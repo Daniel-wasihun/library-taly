@@ -25,6 +25,7 @@ class UserController extends Controller
     {
         $search = $request->query('search');
         $roleFilter = $request->query('role');
+        $statusFilter = $request->query('status');
 
         $query = User::with('roles', 'permissions')->latest();
 
@@ -32,19 +33,42 @@ class UserController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'ilike', "%{$search}%")
                     ->orWhere('username', 'ilike', "%{$search}%")
-                    ->orWhere('email', 'ilike', "%{$search}%");
+                    ->orWhere('email', 'ilike', "%{$search}%")
+                    ->orWhere('phone', 'ilike', "%{$search}%");
             });
         }
 
-        if ($roleFilter) {
+        if ($roleFilter && $roleFilter !== 'all') {
             $query->role($roleFilter);
+        }
+
+        if ($statusFilter && $statusFilter !== 'all') {
+            $query->where('status', $statusFilter);
         }
 
         $users = $query->paginate(15);
 
+        $items = collect($users->items())->map(function ($u) {
+            $dutyStatus = $this->dutyService->evaluateUserDutyStatus($u, 'book_circulation');
+            return [
+                'id' => $u->id,
+                'name' => $u->name,
+                'username' => $u->username,
+                'email' => $u->email,
+                'phone' => $u->phone,
+                'status' => $u->status,
+                'is_admin' => $u->hasAdminPrivilege(),
+                'roles' => $u->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name]),
+                'direct_permissions' => $u->getDirectPermissionsList(),
+                'all_permissions' => $u->getAllPermissionsList(),
+                'duty_status' => $dutyStatus,
+                'created_at' => $u->created_at?->toISOString(),
+            ];
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $users->items(),
+            'data' => $items,
             'pagination' => [
                 'current_page' => $users->currentPage(),
                 'last_page' => $users->lastPage(),
@@ -156,6 +180,28 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'User deleted successfully.',
+        ]);
+    }
+
+    /**
+     * Override direct permissions on a user (Spatie syncPermissions).
+     */
+    public function overridePermissions(Request $request, User $user): JsonResponse
+    {
+        $validated = $request->validate([
+            'permissions' => ['required', 'array'],
+            'permissions.*' => ['string', 'exists:permissions,name'],
+        ]);
+
+        $user->syncPermissions($validated['permissions']);
+
+        $this->dutyService->clearUserScheduleCache($user->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Direct permissions updated successfully.',
+            'direct_permissions' => $user->getDirectPermissionsList(),
+            'all_permissions' => $user->getAllPermissionsList(),
         ]);
     }
 }

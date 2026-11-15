@@ -7,10 +7,13 @@ export interface User {
     email: string;
     phone: string | null;
     status: 'active' | 'inactive' | 'suspended';
-    roles: string[];
-    permissions: string[];
+    roles: (string | { id: number; name: string })[];
+    permissions?: (string | { id: number; name: string })[];
+    direct_permissions?: string[];
+    all_permissions?: string[];
     is_admin: boolean;
-    duty_status: DutyStatus;
+    duty_status?: DutyStatus;
+    created_at?: string;
 }
 
 export interface DutyStatus {

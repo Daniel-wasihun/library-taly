@@ -81,4 +81,24 @@ class User extends Authenticatable
     {
         return $this->hasRole(['Super Admin', 'Head Librarian']);
     }
+
+    /**
+     * Get list of direct permissions granted explicitly to this user.
+     *
+     * @return array<int, string>
+     */
+    public function getDirectPermissionsList(): array
+    {
+        return $this->getDirectPermissions()->pluck('name')->values()->all();
+    }
+
+    /**
+     * Get list of all permissions (via roles + direct user overrides).
+     *
+     * @return array<int, string>
+     */
+    public function getAllPermissionsList(): array
+    {
+        return $this->getAllPermissions()->pluck('name')->values()->all();
+    }
 }

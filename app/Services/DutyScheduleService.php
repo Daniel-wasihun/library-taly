@@ -97,6 +97,39 @@ class DutyScheduleService
     }
 
     /**
+     * Evaluate duty status summary for a user.
+     *
+     * @param User $user
+     * @param string $taskKey
+     * @return array
+     */
+    public function evaluateUserDutyStatus(User $user, string $taskKey = 'book_circulation'): array
+    {
+        $evaluation = $this->canPerformTask($user, $taskKey);
+
+        $today = Carbon::today()->toDateString();
+        $todayShifts = DutySchedule::where('user_id', $user->id)
+            ->where('shift_date', $today)
+            ->whereIn('status', ['scheduled', 'active'])
+            ->get()
+            ->map(fn ($s) => [
+                'id' => $s->id,
+                'task_key' => $s->task_key,
+                'task_name' => self::TASKS[$s->task_key] ?? $s->task_key,
+                'start_time' => $s->start_time,
+                'end_time' => $s->end_time,
+            ]);
+
+        return [
+            'has_active_shift_today' => $evaluation['allowed'] && !$user->hasAdminPrivilege(),
+            'circulation_authorized_today' => $evaluation['allowed'],
+            'circulation_reason' => $evaluation['reason'] ?? '',
+            'next_turn' => $evaluation['next_turn'] ?? null,
+            'today_shifts' => $todayShifts,
+        ];
+    }
+
+    /**
      * Get list of supported tasks.
      */
     public function getAvailableTasks(): array

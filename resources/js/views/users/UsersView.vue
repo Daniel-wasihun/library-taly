@@ -8,17 +8,28 @@
           <span>{{ langStore.t('users.title', 'User Accounts & Access') }}</span>
         </h2>
         <p class="text-xs text-main-text/50 mt-0.5">
-          {{ langStore.t('users.subtitle', 'Manage user authentication, Spatie role assignments, and duty status') }}
+          {{ langStore.t('users.subtitle', 'Manage user authentication, Spatie role assignments, and granular permission overrides') }}
         </p>
       </div>
-      <Button
-        variant="primary"
-        size="sm"
-        :icon="Plus"
-        @click="openCreateModal"
-      >
-        {{ langStore.t('users.add', 'Add New User') }}
-      </Button>
+      <div class="flex items-center gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          :icon="RefreshCw"
+          :loading="userStore.loading"
+          @click="loadData"
+        >
+          {{ langStore.t('common.refresh', 'Refresh') }}
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          :icon="Plus"
+          @click="openCreateModal"
+        >
+          {{ langStore.t('users.add', 'Add New User') }}
+        </Button>
+      </div>
     </div>
 
     <!-- Users DataTable matching Gibi-Gubae -->
@@ -34,6 +45,35 @@
       :current-page="userStore.pagination.current_page"
       @page-change="handlePageChange"
     >
+      <!-- Filter Toolbar Slot -->
+      <template #toolbar>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <!-- Role Filter -->
+          <select
+            v-model="selectedRoleFilter"
+            @change="handleFilterChange"
+            class="h-9 px-3 text-xs rounded-xl bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+          >
+            <option value="all">All Roles</option>
+            <option v-for="r in userStore.roles" :key="r.id" :value="r.name">
+              {{ r.name }}
+            </option>
+          </select>
+
+          <!-- Status Filter -->
+          <select
+            v-model="selectedStatusFilter"
+            @change="handleFilterChange"
+            class="h-9 px-3 text-xs rounded-xl bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+          >
+            <option value="all">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
+      </template>
+
       <!-- User Details Column -->
       <template #user="{ item }">
         <div v-if="item" class="flex items-center gap-2.5">
@@ -66,17 +106,28 @@
         </div>
       </template>
 
+      <!-- Direct Permission Overrides Column -->
+      <template #direct_permissions="{ item }">
+        <div v-if="item?.direct_permissions?.length" class="flex items-center gap-1.5">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/25 select-none shadow-2xs">
+            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+            {{ item.direct_permissions.length }} Overrides
+          </span>
+        </div>
+        <span v-else class="text-main-text/40 text-[11px] italic">Role default</span>
+      </template>
+
       <!-- Duty Status Column -->
       <template #duty_status="{ item }">
         <span v-if="item.is_admin" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
           <Shield class="w-3 h-3 text-blue-600 dark:text-blue-400" />
           {{ langStore.t('duty.admin_override', 'Override') }}
         </span>
-        <span v-else-if="item.duty_status?.has_active_shift_today" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+        <span v-else-if="item.duty_status?.has_active_shift_today" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20" :title="item.duty_status?.today_shifts?.[0]?.task_name || 'Active Turn'">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           {{ langStore.t('duty.on_duty', 'On Duty') }}
         </span>
-        <span v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+        <span v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20" :title="item.duty_status?.next_turn ? `Next turn: ${item.duty_status.next_turn}` : 'No turn scheduled'">
           {{ langStore.t('duty.off_duty', 'Off Duty') }}
         </span>
       </template>
@@ -89,6 +140,17 @@
       <!-- Actions Column -->
       <template #actions="{ item }">
         <div class="flex items-center justify-end gap-1">
+          <!-- Direct Permission Overrides Button -->
+          <button
+            type="button"
+            class="table-action-btn text-purple-600 hover:bg-purple-500/10 transition cursor-pointer"
+            title="Direct Permission Overrides"
+            @click="openOverridesModal(item)"
+          >
+            <Zap class="w-4 h-4 stroke-[2.2]" />
+          </button>
+
+          <!-- Edit User Button -->
           <button
             type="button"
             class="table-action-btn text-brand-blue hover:bg-brand-blue/10 transition cursor-pointer"
@@ -97,6 +159,8 @@
           >
             <Pencil class="w-4 h-4 stroke-[2.2]" />
           </button>
+
+          <!-- Delete User Button -->
           <button
             type="button"
             class="table-action-btn text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
@@ -112,7 +176,7 @@
     <!-- Create / Edit User Modal matching Gibi-Gubae -->
     <Modal
       :show="showModal"
-      :title="editingUser ? langStore.t('users.edit', 'Edit User') : langStore.t('users.add', 'Add New User')"
+      :title="editingUser ? langStore.t('users.edit', 'Edit User Account') : langStore.t('users.add', 'Register New User')"
       :description="langStore.t('users.subtitle', 'Configure user credentials, email, and role assignment')"
       :icon="editingUser ? Pencil : UserPlus"
       size="md"
@@ -128,7 +192,7 @@
             v-model="form.name"
             type="text"
             required
-            placeholder="Dr. Abebe Bekele"
+            placeholder="e.g. Dr. Abebe Bekele"
             class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           />
         </div>
@@ -174,7 +238,7 @@
               v-model="form.password"
               type="password"
               :required="!editingUser"
-              :placeholder="editingUser ? 'Leave blank to retain' : '••••••••'"
+              :placeholder="editingUser ? 'Leave blank to retain current' : '••••••••'"
               class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
             />
           </div>
@@ -243,6 +307,55 @@
       </template>
     </Modal>
 
+    <!-- Direct Permission Overrides Modal -->
+    <Modal
+      :show="showOverridesModal"
+      :title="`Direct Permission Overrides: ${overridesUser?.name}`"
+      description="Explicit user abilities in model_has_permissions that augment or override base role permissions"
+      :icon="Zap"
+      size="lg"
+      @close="showOverridesModal = false"
+    >
+      <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+        <div v-for="(perms, moduleName) in groupedPermissions" :key="moduleName" class="space-y-2">
+          <h4 class="text-xs font-bold text-main-text uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-card-border/60">
+            <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+            <span>{{ moduleName }}</span>
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label
+              v-for="perm in perms"
+              :key="perm.name"
+              class="flex items-center gap-2 p-2 rounded-lg border border-card-border hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition select-none text-xs"
+              :class="userDirectPerms.includes(perm.name) ? 'border-purple-500/50 bg-purple-500/5 dark:bg-purple-500/10' : ''"
+            >
+              <input
+                type="checkbox"
+                :value="perm.name"
+                v-model="userDirectPerms"
+                class="rounded text-purple-600 focus:ring-purple-500/20"
+              />
+              <span class="font-mono text-[11px] text-main-text truncate">{{ perm.name }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button variant="secondary" size="sm" @click="showOverridesModal = false">
+          {{ langStore.t('common.cancel', 'Cancel') }}
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          :loading="userStore.loading"
+          @click="saveDirectPermissions"
+        >
+          Save Overrides
+        </Button>
+      </template>
+    </Modal>
+
     <!-- Delete Confirmation Modal -->
     <Modal
       :show="showDelete"
@@ -278,26 +391,37 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useUserStore } from '@/stores/userStore';
 import { useLanguageStore } from '@/stores/languageStore';
+import { rolesApi } from '@/api';
 import Button from '@/components/ui/Button.vue';
 import DataTable, { ColumnDef } from '@/components/ui/DataTable.vue';
 import Modal from '@/components/ui/Modal.vue';
 import RoleBadge from '@/components/ui/RoleBadge.vue';
 import StatusBadge from '@/components/ui/StatusBadge.vue';
-import { Users, Plus, Pencil, Trash2, UserPlus, Shield } from 'lucide-vue-next';
+import { Users, Plus, Pencil, Trash2, UserPlus, Shield, Zap, RefreshCw } from 'lucide-vue-next';
 import type { User } from '@/types';
 
 const userStore = useUserStore();
 const langStore = useLanguageStore();
 
 const searchQuery = ref('');
+const selectedRoleFilter = ref('all');
+const selectedStatusFilter = ref('all');
+
 const showModal = ref(false);
 const showDelete = ref(false);
+const showOverridesModal = ref(false);
+
 const editingUser = ref<User | null>(null);
 const deletingUser = ref<User | null>(null);
+const overridesUser = ref<User | null>(null);
+
+const userDirectPerms = ref<string[]>([]);
+const availablePermissions = ref<{ id: number; name: string; group?: string }[]>([]);
 
 const userColumns = computed<ColumnDef[]>(() => [
   { key: 'user', label: langStore.t('users.name', 'User') },
   { key: 'roles', label: langStore.t('users.role', 'Roles') },
+  { key: 'direct_permissions', label: 'Direct Overrides' },
   { key: 'duty_status', label: langStore.t('duty.active_shift', 'Duty Turn') },
   { key: 'status', label: langStore.t('common.status', 'Status') },
   { key: 'actions', label: langStore.t('common.actions', 'Actions'), align: 'right' },
@@ -312,6 +436,37 @@ const form = reactive({
   role: '',
   status: 'active',
 });
+
+const groupedPermissions = computed(() => {
+  const groups: Record<string, { id: number; name: string }[]> = {};
+  for (const p of availablePermissions.value) {
+    const mod = p.name.split('.')[0] || 'general';
+    if (!groups[mod]) groups[mod] = [];
+    groups[mod].push(p);
+  }
+  return groups;
+});
+
+const loadData = async () => {
+  await Promise.all([
+    userStore.fetchUsers({
+      search: searchQuery.value,
+      role: selectedRoleFilter.value !== 'all' ? selectedRoleFilter.value : undefined,
+      status: selectedStatusFilter.value !== 'all' ? selectedStatusFilter.value : undefined,
+    }),
+    userStore.fetchRoles(),
+    loadAvailablePermissions(),
+  ]);
+};
+
+const loadAvailablePermissions = async () => {
+  try {
+    const { data } = await rolesApi.list();
+    availablePermissions.value = data.permissions || [];
+  } catch {
+    // fallback
+  }
+};
 
 const openCreateModal = () => {
   editingUser.value = null;
@@ -342,6 +497,20 @@ const openEditModal = (user: User) => {
   showModal.value = true;
 };
 
+const openOverridesModal = (user: User) => {
+  overridesUser.value = user;
+  userDirectPerms.value = [...(user.direct_permissions || [])];
+  showOverridesModal.value = true;
+};
+
+const saveDirectPermissions = async () => {
+  if (!overridesUser.value) return;
+  const success = await userStore.overridePermissions(overridesUser.value.id, userDirectPerms.value);
+  if (success) {
+    showOverridesModal.value = false;
+  }
+};
+
 const confirmDelete = (user: User) => {
   deletingUser.value = user;
   showDelete.value = true;
@@ -367,19 +536,32 @@ const handleDelete = async () => {
   }
 };
 
+const handleFilterChange = () => {
+  userStore.fetchUsers({
+    search: searchQuery.value,
+    role: selectedRoleFilter.value !== 'all' ? selectedRoleFilter.value : undefined,
+    status: selectedStatusFilter.value !== 'all' ? selectedStatusFilter.value : undefined,
+  });
+};
+
 const handlePageChange = (page: number) => {
-  userStore.fetchUsers({ search: searchQuery.value, page });
+  userStore.fetchUsers({
+    search: searchQuery.value,
+    role: selectedRoleFilter.value !== 'all' ? selectedRoleFilter.value : undefined,
+    status: selectedStatusFilter.value !== 'all' ? selectedStatusFilter.value : undefined,
+    page,
+  });
 };
 
 let searchTimer: ReturnType<typeof setTimeout>;
 watch(searchQuery, (query) => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
-    userStore.fetchUsers({ search: query });
+    handleFilterChange();
   }, 350);
 });
 
 onMounted(async () => {
-  await Promise.all([userStore.fetchUsers(), userStore.fetchRoles()]);
+  await loadData();
 });
 </script>

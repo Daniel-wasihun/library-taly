@@ -47,7 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/roles/{role}', [RolePermissionController::class, 'destroyRole']);
     Route::get('/tasks', [RolePermissionController::class, 'tasks']);
 
-    // User Management (Full CRUD)
+    // User Management (Full CRUD + Direct Permission Overrides)
+    Route::post('/users/{user}/permissions', [UserController::class, 'overridePermissions']);
     Route::apiResource('users', UserController::class);
 
     // Duty Schedules & Shift Management

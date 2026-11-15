@@ -87,6 +87,21 @@ export const useUserStore = defineStore('users', () => {
         }
     }
 
+    async function overridePermissions(userId: number, permissions: string[]) {
+        loading.value = true;
+        try {
+            const { data } = await usersApi.overridePermissions(userId, permissions);
+            toast.success(data.message || 'Direct permissions updated successfully.');
+            await fetchUsers();
+            return true;
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to update direct permissions.');
+            return false;
+        } finally {
+            loading.value = false;
+        }
+    }
+
     return {
         users,
         selectedUser,
@@ -98,5 +113,6 @@ export const useUserStore = defineStore('users', () => {
         createUser,
         updateUser,
         deleteUser,
+        overridePermissions,
     };
 });

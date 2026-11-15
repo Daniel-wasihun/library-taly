@@ -30,7 +30,7 @@ export const dashboardApi = {
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 export const usersApi = {
-    list: (params?: { search?: string; role?: string; page?: number }) =>
+    list: (params?: { search?: string; role?: string; status?: string; page?: number }) =>
         api.get('/users', { params }),
 
     show: (id: number) => api.get(`/users/${id}`),
@@ -59,11 +59,26 @@ export const usersApi = {
     ) => api.put(`/users/${id}`, data),
 
     destroy: (id: number) => api.delete(`/users/${id}`),
+
+    overridePermissions: (userId: number, permissions: string[]) =>
+        api.post<{ success: boolean; message: string; direct_permissions: string[]; all_permissions: string[] }>(
+            `/users/${userId}/permissions`,
+            { permissions }
+        ),
 };
 
 // ── Roles ─────────────────────────────────────────────────────────────────────
 export const rolesApi = {
     list: () => api.get<{ success: boolean; roles: ApiRole[]; permissions: { id: number; name: string }[] }>('/roles'),
+
+    create: (data: { name: string; permissions?: string[] }) =>
+        api.post('/roles', data),
+
+    update: (id: number, data: { name: string; permissions?: string[] }) =>
+        api.put(`/roles/${id}`, data),
+
+    destroy: (id: number) =>
+        api.delete(`/roles/${id}`),
 
     tasks: () => api.get<{ success: boolean; tasks: { key: string; name: string }[] }>('/tasks'),
 };

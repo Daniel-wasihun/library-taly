@@ -16,6 +16,7 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': path.resolve(import.meta.dirname, './resources/js'),
+            'lucide-vue-next': '@lucide/vue',
         },
     },
     server: {

@@ -1,30 +1,26 @@
 <template>
-    <div class="flex h-screen overflow-hidden" style="background: var(--bg-page); color: var(--text-primary);">
-        <!-- Sidebar -->
-        <AppSidebar />
+  <div class="flex h-screen overflow-hidden bg-main-bg text-main-text font-sans">
+    <!-- Sidebar -->
+    <Sidebar />
 
-        <!-- Main Content -->
-        <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
-            <!-- Topbar -->
-            <AppNavbar />
+    <!-- Main Content Area -->
+    <div class="flex flex-col flex-1 min-w-0 overflow-hidden bg-main-bg">
+      <!-- Navbar -->
+      <Navbar />
 
-            <!-- Page Content -->
-            <main class="flex-1 overflow-y-auto p-6">
-                <router-view v-slot="{ Component }">
-                    <transition name="fade" mode="out-in">
-                        <component :is="Component" />
-                    </transition>
-                </router-view>
-            </main>
-        </div>
-
-        <!-- Toast Notifications -->
-        <AppToast />
+      <!-- Scrollable Main Content -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-main-bg">
+        <slot></slot>
+      </main>
     </div>
+
+    <!-- Toast Notifications -->
+    <Toast />
+  </div>
 </template>
 
 <script setup lang="ts">
-import AppSidebar from '@/components/AppSidebar.vue';
-import AppNavbar from '@/components/AppNavbar.vue';
-import AppToast from '@/components/AppToast.vue';
+import Sidebar from '@/components/Sidebar.vue';
+import Navbar from '@/components/Navbar.vue';
+import Toast from '@/components/Toast.vue';
 </script>

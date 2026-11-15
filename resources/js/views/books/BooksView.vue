@@ -1,271 +1,349 @@
 <template>
-    <div class="space-y-5">
-        <div class="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-            <div>
-                <h1 class="text-xl font-bold" style="color: var(--text-primary);">Book Catalog</h1>
-                <p class="text-sm mt-1" style="color: var(--text-secondary);">
-                    {{ bookStore.pagination.total }} books in the university library.
-                </p>
-            </div>
-            <button v-if="authStore.isAdmin || authStore.hasRole('Head Librarian')"
-                @click="openCreate"
-                class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white"
-                style="background: var(--lib-primary-light);">
-                <Plus :size="15" /> Add Book
-            </button>
-        </div>
+  <div class="space-y-5 max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-bold text-main-text tracking-tight flex items-center gap-2">
+          <BookOpen class="w-6 h-6 text-brand-blue dark:text-brand-yellow" />
+          <span>{{ langStore.t('books.title', 'University Library Catalog') }}</span>
+        </h2>
+        <p class="text-xs text-main-text/50 mt-0.5">
+          Browse, search, and manage cataloged books across academic departments
+        </p>
+      </div>
 
-        <!-- Search + Category Filter -->
-        <div class="flex flex-col sm:flex-row gap-3">
-            <div class="relative flex-1">
-                <Search :size="15" class="absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--text-muted);" />
-                <input v-model="search" type="search" placeholder="Search by title, author or ISBN…"
-                    class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border"
-                    style="background: var(--bg-card); border-color: var(--border); color: var(--text-primary);" />
-            </div>
-            <select v-model="categoryFilter"
-                class="px-3 py-2 text-sm rounded-lg border"
-                style="background: var(--bg-card); border-color: var(--border); color: var(--text-primary);">
-                <option value="">All Categories</option>
-                <option v-for="c in bookStore.categories" :key="c" :value="c">{{ c }}</option>
-            </select>
-            <label class="flex items-center gap-2 text-xs cursor-pointer" style="color: var(--text-secondary);">
-                <input v-model="availableOnly" type="checkbox" class="rounded" />
-                Available only
-            </label>
-        </div>
-
-        <!-- Books Grid -->
-        <div v-if="bookStore.loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <div v-for="i in 8" :key="i" class="rounded-xl h-44 animate-pulse" style="background: var(--border);"></div>
-        </div>
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <div v-for="book in bookStore.books" :key="book.id"
-                class="rounded-xl border p-4 flex flex-col gap-3 transition-shadow hover:shadow-md"
-                style="background: var(--bg-card); border-color: var(--border);">
-                <!-- Book spine visual -->
-                <div class="flex items-start gap-3">
-                    <div class="w-10 h-14 rounded flex items-center justify-center shrink-0"
-                        :style="getCategoryStyle(book.category)">
-                        <BookOpen :size="18" class="text-white" />
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold leading-snug line-clamp-2" style="color: var(--text-primary);">
-                            {{ book.title }}
-                        </p>
-                        <p class="text-xs mt-0.5 truncate" style="color: var(--text-secondary);">{{ book.author }}</p>
-                    </div>
-                </div>
-
-                <!-- Metadata -->
-                <div class="space-y-1 text-xs" style="color: var(--text-muted);">
-                    <div class="flex items-center gap-1.5">
-                        <Tag :size="11" />
-                        <span>{{ book.category }}</span>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <MapPin :size="11" />
-                        <span class="truncate">{{ book.shelf_location ?? 'Not assigned' }}</span>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <Hash :size="11" />
-                        <code class="text-xs">{{ book.isbn }}</code>
-                    </div>
-                </div>
-
-                <!-- Availability -->
-                <div class="flex items-center justify-between mt-auto">
-                    <div class="text-xs" style="color: var(--text-muted);">
-                        <span class="font-semibold" :style="book.available_copies > 0 ? 'color: var(--lib-success);' : 'color: var(--lib-danger);'">
-                            {{ book.available_copies }}
-                        </span>
-                        / {{ book.total_copies }} available
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button v-if="authStore.isAdmin || authStore.hasRole('Head Librarian')"
-                            @click="openEdit(book)" class="p-1.5 rounded hover:bg-blue-50 transition-colors">
-                            <Pencil :size="13" style="color: var(--lib-primary-light);" />
-                        </button>
-                        <button v-if="authStore.isAdmin"
-                            @click="confirmDelete(book)" class="p-1.5 rounded hover:bg-red-50 transition-colors">
-                            <Trash2 :size="13" style="color: var(--lib-danger);" />
-                        </button>
-                    </div>
-                </div>
-
-                <div class="w-full h-1.5 rounded-full overflow-hidden" style="background: var(--border);">
-                    <div class="h-full rounded-full transition-all"
-                        :style="`width: ${availabilityPct(book)}%; background: ${book.available_copies > 2 ? 'var(--lib-success)' : book.available_copies > 0 ? '#d97706' : 'var(--lib-danger)'};`"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Create / Edit Modal -->
-        <AppModal v-model="showModal" :title="editingBook ? 'Edit Book' : 'Add Book to Catalog'" size="md">
-            <form @submit.prevent="handleSubmit" class="space-y-4">
-                <div>
-                    <label class="label">Title</label>
-                    <input v-model="form.title" type="text" placeholder="Introduction to Algorithms" required class="inp" />
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="label">Author(s)</label>
-                        <input v-model="form.author" type="text" required class="inp" />
-                    </div>
-                    <div>
-                        <label class="label">ISBN</label>
-                        <input v-model="form.isbn" type="text" required class="inp" />
-                    </div>
-                    <div>
-                        <label class="label">Category</label>
-                        <input v-model="form.category" type="text" list="categories-list" required class="inp" />
-                        <datalist id="categories-list">
-                            <option v-for="c in bookStore.categories" :key="c" :value="c" />
-                        </datalist>
-                    </div>
-                    <div>
-                        <label class="label">Shelf Location</label>
-                        <input v-model="form.shelf_location" type="text" placeholder="Floor 2 - Stacks CS-101" class="inp" />
-                    </div>
-                    <div>
-                        <label class="label">Total Copies</label>
-                        <input v-model.number="form.total_copies" type="number" min="1" required class="inp" />
-                    </div>
-                    <div v-if="editingBook">
-                        <label class="label">Available Copies</label>
-                        <input v-model.number="form.available_copies" type="number" min="0" required class="inp" />
-                    </div>
-                </div>
-            </form>
-            <template #footer>
-                <button @click="showModal = false" class="px-4 py-2 text-sm rounded-lg border"
-                    style="border-color: var(--border);">Cancel</button>
-                <button @click="handleSubmit" :disabled="bookStore.loading"
-                    class="px-4 py-2 text-sm rounded-lg text-white font-medium disabled:opacity-50"
-                    style="background: var(--lib-primary-light);">
-                    {{ bookStore.loading ? 'Saving…' : editingBook ? 'Update' : 'Add Book' }}
-                </button>
-            </template>
-        </AppModal>
-
-        <!-- Delete Modal -->
-        <AppModal v-model="showDelete" title="Remove Book" size="sm">
-            <div class="text-center space-y-3 py-2">
-                <Trash2 :size="28" class="mx-auto" style="color: var(--lib-danger);" />
-                <p class="text-sm" style="color: var(--text-secondary);">
-                    Remove <strong>{{ deletingBook?.title }}</strong> from catalog?
-                </p>
-            </div>
-            <template #footer>
-                <button @click="showDelete = false" class="px-4 py-2 text-sm rounded-lg border" style="border-color: var(--border);">Cancel</button>
-                <button @click="handleDelete" class="px-4 py-2 text-sm rounded-lg text-white" style="background: var(--lib-danger);">Remove</button>
-            </template>
-        </AppModal>
+      <Button
+        v-if="authStore.isAdmin || authStore.hasRole('Head Librarian')"
+        variant="primary"
+        size="sm"
+        :icon="Plus"
+        @click="openCreateModal"
+      >
+        {{ langStore.t('books.add', 'Add Book') }}
+      </Button>
     </div>
+
+    <!-- DataTable matching Gibi-Gubae -->
+    <DataTable
+      :columns="columns"
+      :items="bookStore.books"
+      :loading="bookStore.loading"
+      show-search
+      v-model:search-value="searchQuery"
+      :search-placeholder="langStore.t('common.search', 'Search by title, author, or ISBN...')"
+      :total="bookStore.pagination.total"
+      :per-page="15"
+      :current-page="bookStore.pagination.current_page"
+      @page-change="handlePageChange"
+    >
+      <!-- Title & Author Column -->
+      <template #title="{ item }">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center font-bold text-xs shrink-0">
+            📖
+          </div>
+          <div class="min-w-0">
+            <p class="font-bold text-main-text truncate">{{ item.title }}</p>
+            <p class="text-[11px] text-main-text/50 truncate">{{ item.author }}</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- ISBN Column -->
+      <template #isbn="{ item }">
+        <code class="text-xs font-mono text-main-text/70 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-card-border">
+          {{ item.isbn }}
+        </code>
+      </template>
+
+      <!-- Category Column -->
+      <template #category="{ item }">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/25">
+          {{ item.category }}
+        </span>
+      </template>
+
+      <!-- Location Column -->
+      <template #shelf_location="{ item }">
+        <span class="text-xs text-main-text/70 font-mono">{{ item.shelf_location || 'General Stacks' }}</span>
+      </template>
+
+      <!-- Availability Column -->
+      <template #availability="{ item }">
+        <div class="flex items-center gap-2">
+          <span
+            class="font-bold text-xs"
+            :class="item.available_copies > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
+          >
+            {{ item.available_copies }}
+          </span>
+          <span class="text-[11px] text-main-text/40">/ {{ item.total_copies }}</span>
+        </div>
+      </template>
+
+      <!-- Actions Column -->
+      <template #actions="{ item }">
+        <div v-if="authStore.isAdmin || authStore.hasRole('Head Librarian')" class="flex items-center justify-end gap-1">
+          <button
+            type="button"
+            class="table-action-btn text-brand-blue hover:bg-brand-blue/10 transition cursor-pointer"
+            :title="langStore.t('common.edit', 'Edit Book')"
+            @click="openEditModal(item)"
+          >
+            <Pencil class="w-4 h-4 stroke-[2.2]" />
+          </button>
+          <button
+            v-if="authStore.isAdmin"
+            type="button"
+            class="table-action-btn text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
+            :title="langStore.t('common.delete', 'Delete Book')"
+            @click="confirmDelete(item)"
+          >
+            <Trash2 class="w-4 h-4 stroke-[2.2]" />
+          </button>
+        </div>
+        <span v-else class="text-main-text/30">—</span>
+      </template>
+    </DataTable>
+
+    <!-- Create / Edit Modal -->
+    <Modal
+      :show="showModal"
+      :title="editingBook ? langStore.t('common.edit', 'Edit Book') : langStore.t('books.add', 'Add Book')"
+      :description="langStore.t('books.title', 'Fill catalog details and copy counts')"
+      :icon="BookOpen"
+      size="md"
+      @close="showModal = false"
+    >
+      <form @submit.prevent="handleSubmit" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-main-text mb-1">
+            {{ langStore.t('books.book_title', 'Book Title') }} <span class="text-rose-500">*</span>
+          </label>
+          <input
+            v-model="form.title"
+            type="text"
+            required
+            placeholder="Introduction to Algorithms"
+            class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.t('books.author', 'Author(s)') }} <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="form.author"
+              type="text"
+              required
+              placeholder="Thomas H. Cormen"
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.t('books.isbn', 'ISBN') }} <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="form.isbn"
+              type="text"
+              required
+              placeholder="978-0262046305"
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.t('books.category', 'Category') }} <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="form.category"
+              type="text"
+              required
+              placeholder="Computer Science"
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.t('books.location', 'Shelf Location') }}
+            </label>
+            <input
+              v-model="form.shelf_location"
+              type="text"
+              placeholder="Floor 2 - Stacks CS-101"
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              Total Copies <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model.number="form.total_copies"
+              type="number"
+              min="1"
+              required
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+            />
+          </div>
+
+          <div v-if="editingBook">
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              Available Copies <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model.number="form.available_copies"
+              type="number"
+              min="0"
+              required
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+            />
+          </div>
+        </div>
+      </form>
+
+      <template #footer>
+        <Button variant="secondary" size="sm" @click="showModal = false">
+          {{ langStore.t('common.cancel', 'Cancel') }}
+        </Button>
+        <Button variant="primary" size="sm" :loading="bookStore.loading" @click="handleSubmit">
+          {{ editingBook ? langStore.t('common.update', 'Update Book') : langStore.t('common.save', 'Save Book') }}
+        </Button>
+      </template>
+    </Modal>
+
+    <!-- Delete Modal -->
+    <Modal
+      :show="showDelete"
+      :title="langStore.t('common.delete', 'Delete Book')"
+      size="sm"
+      @close="showDelete = false"
+    >
+      <div class="text-center py-2 space-y-3">
+        <div class="w-12 h-12 rounded-full mx-auto flex items-center justify-center bg-rose-500/10 text-rose-600 border border-rose-500/20">
+          <Trash2 class="w-6 h-6 stroke-[2.2]" />
+        </div>
+        <p class="text-xs text-main-text">
+          Remove <strong>{{ deletingBook?.title }}</strong> from library catalog?
+        </p>
+      </div>
+
+      <template #footer>
+        <Button variant="secondary" size="sm" @click="showDelete = false">
+          {{ langStore.t('common.cancel', 'Cancel') }}
+        </Button>
+        <Button variant="danger" size="sm" @click="handleDelete">
+          {{ langStore.t('common.delete', 'Delete') }}
+        </Button>
+      </template>
+    </Modal>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useBookStore } from '@/stores/bookStore';
 import { useAuthStore } from '@/stores/authStore';
-import AppModal from '@/components/ui/AppModal.vue';
-import { Plus, Search, BookOpen, Pencil, Trash2, Tag, MapPin, Hash } from '@lucide/vue';
+import { useLanguageStore } from '@/stores/languageStore';
+import Button from '@/components/ui/Button.vue';
+import DataTable, { ColumnDef } from '@/components/ui/DataTable.vue';
+import Modal from '@/components/ui/Modal.vue';
+import { BookOpen, Plus, Pencil, Trash2 } from 'lucide-vue-next';
 import type { Book } from '@/types';
 
 const bookStore = useBookStore();
 const authStore = useAuthStore();
-const search = ref('');
-const categoryFilter = ref('');
-const availableOnly = ref(false);
+const langStore = useLanguageStore();
+
+const searchQuery = ref('');
 const showModal = ref(false);
 const showDelete = ref(false);
 const editingBook = ref<Book | null>(null);
 const deletingBook = ref<Book | null>(null);
 
+const columns = computed<ColumnDef[]>(() => [
+  { key: 'title', label: langStore.t('books.book_title', 'Book & Author') },
+  { key: 'isbn', label: langStore.t('books.isbn', 'ISBN') },
+  { key: 'category', label: langStore.t('books.category', 'Category') },
+  { key: 'shelf_location', label: langStore.t('books.location', 'Location') },
+  { key: 'availability', label: langStore.t('books.copies', 'Availability') },
+  { key: 'actions', label: langStore.t('common.actions', 'Actions'), align: 'right' },
+]);
+
 const form = reactive({
-    title: '', author: '', isbn: '', category: '', shelf_location: '', total_copies: 1, available_copies: 1,
+  title: '',
+  author: '',
+  isbn: '',
+  category: '',
+  shelf_location: '',
+  total_copies: 1,
+  available_copies: 1,
 });
 
-const categoryColors: Record<string, string> = {
-    'Computer Science': '#1e3a8a',
-    'Medicine': '#065f46',
-    'Law': '#5b21b6',
-    'Engineering': '#92400e',
+const openCreateModal = () => {
+  editingBook.value = null;
+  Object.assign(form, {
+    title: '',
+    author: '',
+    isbn: '',
+    category: '',
+    shelf_location: '',
+    total_copies: 1,
+    available_copies: 1,
+  });
+  showModal.value = true;
 };
 
-function getCategoryStyle(cat: string) {
-    const color = categoryColors[cat] ?? '#374151';
-    return `background: ${color};`;
-}
+const openEditModal = (book: Book) => {
+  editingBook.value = book;
+  Object.assign(form, { ...book });
+  showModal.value = true;
+};
 
-function availabilityPct(book: Book) {
-    if (book.total_copies === 0) return 0;
-    return Math.round((book.available_copies / book.total_copies) * 100);
-}
+const confirmDelete = (book: Book) => {
+  deletingBook.value = book;
+  showDelete.value = true;
+};
 
-function openCreate() {
-    editingBook.value = null;
-    Object.assign(form, { title: '', author: '', isbn: '', category: '', shelf_location: '', total_copies: 1, available_copies: 1 });
-    showModal.value = true;
-}
+const handleSubmit = async () => {
+  const success = editingBook.value
+    ? await bookStore.updateBook(editingBook.value.id, { ...form })
+    : await bookStore.createBook({ ...form });
 
-function openEdit(b: Book) {
-    editingBook.value = b;
-    Object.assign(form, { ...b });
-    showModal.value = true;
-}
+  if (success) {
+    showModal.value = false;
+  }
+};
 
-function confirmDelete(b: Book) {
-    deletingBook.value = b;
-    showDelete.value = true;
-}
+const handleDelete = async () => {
+  if (deletingBook.value) {
+    await bookStore.deleteBook(deletingBook.value.id);
+    showDelete.value = false;
+  }
+};
 
-async function handleSubmit() {
-    const success = editingBook.value
-        ? await bookStore.updateBook(editingBook.value.id, { ...form })
-        : await bookStore.createBook({ ...form });
-    if (success) showModal.value = false;
-}
-
-async function handleDelete() {
-    if (deletingBook.value) {
-        await bookStore.deleteBook(deletingBook.value.id);
-        showDelete.value = false;
-    }
-}
+const handlePageChange = (page: number) => {
+  bookStore.fetchBooks({ search: searchQuery.value, page });
+};
 
 let searchTimer: ReturnType<typeof setTimeout>;
-watch([search, categoryFilter, availableOnly], () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-        bookStore.fetchBooks({ search: search.value, category: categoryFilter.value, available: availableOnly.value });
-    }, 400);
+watch(searchQuery, (query) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    bookStore.fetchBooks({ search: query });
+  }, 350);
 });
 
 onMounted(() => bookStore.fetchBooks());
 </script>
-
-<style scoped>
-.label {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-    color: var(--text-secondary);
-}
-.inp {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--border);
-    background: var(--bg-input);
-    color: var(--text-primary);
-}
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-</style>

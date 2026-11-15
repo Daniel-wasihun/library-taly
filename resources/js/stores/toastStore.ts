@@ -1,24 +1,41 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { Toast, ToastType } from '@/types';
+
+export interface ToastItem {
+    id: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    message: string;
+    duration?: number;
+}
 
 export const useToastStore = defineStore('toast', () => {
-    const toasts = ref<Toast[]>([]);
+    const toasts = ref<ToastItem[]>([]);
 
-    function add(type: ToastType, message: string, duration = 4000) {
-        const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        toasts.value.push({ id, type, message });
-        setTimeout(() => remove(id), duration);
-    }
+    const add = (message: string, type: ToastItem['type'] = 'info', duration = 4000) => {
+        const id = Math.random().toString(36).substring(2, 9);
+        toasts.value.push({ id, type, message, duration });
 
-    function remove(id: string) {
+        setTimeout(() => {
+            remove(id);
+        }, duration);
+    };
+
+    const success = (message: string, duration?: number) => add(message, 'success', duration);
+    const error = (message: string, duration?: number) => add(message, 'error', duration);
+    const warning = (message: string, duration?: number) => add(message, 'warning', duration);
+    const info = (message: string, duration?: number) => add(message, 'info', duration);
+
+    const remove = (id: string) => {
         toasts.value = toasts.value.filter((t) => t.id !== id);
-    }
+    };
 
-    const success = (msg: string) => add('success', msg);
-    const error = (msg: string) => add('error', msg);
-    const warning = (msg: string) => add('warning', msg);
-    const info = (msg: string) => add('info', msg);
-
-    return { toasts, add, remove, success, error, warning, info };
+    return {
+        toasts,
+        add,
+        success,
+        error,
+        warning,
+        info,
+        remove,
+    };
 });

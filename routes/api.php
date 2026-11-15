@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CirculationController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DutyScheduleController;
 use App\Http\Controllers\Api\RolePermissionController;
+use App\Http\Controllers\Api\TranslationController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,12 @@ use Illuminate\Support\Facades\Route;
 | Public Routes
 |--------------------------------------------------------------------------
 */
+// Localization Endpoints
+Route::prefix('translations')->group(function () {
+    Route::get('/languages', [TranslationController::class, 'getLanguages']);
+    Route::get('/front/{lang?}', [TranslationController::class, 'getFront']);
+});
+
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
@@ -35,6 +42,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Roles and Available Tasks
     Route::get('/roles', [RolePermissionController::class, 'roles']);
+    Route::post('/roles', [RolePermissionController::class, 'storeRole']);
+    Route::put('/roles/{role}', [RolePermissionController::class, 'updateRole']);
+    Route::delete('/roles/{role}', [RolePermissionController::class, 'destroyRole']);
     Route::get('/tasks', [RolePermissionController::class, 'tasks']);
 
     // User Management (Full CRUD)

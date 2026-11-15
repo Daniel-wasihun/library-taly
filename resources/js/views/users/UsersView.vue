@@ -1,304 +1,385 @@
 <template>
-    <div class="space-y-5">
-        <!-- Header + Actions -->
-        <div class="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-            <div>
-                <h1 class="text-xl font-bold" style="color: var(--text-primary);">User Management</h1>
-                <p class="text-sm mt-1" style="color: var(--text-secondary);">
-                    Manage library staff, librarians and student members.
-                </p>
-            </div>
-            <button @click="openCreate"
-                class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
-                style="background: var(--lib-primary-light);">
-                <UserPlus :size="15" />
-                Add User
-            </button>
-        </div>
-
-        <!-- Filters -->
-        <div class="flex flex-col sm:flex-row gap-3">
-            <div class="relative flex-1">
-                <Search :size="15" class="absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--text-muted);" />
-                <input v-model="search" type="search" placeholder="Search users by name, username or email…"
-                    class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border"
-                    style="background: var(--bg-card); border-color: var(--border); color: var(--text-primary);" />
-            </div>
-            <select v-model="roleFilter" class="px-3 py-2 text-sm rounded-lg border"
-                style="background: var(--bg-card); border-color: var(--border); color: var(--text-primary);">
-                <option value="">All Roles</option>
-                <option v-for="r in userStore.roles" :key="r.id" :value="r.name">{{ r.name }}</option>
-            </select>
-        </div>
-
-        <!-- Table -->
-        <div class="rounded-xl border overflow-hidden" style="background: var(--bg-card); border-color: var(--border);">
-            <div v-if="userStore.loading" class="p-10 text-center">
-                <Loader2 :size="24" class="animate-spin mx-auto" style="color: var(--lib-primary-light);" />
-            </div>
-            <table v-else class="w-full text-sm">
-                <thead>
-                    <tr style="background: var(--bg-page);">
-                        <th v-for="col in columns" :key="col"
-                            class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide"
-                            style="color: var(--text-muted);">{{ col }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-if="userStore.users.length === 0">
-                        <td :colspan="columns.length" class="py-12 text-center text-sm" style="color: var(--text-muted);">
-                            No users found.
-                        </td>
-                    </tr>
-                    <tr v-for="u in userStore.users" :key="u.id"
-                        class="border-t transition-colors hover:bg-slate-50"
-                        style="border-color: var(--border);">
-                        <!-- User Info -->
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                                    style="background: var(--lib-primary-light);">
-                                    {{ initials(u.name) }}
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="font-medium truncate" style="color: var(--text-primary);">{{ u.name }}</p>
-                                    <p class="text-xs truncate" style="color: var(--text-muted);">@{{ u.username }}</p>
-                                </div>
-                            </div>
-                        </td>
-                        <!-- Email -->
-                        <td class="px-4 py-3 text-xs" style="color: var(--text-secondary);">{{ u.email }}</td>
-                        <!-- Role -->
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-0.5 text-xs font-medium rounded-full"
-                                :style="roleStyle((u as any).roles?.[0]?.name ?? u.roles?.[0])">
-                                {{ (u as any).roles?.[0]?.name ?? u.roles?.[0] ?? '—' }}
-                            </span>
-                        </td>
-                        <!-- Status -->
-                        <td class="px-4 py-3">
-                            <span class="flex items-center gap-1.5 text-xs font-medium"
-                                :style="u.status === 'active' ? 'color: var(--lib-success);' : 'color: var(--text-muted);'">
-                                <div class="w-1.5 h-1.5 rounded-full"
-                                    :style="u.status === 'active' ? 'background: var(--lib-success);' : 'background: var(--text-muted);'"></div>
-                                {{ u.status }}
-                            </span>
-                        </td>
-                        <!-- Actions -->
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-1">
-                                <button @click="openEdit(u)"
-                                    class="p-1.5 rounded-md hover:bg-blue-50 transition-colors" title="Edit">
-                                    <Pencil :size="14" style="color: var(--lib-primary-light);" />
-                                </button>
-                                <button @click="confirmDelete(u)"
-                                    class="p-1.5 rounded-md hover:bg-red-50 transition-colors" title="Delete">
-                                    <Trash2 :size="14" style="color: var(--lib-danger);" />
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- Pagination -->
-            <div v-if="userStore.pagination.last_page > 1"
-                class="flex items-center justify-between px-4 py-3 border-t text-xs"
-                style="border-color: var(--border); color: var(--text-muted);">
-                <span>Total {{ userStore.pagination.total }} users</span>
-                <div class="flex gap-1">
-                    <button v-for="p in pages" :key="p"
-                        @click="goPage(p)"
-                        class="w-7 h-7 rounded flex items-center justify-center transition-colors"
-                        :style="p === currentPage ? 'background: var(--lib-primary-light); color: white;' : 'hover:background: var(--bg-page);'">
-                        {{ p }}
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Create / Edit Modal -->
-        <AppModal v-model="showModal" :title="editingUser ? 'Edit User' : 'Add New User'" size="md">
-            <form @submit.prevent="handleSubmit" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2">
-                        <label class="label">Full Name</label>
-                        <input v-model="form.name" type="text" placeholder="Dr. Abebe Bekele" required class="inp" />
-                    </div>
-                    <div>
-                        <label class="label">Username</label>
-                        <input v-model="form.username" type="text" placeholder="abebe_bekele" required class="inp" />
-                    </div>
-                    <div>
-                        <label class="label">Email</label>
-                        <input v-model="form.email" type="email" placeholder="abebe@unilib.edu" required class="inp" />
-                    </div>
-                    <div>
-                        <label class="label">Password {{ editingUser ? '(leave blank to keep)' : '' }}</label>
-                        <input v-model="form.password" type="password" placeholder="••••••" :required="!editingUser" class="inp" />
-                    </div>
-                    <div>
-                        <label class="label">Phone</label>
-                        <input v-model="form.phone" type="tel" placeholder="+251 911 123456" class="inp" />
-                    </div>
-                    <div>
-                        <label class="label">Role</label>
-                        <select v-model="form.role" required class="inp">
-                            <option value="">Select role…</option>
-                            <option v-for="r in userStore.roles" :key="r.id" :value="r.name">{{ r.name }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="label">Status</label>
-                        <select v-model="form.status" class="inp">
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="suspended">Suspended</option>
-                        </select>
-                    </div>
-                </div>
-            </form>
-            <template #footer>
-                <button @click="showModal = false" class="px-4 py-2 text-sm rounded-lg border transition-colors"
-                    style="border-color: var(--border); color: var(--text-secondary);">Cancel</button>
-                <button @click="handleSubmit" :disabled="userStore.loading"
-                    class="px-4 py-2 text-sm rounded-lg text-white font-medium transition-colors disabled:opacity-50"
-                    style="background: var(--lib-primary-light);">
-                    <span v-if="userStore.loading"><Loader2 :size="14" class="animate-spin inline mr-1" />Saving…</span>
-                    <span v-else>{{ editingUser ? 'Update User' : 'Create User' }}</span>
-                </button>
-            </template>
-        </AppModal>
-
-        <!-- Delete Confirm Modal -->
-        <AppModal v-model="showDelete" title="Delete User" size="sm">
-            <div class="text-center space-y-3 py-2">
-                <div class="w-12 h-12 rounded-full mx-auto flex items-center justify-center" style="background: var(--lib-danger-light);">
-                    <Trash2 :size="20" style="color: var(--lib-danger);" />
-                </div>
-                <p class="text-sm" style="color: var(--text-secondary);">
-                    Delete <strong>{{ deletingUser?.name }}</strong>? This cannot be undone.
-                </p>
-            </div>
-            <template #footer>
-                <button @click="showDelete = false" class="px-4 py-2 text-sm rounded-lg border"
-                    style="border-color: var(--border);">Cancel</button>
-                <button @click="handleDelete" class="px-4 py-2 text-sm rounded-lg text-white font-medium"
-                    style="background: var(--lib-danger);">Delete</button>
-            </template>
-        </AppModal>
+  <div class="space-y-5 max-w-7xl mx-auto">
+    <!-- Header matching Gibi-Gubae -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-bold text-main-text tracking-tight flex items-center gap-2">
+          <Users class="w-6 h-6 text-brand-blue dark:text-brand-yellow" />
+          <span>{{ langStore.t('users.title', 'User Accounts & Access') }}</span>
+        </h2>
+        <p class="text-xs text-main-text/50 mt-0.5">
+          {{ langStore.t('users.subtitle', 'Manage user authentication, Spatie role assignments, and duty status') }}
+        </p>
+      </div>
+      <Button
+        variant="primary"
+        size="sm"
+        :icon="Plus"
+        @click="openCreateModal"
+      >
+        {{ langStore.t('users.add', 'Add New User') }}
+      </Button>
     </div>
+
+    <!-- Users DataTable matching Gibi-Gubae -->
+    <DataTable
+      :columns="userColumns"
+      :items="userStore.users"
+      :loading="userStore.loading"
+      show-search
+      v-model:search-value="searchQuery"
+      :search-placeholder="langStore.t('common.search', 'Search users by name, username, email...')"
+      :total="userStore.pagination.total"
+      :per-page="15"
+      :current-page="userStore.pagination.current_page"
+      @page-change="handlePageChange"
+    >
+      <!-- User Details Column -->
+      <template #user="{ item }">
+        <div v-if="item" class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-nav-accent/10 text-nav-accent border border-nav-accent/25 font-bold flex items-center justify-center text-xs shrink-0 shadow-2xs">
+            {{ (item.name || '?').charAt(0).toUpperCase() }}
+          </div>
+          <div class="min-w-0">
+            <div class="font-bold text-main-text flex items-center gap-1.5">
+              <span class="truncate">{{ item.name }}</span>
+              <span v-if="item.is_admin" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-nav-accent/10 text-nav-accent border border-nav-accent/25 uppercase tracking-wide">
+                Admin
+              </span>
+            </div>
+            <div class="text-[11px] text-main-text/50 font-mono truncate">
+              @{{ item.username }} · {{ item.email }}
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Roles Column -->
+      <template #roles="{ item }">
+        <div v-if="item" class="flex flex-wrap gap-1.5">
+          <RoleBadge
+            v-for="role in (item.roles || [])"
+            :key="role.id ?? role"
+            :role="role"
+          />
+          <span v-if="!item.roles?.length" class="text-main-text/40 italic text-[11px]">No role</span>
+        </div>
+      </template>
+
+      <!-- Duty Status Column -->
+      <template #duty_status="{ item }">
+        <span v-if="item.is_admin" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+          <Shield class="w-3 h-3 text-blue-600 dark:text-blue-400" />
+          {{ langStore.t('duty.admin_override', 'Override') }}
+        </span>
+        <span v-else-if="item.duty_status?.has_active_shift_today" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          {{ langStore.t('duty.on_duty', 'On Duty') }}
+        </span>
+        <span v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+          {{ langStore.t('duty.off_duty', 'Off Duty') }}
+        </span>
+      </template>
+
+      <!-- Status Column -->
+      <template #status="{ item }">
+        <StatusBadge :status="item.status" />
+      </template>
+
+      <!-- Actions Column -->
+      <template #actions="{ item }">
+        <div class="flex items-center justify-end gap-1">
+          <button
+            type="button"
+            class="table-action-btn text-brand-blue hover:bg-brand-blue/10 transition cursor-pointer"
+            :title="langStore.t('common.edit', 'Edit User')"
+            @click="openEditModal(item)"
+          >
+            <Pencil class="w-4 h-4 stroke-[2.2]" />
+          </button>
+          <button
+            type="button"
+            class="table-action-btn text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
+            :title="langStore.t('common.delete', 'Delete User')"
+            @click="confirmDelete(item)"
+          >
+            <Trash2 class="w-4 h-4 stroke-[2.2]" />
+          </button>
+        </div>
+      </template>
+    </DataTable>
+
+    <!-- Create / Edit User Modal matching Gibi-Gubae -->
+    <Modal
+      :show="showModal"
+      :title="editingUser ? langStore.t('users.edit', 'Edit User') : langStore.t('users.add', 'Add New User')"
+      :description="langStore.t('users.subtitle', 'Configure user credentials, email, and role assignment')"
+      :icon="editingUser ? Pencil : UserPlus"
+      size="md"
+      @close="showModal = false"
+    >
+      <form @submit.prevent="handleSubmit" class="space-y-4">
+        <!-- Full Name -->
+        <div>
+          <label class="block text-xs font-semibold text-main-text mb-1">
+            {{ langStore.t('users.name', 'Full Name') }} <span class="text-rose-500">*</span>
+          </label>
+          <input
+            v-model="form.name"
+            type="text"
+            required
+            placeholder="Dr. Abebe Bekele"
+            class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <!-- Username -->
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.t('users.username', 'Username (unique)') }} <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="form.username"
+              type="text"
+              required
+              placeholder="abebe_bekele"
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+            />
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.t('users.email', 'Email Address') }} <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="form.email"
+              type="email"
+              required
+              placeholder="abebe@unilib.edu"
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <!-- Password -->
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.t('users.password', 'Password') }}
+              <span v-if="!editingUser" class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="form.password"
+              type="password"
+              :required="!editingUser"
+              :placeholder="editingUser ? 'Leave blank to retain' : '••••••••'"
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            />
+          </div>
+
+          <!-- Phone -->
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.t('users.phone', 'Phone Number') }}
+            </label>
+            <input
+              v-model="form.phone"
+              type="tel"
+              placeholder="+251 911 234567"
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <!-- Role Assignment -->
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.t('users.role', 'Assigned Role') }} <span class="text-rose-500">*</span>
+            </label>
+            <select
+              v-model="form.role"
+              required
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            >
+              <option value="">Select a role...</option>
+              <option v-for="r in userStore.roles" :key="r.id" :value="r.name">
+                {{ r.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Account Status -->
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.t('common.status', 'Status') }}
+            </label>
+            <select
+              v-model="form.status"
+              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs capitalize"
+            >
+              <option value="active">{{ langStore.t('common.active', 'Active') }}</option>
+              <option value="inactive">{{ langStore.t('common.inactive', 'Inactive') }}</option>
+              <option value="suspended">{{ langStore.t('common.suspended', 'Suspended') }}</option>
+            </select>
+          </div>
+        </div>
+      </form>
+
+      <template #footer>
+        <Button variant="secondary" size="sm" @click="showModal = false">
+          {{ langStore.t('common.cancel', 'Cancel') }}
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          :loading="userStore.loading"
+          @click="handleSubmit"
+        >
+          {{ editingUser ? langStore.t('common.update', 'Update User') : langStore.t('common.save', 'Save User') }}
+        </Button>
+      </template>
+    </Modal>
+
+    <!-- Delete Confirmation Modal -->
+    <Modal
+      :show="showDelete"
+      :title="langStore.t('common.delete', 'Delete User')"
+      size="sm"
+      @close="showDelete = false"
+    >
+      <div class="text-center py-2 space-y-3">
+        <div class="w-12 h-12 rounded-full mx-auto flex items-center justify-center bg-rose-500/10 text-rose-600 border border-rose-500/20">
+          <Trash2 class="w-6 h-6 stroke-[2.2]" />
+        </div>
+        <p class="text-xs text-main-text">
+          {{ langStore.t('common.confirm_delete', 'Are you sure you want to delete this record?') }}
+        </p>
+        <p class="text-xs font-bold text-main-text/70 font-mono">
+          {{ deletingUser?.name }} (@{{ deletingUser?.username }})
+        </p>
+      </div>
+
+      <template #footer>
+        <Button variant="secondary" size="sm" @click="showDelete = false">
+          {{ langStore.t('common.cancel', 'Cancel') }}
+        </Button>
+        <Button variant="danger" size="sm" @click="handleDelete">
+          {{ langStore.t('common.delete', 'Delete') }}
+        </Button>
+      </template>
+    </Modal>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useUserStore } from '@/stores/userStore';
-import AppModal from '@/components/ui/AppModal.vue';
-import { UserPlus, Search, Pencil, Trash2, Loader2 } from '@lucide/vue';
+import { useLanguageStore } from '@/stores/languageStore';
+import Button from '@/components/ui/Button.vue';
+import DataTable, { ColumnDef } from '@/components/ui/DataTable.vue';
+import Modal from '@/components/ui/Modal.vue';
+import RoleBadge from '@/components/ui/RoleBadge.vue';
+import StatusBadge from '@/components/ui/StatusBadge.vue';
+import { Users, Plus, Pencil, Trash2, UserPlus, Shield } from 'lucide-vue-next';
 import type { User } from '@/types';
 
 const userStore = useUserStore();
+const langStore = useLanguageStore();
 
-const columns = ['User', 'Email', 'Role', 'Status', 'Actions'];
-const search = ref('');
-const roleFilter = ref('');
-const currentPage = ref(1);
+const searchQuery = ref('');
 const showModal = ref(false);
 const showDelete = ref(false);
 const editingUser = ref<User | null>(null);
 const deletingUser = ref<User | null>(null);
 
+const userColumns = computed<ColumnDef[]>(() => [
+  { key: 'user', label: langStore.t('users.name', 'User') },
+  { key: 'roles', label: langStore.t('users.role', 'Roles') },
+  { key: 'duty_status', label: langStore.t('duty.active_shift', 'Duty Turn') },
+  { key: 'status', label: langStore.t('common.status', 'Status') },
+  { key: 'actions', label: langStore.t('common.actions', 'Actions'), align: 'right' },
+]);
+
 const form = reactive({
-    name: '', username: '', email: '', password: '',
-    phone: '', role: '', status: 'active',
+  name: '',
+  username: '',
+  email: '',
+  password: '',
+  phone: '',
+  role: '',
+  status: 'active',
 });
 
-const pages = computed(() => {
-    const total = userStore.pagination.last_page;
-    return Array.from({ length: total }, (_, i) => i + 1);
-});
+const openCreateModal = () => {
+  editingUser.value = null;
+  Object.assign(form, {
+    name: '',
+    username: '',
+    email: '',
+    password: '',
+    phone: '',
+    role: userStore.roles[0]?.name || '',
+    status: 'active',
+  });
+  showModal.value = true;
+};
 
-function initials(name: string) {
-    return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-}
+const openEditModal = (user: User) => {
+  editingUser.value = user;
+  const roleName = (user as any).roles?.[0]?.name ?? user.roles?.[0] ?? '';
+  Object.assign(form, {
+    name: user.name,
+    username: user.username,
+    email: user.email,
+    password: '',
+    phone: user.phone || '',
+    role: roleName,
+    status: user.status,
+  });
+  showModal.value = true;
+};
 
-function roleStyle(role: string) {
-    return {
-        'Super Admin': 'background: #dbeafe; color: #1e40af;',
-        'Head Librarian': 'background: #ede9fe; color: #5b21b6;',
-        'Desk Librarian': 'background: #d1fae5; color: #065f46;',
-        'Student Member': 'background: #fef9c3; color: #92400e;',
-    }[role] ?? 'background: var(--bg-page); color: var(--text-secondary);';
-}
+const confirmDelete = (user: User) => {
+  deletingUser.value = user;
+  showDelete.value = true;
+};
 
-function openCreate() {
-    editingUser.value = null;
-    Object.assign(form, { name: '', username: '', email: '', password: '', phone: '', role: '', status: 'active' });
-    showModal.value = true;
-}
+const handleSubmit = async () => {
+  const payload: any = { ...form };
+  if (!payload.password) delete payload.password;
 
-function openEdit(u: User) {
-    editingUser.value = u;
-    const roleName = (u as any).roles?.[0]?.name ?? u.roles?.[0] ?? '';
-    Object.assign(form, { name: u.name, username: u.username, email: u.email, password: '', phone: u.phone ?? '', role: roleName, status: u.status });
-    showModal.value = true;
-}
+  const success = editingUser.value
+    ? await userStore.updateUser(editingUser.value.id, payload)
+    : await userStore.createUser(payload);
 
-function confirmDelete(u: User) {
-    deletingUser.value = u;
-    showDelete.value = true;
-}
+  if (success) {
+    showModal.value = false;
+  }
+};
 
-async function handleSubmit() {
-    const payload: any = { ...form };
-    if (!payload.password) delete payload.password;
-    const success = editingUser.value
-        ? await userStore.updateUser(editingUser.value.id, payload)
-        : await userStore.createUser(payload);
-    if (success) showModal.value = false;
-}
+const handleDelete = async () => {
+  if (deletingUser.value) {
+    await userStore.deleteUser(deletingUser.value.id);
+    showDelete.value = false;
+  }
+};
 
-async function handleDelete() {
-    if (deletingUser.value) {
-        await userStore.deleteUser(deletingUser.value.id);
-        showDelete.value = false;
-    }
-}
+const handlePageChange = (page: number) => {
+  userStore.fetchUsers({ search: searchQuery.value, page });
+};
 
-function goPage(p: number) {
-    currentPage.value = p;
-    userStore.fetchUsers({ search: search.value, role: roleFilter.value, page: p });
-}
-
-let searchTimeout: ReturnType<typeof setTimeout>;
-watch([search, roleFilter], () => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        currentPage.value = 1;
-        userStore.fetchUsers({ search: search.value, role: roleFilter.value });
-    }, 400);
+let searchTimer: ReturnType<typeof setTimeout>;
+watch(searchQuery, (query) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    userStore.fetchUsers({ search: query });
+  }, 350);
 });
 
 onMounted(async () => {
-    await Promise.all([userStore.fetchUsers(), userStore.fetchRoles()]);
+  await Promise.all([userStore.fetchUsers(), userStore.fetchRoles()]);
 });
 </script>
-
-<style scoped>
-.label {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-    color: var(--text-secondary);
-}
-.inp {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--border);
-    background: var(--bg-input);
-    color: var(--text-primary);
-}
-</style>

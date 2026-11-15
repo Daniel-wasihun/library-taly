@@ -30,6 +30,12 @@ const routes: RouteRecordRaw[] = [
                 meta: { title: 'User Management', icon: 'Users', roles: ['Super Admin', 'Head Librarian'] },
             },
             {
+                path: 'roles',
+                name: 'Roles',
+                component: () => import('@/views/roles/RolesView.vue'),
+                meta: { title: 'Roles & RBAC Matrix', icon: 'ShieldCheck', roles: ['Super Admin', 'Head Librarian'] },
+            },
+            {
                 path: 'schedules',
                 name: 'Schedules',
                 component: () => import('@/views/schedules/SchedulesView.vue'),

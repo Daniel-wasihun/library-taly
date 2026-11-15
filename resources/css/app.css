@@ -1,117 +1,268 @@
 @import "tailwindcss";
 
-/* =========================================================
-   UniLibrary – University Library System Design Tokens
-   ========================================================= */
-
-:root {
-    /* Primary – Deep Library Blue */
-    --lib-primary:        #1e3a8a;
-    --lib-primary-light:  #2563eb;
-    --lib-primary-muted:  #dbeafe;
-
-    /* Accent – Warm Amber (book spine warmth) */
-    --lib-accent:         #d97706;
-    --lib-accent-light:   #fef3c7;
-
-    /* Semantic */
-    --lib-success:        #059669;
-    --lib-success-light:  #d1fae5;
-    --lib-warning:        #d97706;
-    --lib-warning-light:  #fef9c3;
-    --lib-danger:         #dc2626;
-    --lib-danger-light:   #fee2e2;
-
-    /* Surfaces */
-    --bg-page:            #f1f5f9;
-    --bg-card:            #ffffff;
-    --bg-card-hover:      #f8fafc;
-    --bg-sidebar:         #1e293b;
-    --bg-sidebar-muted:   #334155;
-    --bg-input:           #f8fafc;
-
-    /* Text */
-    --text-primary:       #0f172a;
-    --text-secondary:     #475569;
-    --text-muted:         #94a3b8;
-    --text-on-dark:       #f1f5f9;
-    --text-on-primary:    #ffffff;
-
-    /* Borders */
-    --border:             #e2e8f0;
-    --border-focus:       #2563eb;
-
-    /* Shadows */
-    --shadow-card:        0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-modal:       0 20px 60px -15px rgb(0 0 0 / 0.25);
-
-    /* Typography */
-    --font-sans: 'Inter', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
-}
-
-/* ---- Dark mode ---- */
-@media (prefers-color-scheme: dark) { :root {
-    --bg-page:    #0f172a;
-    --bg-card:    #1e293b;
-    --bg-input:   #1e293b;
-    --text-primary:    #f1f5f9;
-    --text-secondary:  #94a3b8;
-    --border:          #334155;
-}}
-
 @custom-variant dark (&:where(.dark, .dark *));
 
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+@source '../**/*.ts';
+@source '../**/*.vue';
+
+/**
+ * UniLibrary Design System — Senbet & Gibi Gubae Design Standards
+ * --------------------------------------------------------------------------
+ * Global theme configuration using modern CSS variables and Tailwind v4 @theme.
+ */
+
 @theme {
-    --color-lib-primary:       var(--lib-primary);
-    --color-lib-primary-light: var(--lib-primary-light);
-    --color-lib-primary-muted: var(--lib-primary-muted);
-    --color-lib-accent:        var(--lib-accent);
-    --color-lib-accent-light:  var(--lib-accent-light);
-    --color-lib-success:       var(--lib-success);
-    --color-lib-success-light: var(--lib-success-light);
-    --color-lib-danger:        var(--lib-danger);
-    --color-lib-danger-light:  var(--lib-danger-light);
-    --color-lib-warning:       var(--lib-warning);
-    --color-lib-warning-light: var(--lib-warning-light);
-    --color-bg-page:           var(--bg-page);
-    --color-bg-card:           var(--bg-card);
-    --color-bg-sidebar:        var(--bg-sidebar);
-    --color-bg-sidebar-muted:  var(--bg-sidebar-muted);
-    --color-text-primary:      var(--text-primary);
-    --color-text-secondary:    var(--text-secondary);
-    --color-text-muted:        var(--text-muted);
-    --color-text-on-dark:      var(--text-on-dark);
-    --color-border:            var(--border);
-    --font-sans: var(--font-sans);
+    /* Primary Brand Blue Scale */
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-200: #bfdbfe;
+    --color-primary-300: #93c5fd;
+    --color-primary-400: #60a5fa;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+    --color-primary-800: #1e40af;
+    --color-primary-900: #1e3a8a;
+    --color-primary-950: #172554;
+
+    /* Brand Tokens matching Gibi-Gubae & Senbet System */
+    --color-brand-blue: var(--brand-blue);
+    --color-brand-blue-dark: var(--brand-blue-dark);
+    --color-verify-blue: var(--verify-blue);
+    --color-verify-blue-dark: var(--verify-blue-dark);
+    --color-brand-yellow: var(--brand-yellow);
+    --color-brand-red: var(--brand-red);
+    --color-brand-green: var(--brand-green);
+    --color-brand-dark: var(--brand-dark);
+
+    /* Semantic Theme Mappings */
+    --color-main-bg: var(--bg-main);
+    --color-main-text: var(--text-main);
+    --color-card-bg: var(--card-bg);
+    --color-card-hover: var(--card-hover);
+    --color-card-border: var(--card-border);
+    --color-form-bg: var(--form-bg);
+    --color-input-bg: var(--input-bg);
+    --color-input-border: var(--input-border);
+    --color-accent: var(--accent);
+    --color-accent-hover: var(--accent-hover);
+    --color-accent-light: var(--accent-light);
+    --color-nav-accent: var(--nav-accent);
+    --color-nav-accent-hover: var(--nav-accent-hover);
+    --color-nav-accent-light: var(--nav-accent-light);
+
+    /* Typography */
+    --font-sans: "Poppins", "Outfit", "Inter", "Noto Sans Ethiopic", system-ui, -apple-system, sans-serif;
+
+    /* Smooth Shadows */
+    --shadow-premium: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+
+    /* Z-Index orchestration */
+    --z-dropdown: 11000;
+    --z-sticky: 100;
+    --z-modal: 10000;
+    --z-tooltip: 12000;
 }
 
-/* Base */
-*, *::before, *::after { box-sizing: border-box; }
+@layer base {
+    :root {
+        color-scheme: light;
+        --bg-body: #f8fafc;
+        --bg-main: #ffffff;
+        --text-main: #0f172a;
+        --card-bg: #ffffff;
+        --card-hover: #f1f5f9;
+        --card-border: #e2e8f0;
+        --form-bg: #ffffff;
+        --input-bg: #f8fafc;
+        --input-border: rgba(0, 0, 0, 0.12);
 
-html {
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    scroll-behavior: smooth;
+        /* Authentic University Blue Palette */
+        --accent: #0b529c;
+        --accent-hover: #083a6e;
+        --accent-light: #1d4ed8;
+        --brand-blue: #0b529c;
+        --brand-blue-dark: #083a6e;
+        --verify-blue: #247297;
+        --verify-blue-dark: #1b5875;
+        --brand-yellow: #fba81c;
+        --brand-red: #ef4444;
+        --brand-green: #10b981;
+        --brand-dark: #1e293b;
+
+        --nav-accent: #0b529c;
+        --nav-accent-hover: #083a6e;
+        --nav-accent-light: #1d4ed8;
+    }
+
+    .dark {
+        color-scheme: dark;
+        --bg-body: #0a0e1a;
+        --bg-main: #0a0e1a;
+        --text-main: #f1f5f9;
+        --card-bg: #141a29;
+        --card-hover: #1c2438;
+        --card-border: #1e293b;
+        --form-bg: #111624;
+        --input-bg: #1c2438;
+        --input-border: rgba(255, 255, 255, 0.15);
+
+        --accent: #fba81c;
+        --accent-hover: #f59e0b;
+        --accent-light: #fbbf24;
+        --brand-blue: #0b529c;
+        --brand-blue-dark: #083a6e;
+        --verify-blue: #247297;
+        --verify-blue-dark: #1b5875;
+        --brand-yellow: #fba81c;
+        --brand-red: #ef4444;
+        --brand-green: #10b981;
+        --brand-dark: #0f172a;
+
+        --nav-accent: #fba81c;
+        --nav-accent-hover: #f59e0b;
+        --nav-accent-light: #fbbf24;
+    }
+
+    /* Automatic Dark Mode Adaptation for Blue Text & Accents */
+    .dark :where(.text-brand-blue):not([class*="dark:text-"]) {
+        color: var(--nav-accent);
+    }
+    .dark :where(.hover\:text-brand-blue:hover):not([class*="dark:hover:text-"]) {
+        color: var(--nav-accent);
+    }
+    .dark :where(.text-blue-600, .text-blue-700, .text-blue-800, .text-blue-900):not([class*="dark:text-"]) {
+        color: #60a5fa;
+    }
+    .dark :where(.hover\:text-blue-600:hover, .hover\:text-blue-700:hover):not([class*="dark:hover:text-"]) {
+        color: #93c5fd;
+    }
+
+    /* Standardized Table Action Buttons & High-Visibility Icon Sizing */
+    .table-action-btn {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 8px !important;
+    }
+
+    .table-action-btn svg {
+        width: 18px !important;
+        height: 18px !important;
+        min-width: 18px !important;
+        min-height: 18px !important;
+        flex-shrink: 0 !important;
+        stroke-width: 2.2 !important;
+    }
+
+    .table-action-btn-labeled {
+        height: 36px !important;
+        min-height: 36px !important;
+        padding-left: 12px !important;
+        padding-right: 14px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        gap: 6px !important;
+    }
+
+    .table-action-btn-labeled svg {
+        width: 16px !important;
+        height: 16px !important;
+        min-width: 16px !important;
+        min-height: 16px !important;
+        flex-shrink: 0 !important;
+        stroke-width: 2.2 !important;
+    }
+
+    body {
+        background-color: var(--bg-body);
+        color: var(--text-main);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        min-height: 100vh;
+    }
 }
 
-body {
-    background-color: var(--bg-page);
-    color: var(--text-primary);
-    margin: 0;
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.15);
+    border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 23, 42, 0.3);
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+/* Unified Shimmer Animation for Page Skeletons */
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
 
-/* Transitions */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.shimmer-wave {
+    position: relative;
+    overflow: hidden;
+    background-color: #f1f5f9;
+}
+
+.dark .shimmer-wave {
+    background-color: #1e293b;
+}
+
+.shimmer-wave::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.45) 35%,
+        rgba(255, 255, 255, 0.8) 50%,
+        rgba(255, 255, 255, 0.45) 65%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    content: '';
+    pointer-events: none;
+}
+
+.dark .shimmer-wave::after {
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.04) 35%,
+        rgba(255, 255, 255, 0.09) 50%,
+        rgba(255, 255, 255, 0.04) 65%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+/* Animations */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
-
-.slide-up-enter-active, .slide-up-leave-active { transition: all 0.25s ease; }
-.slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateY(12px); }
-
-/* Focus ring override for accessibility */
-:focus-visible { outline: 2px solid var(--lib-primary-light); outline-offset: 2px; }

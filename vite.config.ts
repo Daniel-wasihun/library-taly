@@ -18,4 +18,10 @@ export default defineConfig({
             '@': path.resolve(import.meta.dirname, './resources/js'),
         },
     },
+    server: {
+        host: '127.0.0.1',
+        port: 4001,
+        strictPort: true,
+        cors: true,
+    },
 });

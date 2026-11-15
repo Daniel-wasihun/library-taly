@@ -4,7 +4,8 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "start": "concurrently -c \"#1d4ed8,#059669\" \"php artisan serve --host=127.0.0.1 --port=8000\" \"vite --host=127.0.0.1 --port=5173\" --names=\"laravel,vite\""
+        "dev:all": "concurrently -c \"#1d4ed8,#059669\" \"php artisan serve --host=127.0.0.1 --port=4000\" \"vite\" --names=\"laravel,vite\"",
+        "start": "concurrently -c \"#1d4ed8,#059669\" \"php artisan serve --host=127.0.0.1 --port=4000\" \"vite\" --names=\"laravel,vite\""
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

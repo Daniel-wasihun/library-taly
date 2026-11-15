@@ -1,0 +1,106 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\DutySchedule;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+
+class DutyScheduleService
+{
+    /**
+     * Map internal task keys to readable titles.
+     */
+    public const TASKS = [
+        'book_circulation' => 'Book Circulation & Issue',
+        'inventory_audit' => 'Inventory Audit & Barcode Scan',
+        'fine_waiver' => 'Overdue Fine Waiver',
+        'archive_access' => 'Restricted Rare Archive Access',
+    ];
+
+    /**
+     * Validate whether a user is authorized and scheduled to perform a specific task.
+     *
+     * @param User $user
+     * @param string $taskKey
+     * @param string|null $date
+     * @return array{allowed: bool, reason: string, schedule?: DutySchedule|null, next_turn?: string|null}
+     */
+    public function canPerformTask(User $user, string $taskKey, ?string $date = null): array
+    {
+        $targetDate = $date ?? Carbon::today()->toDateString();
+        $taskName = self::TASKS[$taskKey] ?? $taskKey;
+
+        // 1. Super Admin and Head Librarian possess administrative master override
+        if ($user->hasAdminPrivilege()) {
+            return [
+                'allowed' => true,
+                'reason' => 'Administrative override granted.',
+                'task' => $taskKey,
+                'task_name' => $taskName,
+                'schedule' => null,
+            ];
+        }
+
+        // 2. Cache query for high-performance duty turn verification
+        $cacheKey = "duty_turn_{$user->id}_{$taskKey}_{$targetDate}";
+
+        return Cache::remember($cacheKey, 300, function () use ($user, $taskKey, $targetDate, $taskName) {
+            $schedule = DutySchedule::where('user_id', $user->id)
+                ->where('task_key', $taskKey)
+                ->where('shift_date', $targetDate)
+                ->whereIn('status', ['scheduled', 'active'])
+                ->first();
+
+            if ($schedule) {
+                return [
+                    'allowed' => true,
+                    'reason' => "Active duty turn verified for {$taskName} on {$targetDate}.",
+                    'task' => $taskKey,
+                    'task_name' => $taskName,
+                    'schedule' => $schedule,
+                ];
+            }
+
+            // User does not have a duty shift today: find upcoming turn
+            $nextTurn = DutySchedule::where('user_id', $user->id)
+                ->where('task_key', $taskKey)
+                ->where('shift_date', '>', $targetDate)
+                ->whereIn('status', ['scheduled', 'active'])
+                ->orderBy('shift_date', 'asc')
+                ->first();
+
+            return [
+                'allowed' => false,
+                'reason' => "You are logged in, but you can only perform '{$taskName}' during your assigned duty schedule. You have no active shift scheduled for today ({$targetDate}).",
+                'code' => 'OUTSIDE_DUTY_TURN',
+                'task' => $taskKey,
+                'task_name' => $taskName,
+                'next_turn' => $nextTurn ? $nextTurn->shift_date->format('Y-m-d') : null,
+                'schedule' => null,
+            ];
+        });
+    }
+
+    /**
+     * Invalidate schedule cache for a specific user.
+     */
+    public function clearUserScheduleCache(int $userId): void
+    {
+        $today = Carbon::today()->toDateString();
+        foreach (array_keys(self::TASKS) as $taskKey) {
+            Cache::forget("duty_turn_{$userId}_{$taskKey}_{$today}");
+        }
+        Cache::forget("dashboard_stats");
+        Cache::forget("on_duty_librarians_today");
+    }
+
+    /**
+     * Get list of supported tasks.
+     */
+    public function getAvailableTasks(): array
+    {
+        return self::TASKS;
+    }
+}

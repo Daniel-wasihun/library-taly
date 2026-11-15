@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/* =========================================================
+   UniLibrary – University Library System Design Tokens
+   ========================================================= */
+
+:root {
+    /* Primary – Deep Library Blue */
+    --lib-primary:        #1e3a8a;
+    --lib-primary-light:  #2563eb;
+    --lib-primary-muted:  #dbeafe;
+
+    /* Accent – Warm Amber (book spine warmth) */
+    --lib-accent:         #d97706;
+    --lib-accent-light:   #fef3c7;
+
+    /* Semantic */
+    --lib-success:        #059669;
+    --lib-success-light:  #d1fae5;
+    --lib-warning:        #d97706;
+    --lib-warning-light:  #fef9c3;
+    --lib-danger:         #dc2626;
+    --lib-danger-light:   #fee2e2;
+
+    /* Surfaces */
+    --bg-page:            #f1f5f9;
+    --bg-card:            #ffffff;
+    --bg-card-hover:      #f8fafc;
+    --bg-sidebar:         #1e293b;
+    --bg-sidebar-muted:   #334155;
+    --bg-input:           #f8fafc;
+
+    /* Text */
+    --text-primary:       #0f172a;
+    --text-secondary:     #475569;
+    --text-muted:         #94a3b8;
+    --text-on-dark:       #f1f5f9;
+    --text-on-primary:    #ffffff;
+
+    /* Borders */
+    --border:             #e2e8f0;
+    --border-focus:       #2563eb;
+
+    /* Shadows */
+    --shadow-card:        0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-modal:       0 20px 60px -15px rgb(0 0 0 / 0.25);
+
+    /* Typography */
+    --font-sans: 'Inter', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ---- Dark mode ---- */
+@media (prefers-color-scheme: dark) { :root {
+    --bg-page:    #0f172a;
+    --bg-card:    #1e293b;
+    --bg-input:   #1e293b;
+    --text-primary:    #f1f5f9;
+    --text-secondary:  #94a3b8;
+    --border:          #334155;
+}}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --color-lib-primary:       var(--lib-primary);
+    --color-lib-primary-light: var(--lib-primary-light);
+    --color-lib-primary-muted: var(--lib-primary-muted);
+    --color-lib-accent:        var(--lib-accent);
+    --color-lib-accent-light:  var(--lib-accent-light);
+    --color-lib-success:       var(--lib-success);
+    --color-lib-success-light: var(--lib-success-light);
+    --color-lib-danger:        var(--lib-danger);
+    --color-lib-danger-light:  var(--lib-danger-light);
+    --color-lib-warning:       var(--lib-warning);
+    --color-lib-warning-light: var(--lib-warning-light);
+    --color-bg-page:           var(--bg-page);
+    --color-bg-card:           var(--bg-card);
+    --color-bg-sidebar:        var(--bg-sidebar);
+    --color-bg-sidebar-muted:  var(--bg-sidebar-muted);
+    --color-text-primary:      var(--text-primary);
+    --color-text-secondary:    var(--text-secondary);
+    --color-text-muted:        var(--text-muted);
+    --color-text-on-dark:      var(--text-on-dark);
+    --color-border:            var(--border);
+    --font-sans: var(--font-sans);
+}
+
+/* Base */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Transitions */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.slide-up-enter-active, .slide-up-leave-active { transition: all 0.25s ease; }
+.slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateY(12px); }
+
+/* Focus ring override for accessibility */
+:focus-visible { outline: 2px solid var(--lib-primary-light); outline-offset: 2px; }

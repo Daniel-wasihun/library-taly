@@ -1,0 +1,26 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "start": "concurrently -c \"#1d4ed8,#059669\" \"php artisan serve --host=127.0.0.1 --port=8000\" \"vite --host=127.0.0.1 --port=5173\" --names=\"laravel,vite\""
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.0.0",
+        "@vitejs/plugin-vue": "^6.0.11",
+        "concurrently": "^10.0.3",
+        "laravel-vite-plugin": "^3.1",
+        "tailwindcss": "^4.0.0",
+        "typescript": "^5.7.3",
+        "vite": "^8.0.0"
+    },
+    "dependencies": {
+        "@lucide/vue": "^1.73.0",
+        "axios": "^1.7.0",
+        "pinia": "^3.0.4",
+        "pinia-plugin-persistedstate": "^4.3.0",
+        "vue": "^3.5.13",
+        "vue-router": "^4.5.0"
+    }
+}

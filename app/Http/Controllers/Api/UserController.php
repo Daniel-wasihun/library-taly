@@ -1,0 +1,161 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\DutyScheduleService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
+
+class UserController extends Controller
+{
+    public function __construct(
+        protected DutyScheduleService $dutyService
+    ) {}
+
+    /**
+     * List all users with their roles and scheduled duty status.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $search = $request->query('search');
+        $roleFilter = $request->query('role');
+
+        $query = User::with('roles', 'permissions')->latest();
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('username', 'ilike', "%{$search}%")
+                    ->orWhere('email', 'ilike', "%{$search}%");
+            });
+        }
+
+        if ($roleFilter) {
+            $query->role($roleFilter);
+        }
+
+        $users = $query->paginate(15);
+
+        return response()->json([
+            'success' => true,
+            'data' => $users->items(),
+            'pagination' => [
+                'current_page' => $users->currentPage(),
+                'last_page' => $users->lastPage(),
+                'total' => $users->total(),
+                'per_page' => $users->perPage(),
+            ],
+        ]);
+    }
+
+    /**
+     * Create a new user with unique username, email, full name, password, and Spatie role.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'alpha_dash', 'min:3', 'max:50', 'unique:users,username'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6'],
+            'role' => ['required', 'string', 'exists:roles,name'],
+            'status' => ['nullable', 'string', 'in:active,inactive,suspended'],
+            'phone' => ['nullable', 'string', 'max:20'],
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'username' => strtolower($validated['username']),
+            'email' => strtolower($validated['email']),
+            'password' => Hash::make($validated['password']),
+            'status' => $validated['status'] ?? 'active',
+            'phone' => $validated['phone'] ?? null,
+        ]);
+
+        $user->assignRole($validated['role']);
+
+        Cache::forget('dashboard_stats');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User created successfully.',
+            'user' => $user->load('roles'),
+        ], 210);
+    }
+
+    /**
+     * Show single user details.
+     */
+    public function show(User $user): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'user' => $user->load('roles', 'permissions', 'dutySchedules'),
+        ]);
+    }
+
+    /**
+     * Update an existing user.
+     */
+    public function update(Request $request, User $user): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'alpha_dash', 'min:3', 'max:50', Rule::unique('users', 'username')->ignore($user->id)],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'password' => ['nullable', 'string', 'min:6'],
+            'role' => ['required', 'string', 'exists:roles,name'],
+            'status' => ['required', 'string', 'in:active,inactive,suspended'],
+            'phone' => ['nullable', 'string', 'max:20'],
+        ]);
+
+        $user->name = $validated['name'];
+        $user->username = strtolower($validated['username']);
+        $user->email = strtolower($validated['email']);
+        $user->status = $validated['status'];
+        $user->phone = $validated['phone'] ?? null;
+
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $user->save();
+        $user->syncRoles([$validated['role']]);
+
+        $this->dutyService->clearUserScheduleCache($user->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User updated successfully.',
+            'user' => $user->load('roles'),
+        ]);
+    }
+
+    /**
+     * Delete user (prevent deleting self).
+     */
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        if ($request->user()->id === $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot delete your own account.',
+            ], 422);
+        }
+
+        $this->dutyService->clearUserScheduleCache($user->id);
+        $user->delete();
+        Cache::forget('dashboard_stats');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User deleted successfully.',
+        ]);
+    }
+}

@@ -25,6 +25,9 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
+// Printable official report (supports token query parameter or bearer header)
+Route::get('/physical/attendance/report/print', [AttendanceController::class, 'printReport']);
+
 /*
 |--------------------------------------------------------------------------
 | Protected Routes (Sanctum Authenticated)

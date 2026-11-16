@@ -137,24 +137,24 @@
                 class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 font-mono shadow-2xs"
                 :class="entry.gender === 'male'
                   ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                  : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'"
+                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'"
               >
                 +{{ entry.visitor_count }}
               </span>
 
               <div class="min-w-0">
                 <p class="font-bold text-main-text truncate flex items-center gap-2">
-                  <span class="capitalize">{{ entry.gender }}</span>
+                  <span class="capitalize">{{ langStore.localizeGender(entry.gender) }}</span>
                   <span class="text-main-text/40 font-normal">·</span>
                   <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border">
-                    {{ entry.user_type }}
+                    {{ langStore.localizeType(entry.user_type) }}
                   </span>
                   <span v-if="entry.library" class="text-[11px] text-main-text/60 truncate">
-                    @ {{ entry.library.name }}
+                    @ {{ langStore.localizeBranch(entry.library) }}
                   </span>
                 </p>
                 <p class="text-[11px] text-main-text/50 truncate mt-0.5">
-                  Logged by {{ entry.staff?.name ?? 'Desk Staff' }} · {{ formatTime(entry.entry_at) }}
+                  {{ langStore.t('attendance.logged_by', 'Logged by') }} {{ entry.staff?.name ?? 'Desk Staff' }} · {{ formatTime12(entry.entry_at) }}
                 </p>
               </div>
             </div>
@@ -195,7 +195,9 @@
               </span>
             </div>
             <p class="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 font-medium">{{ entry.task_name }}</p>
-            <p class="text-[10px] text-main-text/50 font-mono mt-0.5">{{ entry.library_name }} · {{ entry.start_time }} – {{ entry.end_time }}</p>
+            <p class="text-[10px] text-main-text/50 font-mono mt-0.5">
+              {{ entry.library_name }} · {{ formatTimeStr12(entry.start_time) }} – {{ formatTimeStr12(entry.end_time) }}
+            </p>
           </div>
         </div>
       </div>
@@ -209,6 +211,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import { dashboardApi } from '@/api';
 import StatCard from '@/components/ui/StatCard.vue';
+import { formatDT } from '@/utils/ethiopianDate';
 import {
   LayoutDashboard,
   AlertTriangle,
@@ -227,25 +230,29 @@ const loading = ref(true);
 const stats = ref<any>(null);
 
 const todayDate = computed(() => {
-  return new Date().toLocaleDateString(langStore.currentLanguage === 'am' ? 'am-ET' : 'en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  return formatDT(new Date(), langStore.isAmharic()).full;
 });
 
 const formatDate = (d: string) => {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString(langStore.currentLanguage === 'am' ? 'am-ET' : 'en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatDT(d, langStore.isAmharic()).date;
 };
 
-const formatTime = (d: string) => {
+const formatTime12 = (d: string) => {
   if (!d) return '—';
-  return new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return formatDT(d, langStore.isAmharic()).time;
+};
+
+const formatTimeStr12 = (timeStr: string) => {
+  if (!timeStr) return '—';
+  // Example: '09:00:00' -> convert to today's Date and format 12h
+  const parts = timeStr.split(':');
+  if (parts.length >= 2) {
+    const today = new Date();
+    today.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0);
+    return formatDT(today, langStore.isAmharic()).time;
+  }
+  return timeStr;
 };
 
 onMounted(async () => {

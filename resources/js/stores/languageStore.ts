@@ -72,6 +72,39 @@ const DEFAULT_ENGLISH: Record<string, string> = {
     'attendance.staff': 'Staff',
     'attendance.total_today': 'Total Today',
     'attendance.export_report': 'Export Report',
+    'common.male': 'Male',
+    'common.female': 'Female',
+    'common.student': 'Student',
+    'common.teacher': 'Teacher',
+    'common.staff': 'Staff',
+    'common.count': 'Visitor Count',
+    'common.time': 'Time',
+    'common.location': 'Location',
+    'common.daily_only': 'Daily Report',
+    'common.report_only': 'Periodic Reports',
+    'common.from': 'From',
+    'common.to': 'To',
+    'attendance.today_total': "Today's Total Visits",
+    'attendance.today_male': 'Male Visitors',
+    'attendance.today_female': 'Female Visitors',
+    'attendance.branches': 'Library Branches',
+    'attendance.active_staff': 'Active Staff',
+    'attendance.export_csv': 'Export CSV',
+    'attendance.print_report': 'Print Official Report',
+    'attendance.print': 'Print',
+    'attendance.user_type_demographic': 'User Type Demographic Breakdown',
+    'attendance.gender_distribution': 'Gender Ratio & Distribution',
+    'attendance.usage_trends': 'Daily Activity Trends in Period',
+    'attendance.of_traffic': 'of traffic',
+    'attendance.total_label': 'Total Visitors',
+    'attendance.all_libraries': 'All Library Branches',
+    'attendance.cancel_entry': 'Cancel Entry',
+    'attendance.confirm_cancel': 'Are you sure you want to cancel this entry?',
+    'attendance.confirm_delete': 'Confirm Deletion',
+    'attendance.generating_report': 'Generating official report',
+    'attendance.quick_log': 'Quick Log Patron',
+    'attendance.batch_increment': 'Batch Increments',
+    'attendance.cancel_notice': 'Entries can be cancelled within 2 minutes of logging.',
 };
 
 const DEFAULT_AMHARIC: Record<string, string> = {
@@ -135,6 +168,39 @@ const DEFAULT_AMHARIC: Record<string, string> = {
     'attendance.staff': 'ሠራተኛ',
     'attendance.total_today': 'የዛሬ ድምር',
     'attendance.export_report': 'ሪፖርት አውርድ',
+    'common.male': 'ወንድ',
+    'common.female': 'ሴት',
+    'common.student': 'ተማሪ',
+    'common.teacher': 'መምህር',
+    'common.staff': 'ሰራተኛ',
+    'common.count': 'የጎብኝዎች ብዛት',
+    'common.time': 'ሰዓት',
+    'common.location': 'ቅርንጫፍ',
+    'common.daily_only': 'የዕለቱ ሪፖርት',
+    'common.report_only': 'ወቅታዊ ሪፖርቶች',
+    'common.from': 'ከ',
+    'common.to': 'እስከ',
+    'attendance.today_total': 'የዛሬ አጠቃላይ ጎብኝዎች',
+    'attendance.today_male': 'ወንድ ጎብኝዎች',
+    'attendance.today_female': 'ሴት ጎብኝዎች',
+    'attendance.branches': 'የቤተ-መጽሐፍት ቅርንጫፎች',
+    'attendance.active_staff': 'ንቁ ሠራተኞች',
+    'attendance.export_csv': 'ሪፖርት በCSV አውርድ',
+    'attendance.print_report': 'ይፋዊ ሪፖርት አትም (Print)',
+    'attendance.print': 'አትም',
+    'attendance.user_type_demographic': 'የተጠቃሚዎች ስርጭት ትንተና',
+    'attendance.gender_distribution': 'የሥርዓተ-ፆታ ስርጭትና ንጽጽር',
+    'attendance.usage_trends': 'የቀናት እንቅስቃሴ አዝማሚያ',
+    'attendance.of_traffic': 'የተመዘገበ ድርሻ',
+    'attendance.total_label': 'ጠቅላላ ጎብኝዎች',
+    'attendance.all_libraries': 'ሁሉም የቤተ-መጻሕፍት ቅርንጫፎች',
+    'attendance.cancel_entry': 'ምዝገባን ሰርዝ',
+    'attendance.confirm_cancel': 'ይህን የተመዘገበ መረጃ መሰረዝ እንደሚፈልጉ እርግጠኛ ነዎት?',
+    'attendance.confirm_delete': 'መሰረዙን አረጋግጥ',
+    'attendance.generating_report': 'ይፋዊ ሪፖርት እየተዘጋጀ ነው',
+    'attendance.quick_log': 'ፈጣን መዝግብ',
+    'attendance.batch_increment': 'በቡድን ማከል',
+    'attendance.cancel_notice': 'የተመዘገበው መረጃ በተመዘገበ በ2 ደቂቃ ውስጥ ብቻ መሰረዝ ይችላል።',
 };
 
 export const useLanguageStore = defineStore('language', () => {
@@ -195,6 +261,28 @@ export const useLanguageStore = defineStore('language', () => {
         return translations.value[key] || fallback || key;
     };
 
+    const isAmharic = () => currentLanguage.value === 'am';
+
+    const localizeBranch = (branch: { name?: string; name_am?: string | null } | null | undefined): string => {
+        if (!branch) return '—';
+        if (currentLanguage.value === 'am' && branch.name_am) {
+            return branch.name_am;
+        }
+        return branch.name || '—';
+    };
+
+    const localizeType = (type: string | null | undefined): string => {
+        if (!type) return '—';
+        const key = `common.${type.toLowerCase()}`;
+        return t(key, type);
+    };
+
+    const localizeGender = (gender: string | null | undefined): string => {
+        if (!gender) return '—';
+        const key = `common.${gender.toLowerCase()}`;
+        return t(key, gender);
+    };
+
     return {
         currentLanguage,
         availableLanguages,
@@ -204,5 +292,9 @@ export const useLanguageStore = defineStore('language', () => {
         setLanguage,
         t,
         tr: t,
+        isAmharic,
+        localizeBranch,
+        localizeType,
+        localizeGender,
     };
 });

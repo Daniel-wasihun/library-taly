@@ -51,7 +51,7 @@ const libraryOptions = computed(() => {
 
   return filtered.map((l) => ({
     value: Number(l.id),
-    label: `[${l.code}] ${l.name}`,
+    label: `[${l.code}] ${langStore.localizeBranch(l)}`,
   }));
 });
 
@@ -105,10 +105,10 @@ const statsBreakdown = computed(() => {
   return { malePercent, femalePercent };
 });
 
-const tabs = [
-  { id: 'counter', label: 'Live Counter Desk', icon: Activity },
-  { id: 'analytics', label: 'Analytics & Reporting', icon: TrendingUp },
-];
+const tabs = computed(() => [
+  { id: 'counter', label: langStore.t('attendance.live_desk', 'Live Counter Desk'), icon: Activity },
+  { id: 'analytics', label: langStore.t('attendance.analytics', 'Analytics & Reporting'), icon: TrendingUp },
+]);
 
 const canDeleteEntry = (entryAt: string) => {
   if (authStore.isAdmin) return true;
@@ -131,7 +131,7 @@ const handleLog = async (gender: 'male' | 'female', count = 1) => {
       count
     );
     if (res?.success) {
-      toast.success(`Logged ${count} ${gender} ${selectedUserType.value}(s)`);
+      toast.success(`Logged ${count} ${langStore.localizeGender(gender)} ${langStore.localizeType(selectedUserType.value)}`);
     }
   } catch {
     // handled in store
@@ -140,7 +140,7 @@ const handleLog = async (gender: 'male' | 'female', count = 1) => {
 
 const handleUpdateCount = async (log: Attendance, delta: number) => {
   const newCount = log.visitor_count + delta;
-  if (newCount < 1 || newCount > 50) return;
+  if (newCount < 1 || newCount > 100) return;
   await attendanceStore.updateLogCount(log.slug, newCount);
 };
 
@@ -179,6 +179,23 @@ const handleExport = (range: 'day' | 'week' | 'month' | 'current') => {
     date_from: from,
     date_to: to,
   });
+};
+
+/**
+ * Professional backend printable report generator
+ */
+const handlePrint = (range: 'day' | 'week' | 'month' | 'current' = 'current') => {
+  let from = dateRange.value.from;
+  let to = dateRange.value.to;
+  if (range === 'day' || activeTab.value === 'counter') {
+    from = todayStr;
+    to = todayStr;
+  }
+  const token = authStore.token || localStorage.getItem('auth_token') || '';
+  const lang = langStore.currentLanguage;
+  const libId = selectedLibrary.value ? `&library_id=${selectedLibrary.value}` : '';
+  const url = `/api/physical/attendance/report/print?date_from=${from}&date_to=${to}&lang=${lang}&token=${encodeURIComponent(token)}${libId}`;
+  window.open(url, '_blank');
 };
 
 const refreshStats = async () => {
@@ -252,6 +269,7 @@ watch(selectedLibrary, (newVal) => {
         @updateCount="handleUpdateCount"
         @delete="openDeleteConfirm"
         @export="handleExport('day')"
+        @print="handlePrint('day')"
       />
     </div>
 
@@ -268,30 +286,31 @@ watch(selectedLibrary, (newVal) => {
       @refresh="refreshStats"
       @clear="resetDateRange"
       @export="handleExport"
+      @print="handlePrint('current')"
     />
 
     <!-- Missing Library Selection Modal -->
     <Modal
       :show="showNoLibraryModal"
-      title="Branch Selection Required"
+      :title="langStore.t('attendance.select_library', 'Branch Selection Required')"
       :icon="AlertCircle"
       size="sm"
       @close="showNoLibraryModal = false"
     >
       <div class="p-4 text-center space-y-3">
         <p class="text-xs text-main-text/70 leading-relaxed">
-          Please select a campus library branch from the top dropdown before recording live visitors.
+          {{ langStore.t('attendance.branch_required_msg', 'Please select a campus library branch from the top dropdown before recording live visitors.') }}
         </p>
         <Button variant="primary" class="w-full" size="sm" @click="showNoLibraryModal = false">
-          Understood
+          {{ langStore.t('common.close', 'Understood') }}
         </Button>
       </div>
     </Modal>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Confirmation Modal with 2-minute safety check -->
     <Modal
       :show="showDeleteConfirm"
-      title="Cancel Entry"
+      :title="langStore.t('attendance.cancel_entry', 'Cancel Entry')"
       size="sm"
       @close="showDeleteConfirm = false"
     >
@@ -300,18 +319,18 @@ watch(selectedLibrary, (newVal) => {
           <Trash2 class="w-6 h-6 stroke-[2.2]" />
         </div>
         <p class="text-xs text-main-text">
-          Are you sure you want to cancel this entry?
+          {{ langStore.t('attendance.confirm_cancel', 'Are you sure you want to cancel this entry?') }}
         </p>
         <p class="text-xs font-mono font-bold text-main-text/70" v-if="logToDelete">
-          {{ logToDelete.visitor_count }} {{ logToDelete.gender }} {{ logToDelete.user_type }}(s)
+          +{{ logToDelete.visitor_count }} {{ langStore.localizeGender(logToDelete.gender) }} · {{ langStore.localizeType(logToDelete.user_type) }}
         </p>
       </div>
       <template #footer>
         <Button variant="secondary" size="sm" @click="showDeleteConfirm = false">
-          Cancel
+          {{ langStore.t('common.cancel', 'Cancel') }}
         </Button>
         <Button variant="danger" size="sm" @click="confirmDelete">
-          Confirm Deletion
+          {{ langStore.t('attendance.confirm_delete', 'Confirm Deletion') }}
         </Button>
       </template>
     </Modal>

@@ -41,11 +41,11 @@ const internalSelectedLibrary = computed({
   set: (val) => emit('update:selectedLibrary', val ? Number(val) : null),
 });
 
-const userTypes: { id: 'student' | 'teacher' | 'staff'; label: string }[] = [
-  { id: 'student', label: langStore.t('attendance.student', 'Student') },
-  { id: 'teacher', label: langStore.t('attendance.teacher', 'Teacher') },
-  { id: 'staff', label: langStore.t('attendance.staff', 'Staff') },
-];
+const userTypes = computed(() => [
+  { id: 'student' as const, label: langStore.localizeType('student') },
+  { id: 'teacher' as const, label: langStore.localizeType('teacher') },
+  { id: 'staff' as const, label: langStore.localizeType('staff') },
+]);
 </script>
 
 <template>
@@ -90,9 +90,9 @@ const userTypes: { id: 'student' | 'teacher' | 'staff'; label: string }[] = [
           :key="ut.id"
           type="button"
           @click="emit('update:selectedUserType', ut.id)"
-          class="px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer select-none"
+          class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer select-none"
           :class="selectedUserType === ut.id
-            ? 'bg-nav-accent text-white dark:text-slate-900 shadow-2xs'
+            ? 'bg-brand-blue text-white shadow-2xs'
             : 'text-main-text/60 hover:text-main-text hover:bg-main-text/5'"
         >
           {{ ut.label }}
@@ -106,9 +106,9 @@ const userTypes: { id: 'student' | 'teacher' | 'staff'; label: string }[] = [
           :key="tab.id"
           type="button"
           @click="emit('update:activeTab', tab.id)"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer select-none"
+          class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer select-none"
           :class="activeTab === tab.id
-            ? 'bg-nav-accent text-white dark:text-slate-900 shadow-2xs'
+            ? 'bg-brand-blue text-white shadow-2xs'
             : 'text-main-text/60 hover:text-main-text hover:bg-main-text/5'"
         >
           <component :is="tab.icon" class="w-3.5 h-3.5" />

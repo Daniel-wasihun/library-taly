@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\LibraryAttendance;
 use App\Models\Library;
+use App\Services\EthiopianDateService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceController extends Controller
@@ -288,5 +291,99 @@ class AttendanceController extends Controller
         $attendance->delete();
 
         return response()->json(['success' => true, 'message' => 'Attendance log deleted.']);
+    }
+
+    /**
+     * Generate an official, print-ready HTML attendance report from backend.
+     */
+    public function printReport(Request $request): Response
+    {
+        // Support Sanctum user or fallback to query parameter token for direct browser windows/iframes
+        $user = $request->user();
+        if (!$user && $request->filled('token')) {
+            $token = PersonalAccessToken::findToken($request->query('token'));
+            if ($token) {
+                $user = $token->tokenable;
+            }
+        }
+
+        if (!$user) {
+            abort(401, 'Unauthenticated');
+        }
+
+        $isAmharic = $request->query('lang') === 'am';
+
+        $query = LibraryAttendance::with(['library', 'staff']);
+
+        if (!$user->canManageAllLibraries()) {
+            $query->where('library_id', $user->library_id);
+            $selectedLibrary = $user->library;
+        } elseif ($request->filled('library_id')) {
+            $query->where('library_id', $request->library_id);
+            $selectedLibrary = Library::find($request->library_id);
+        } else {
+            $selectedLibrary = null;
+        }
+
+        $dateFromStr = $request->query('date_from', Carbon::today()->toDateString());
+        $dateToStr = $request->query('date_to', Carbon::today()->toDateString());
+
+        $dateFrom = Carbon::parse($dateFromStr)->startOfDay();
+        $dateTo = Carbon::parse($dateToStr)->endOfDay();
+
+        $query->whereBetween('entry_at', [$dateFrom, $dateTo]);
+
+        $attendances = (clone $query)->orderBy('entry_at', 'desc')->get();
+
+        $totalCount = (int) $attendances->sum('visitor_count');
+        $maleCount = (int) $attendances->where('gender', 'male')->sum('visitor_count');
+        $femaleCount = (int) $attendances->where('gender', 'female')->sum('visitor_count');
+
+        $malePercent = $totalCount > 0 ? round(($maleCount / $totalCount) * 100) : 0;
+        $femalePercent = $totalCount > 0 ? round(($femaleCount / $totalCount) * 100) : 0;
+
+        $demographics = [
+            'student' => ['male' => 0, 'female' => 0, 'total' => 0],
+            'teacher' => ['male' => 0, 'female' => 0, 'total' => 0],
+            'staff' => ['male' => 0, 'female' => 0, 'total' => 0],
+        ];
+
+        foreach ($attendances as $log) {
+            $type = strtolower($log->user_type);
+            $gender = strtolower($log->gender);
+            if (isset($demographics[$type])) {
+                $demographics[$type][$gender] += $log->visitor_count;
+                $demographics[$type]['total'] += $log->visitor_count;
+            }
+        }
+
+        $fromFormatted = EthiopianDateService::formatDT($dateFrom, $isAmharic);
+        $toFormatted = EthiopianDateService::formatDT($dateTo, $isAmharic);
+        $generatedAt = EthiopianDateService::formatDT(now(), $isAmharic);
+
+        $libraryName = $selectedLibrary
+            ? ($isAmharic ? ($selectedLibrary->name_am ?? $selectedLibrary->name) : $selectedLibrary->name)
+            : ($isAmharic ? 'ሁሉም የግቢ ቅርንጫፎች' : 'All Campus Library Branches');
+
+        $html = view('reports.attendance_print', [
+            'isAmharic' => $isAmharic,
+            'attendances' => $attendances,
+            'totalCount' => $totalCount,
+            'maleCount' => $maleCount,
+            'femaleCount' => $femaleCount,
+            'malePercent' => $malePercent,
+            'femalePercent' => $femalePercent,
+            'demographics' => $demographics,
+            'libraryName' => $libraryName,
+            'dateFromStr' => $fromFormatted,
+            'dateToStr' => $toFormatted,
+            'isSingleDay' => $dateFromStr === $dateToStr,
+            'generatedAt' => $generatedAt,
+            'generatedBy' => $user->name,
+        ])->render();
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]);
     }
 }

@@ -243,11 +243,10 @@ watch(selectedLibrary, (newVal) => {
 </script>
 
 <template>
-  <div class="space-y-6 max-w-7xl mx-auto">
+  <div class="space-y-3.5 sm:space-y-5 w-full mx-auto">
     <!-- Modularized Header -->
     <AttendanceHeader
       v-model:selectedLibrary="selectedLibrary"
-      v-model:selectedUserType="selectedUserType"
       v-model:activeTab="activeTab"
       :libraryOptions="libraryOptions"
       :tabs="tabs"

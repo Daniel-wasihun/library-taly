@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Super Admin can do whatever permission is needed
+        Gate::before(function ($user, $ability) {
+            if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
+                return true;
+            }
+        });
     }
 }

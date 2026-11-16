@@ -12,18 +12,27 @@ export const useAuthStore = defineStore(
         const loading = ref(false);
 
         const isAuthenticated = computed(() => !!token.value && !!user.value);
-        const isAdmin = computed(() => user.value?.is_admin ?? false);
+        const isSuperAdmin = computed(() => {
+            const u = user.value as any;
+            if (!u) return false;
+            return Boolean(u.is_super_admin) ||
+                   u.roles?.includes('Super Admin') ||
+                   (Array.isArray(u.roles) && u.roles.some((r: any) => (typeof r === 'string' ? r : r.name) === 'Super Admin'));
+        });
+        const isAdmin = computed(() => isSuperAdmin.value || (user.value?.is_admin ?? false));
         const userRoles = computed(() => user.value?.roles ?? []);
-        const isOnDutyToday = computed(() => user.value?.duty_status?.has_active_shift_today ?? false);
-        const canCirculateBooks = computed(() => user.value?.duty_status?.circulation_authorized_today ?? false);
-        const canLogAttendance = computed(() => isAdmin.value || (user.value?.duty_status?.circulation_authorized_today ?? false));
+        const isOnDutyToday = computed(() => isSuperAdmin.value || (user.value?.duty_status?.has_active_shift_today ?? false));
+        const canCirculateBooks = computed(() => isSuperAdmin.value || (user.value?.duty_status?.circulation_authorized_today ?? false));
+        const canLogAttendance = computed(() => isSuperAdmin.value || isAdmin.value || (user.value?.duty_status?.circulation_authorized_today ?? false));
 
         function hasRole(role: string | string[]): boolean {
+            if (isSuperAdmin.value) return true;
             const roles = Array.isArray(role) ? role : [role];
             return roles.some((r) => userRoles.value.includes(r));
         }
 
         function hasPermission(permission: string): boolean {
+            if (isSuperAdmin.value) return true;
             return user.value?.permissions?.includes(permission) ?? false;
         }
 
@@ -81,6 +90,7 @@ export const useAuthStore = defineStore(
             loading,
             isAuthenticated,
             isAdmin,
+            isSuperAdmin,
             userRoles,
             isOnDutyToday,
             canCirculateBooks,

@@ -12,7 +12,11 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles {
+        hasPermissionTo as traitHasPermissionTo;
+        hasDirectPermission as traitHasDirectPermission;
+        hasAnyPermission as traitHasAnyPermission;
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -110,11 +114,55 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is Super Admin.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('Super Admin');
+    }
+
+    /**
      * Check if user is Super Admin or Head Librarian (administrative override).
      */
     public function hasAdminPrivilege(): bool
     {
         return $this->hasRole(['Super Admin', 'Head Librarian']);
+    }
+
+    /**
+     * Super Admin possesses master permission override for any required permission.
+     */
+    public function hasPermissionTo($permission, $guardName = null): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->traitHasPermissionTo($permission, $guardName);
+    }
+
+    /**
+     * Super Admin possesses master direct permission override.
+     */
+    public function hasDirectPermission($permission): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->traitHasDirectPermission($permission);
+    }
+
+    /**
+     * Super Admin possesses master any-permission override.
+     */
+    public function hasAnyPermission(...$permissions): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->traitHasAnyPermission(...$permissions);
     }
 
     /**

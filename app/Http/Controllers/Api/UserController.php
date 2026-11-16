@@ -28,7 +28,10 @@ class UserController extends Controller
         $statusFilter = $request->query('status');
         $libraryFilter = $request->query('library_id');
 
-        $query = User::with(['roles', 'permissions', 'library'])->latest();
+        $query = User::with(['roles', 'permissions', 'library'])
+            // Super Admin must not be visible in the user list
+            ->whereDoesntHave('roles', fn ($q) => $q->where('name', 'Super Admin'))
+            ->latest();
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -111,6 +114,13 @@ class UserController extends Controller
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
+        if ($validated['role'] === 'Super Admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Super Admin role cannot be assigned.',
+            ], 403);
+        }
+
         $user = User::create([
             'name' => $validated['name'],
             'username' => strtolower($validated['username']),
@@ -137,6 +147,13 @@ class UserController extends Controller
      */
     public function show(User $user): JsonResponse
     {
+        if ($user->isSuperAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Super admin profile cannot be viewed or modified.',
+            ], 403);
+        }
+
         return response()->json([
             'success' => true,
             'user' => $user->load(['roles', 'permissions', 'dutySchedules', 'library']),
@@ -148,6 +165,13 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): JsonResponse
     {
+        if ($user->isSuperAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Super admin account and permissions cannot be modified by any means.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'alpha_dash', 'min:3', 'max:50', Rule::unique('users', 'username')->ignore($user->id)],
@@ -158,6 +182,13 @@ class UserController extends Controller
             'status' => ['required', 'string', 'in:active,inactive,suspended'],
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
+
+        if ($validated['role'] === 'Super Admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Super Admin role cannot be assigned.',
+            ], 403);
+        }
 
         $user->name = $validated['name'];
         $user->username = strtolower($validated['username']);
@@ -183,10 +214,17 @@ class UserController extends Controller
     }
 
     /**
-     * Delete user (prevent deleting self).
+     * Delete user (prevent deleting self and super admin).
      */
     public function destroy(Request $request, User $user): JsonResponse
     {
+        if ($user->isSuperAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Super admin account cannot be deleted.',
+            ], 403);
+        }
+
         if ($request->user()->id === $user->id) {
             return response()->json([
                 'success' => false,
@@ -209,6 +247,13 @@ class UserController extends Controller
      */
     public function overridePermissions(Request $request, User $user): JsonResponse
     {
+        if ($user->isSuperAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Super admin permissions cannot be modified by any means.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'permissions' => ['required', 'array'],
             'permissions.*' => ['string', 'exists:permissions,name'],

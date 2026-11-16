@@ -89,7 +89,10 @@ class AuthController extends Controller
         
         // Load roles and permissions
         $roles = $user->getRoleNames();
-        $permissions = $user->getAllPermissions()->pluck('name');
+        $isSuperAdmin = $user->isSuperAdmin();
+        $permissions = $isSuperAdmin
+            ? \Spatie\Permission\Models\Permission::pluck('name')
+            : $user->getAllPermissions()->pluck('name');
 
         // Check user's duty shifts for today
         $todayShifts = DutySchedule::where('user_id', $user->id)
@@ -117,7 +120,8 @@ class AuthController extends Controller
             'can_manage_all_libraries' => $user->canManageAllLibraries(),
             'roles' => $roles,
             'permissions' => $permissions,
-            'is_admin' => $user->hasAdminPrivilege(),
+            'is_admin' => $user->hasAdminPrivilege() || $isSuperAdmin,
+            'is_super_admin' => $isSuperAdmin,
             'duty_status' => [
                 'has_active_shift_today' => $user->hasAdminPrivilege() || $todayShifts->isNotEmpty(),
                 'circulation_authorized_today' => $deskDutyCheck['allowed'],

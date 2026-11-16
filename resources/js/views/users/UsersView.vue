@@ -68,7 +68,7 @@
             class="h-9 px-3 text-xs rounded-xl bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           >
             <option value="all">All Roles</option>
-            <option v-for="r in roleStore.roles" :key="r.id" :value="r.name">
+            <option v-for="r in roleStore.roles.filter(r => r.name !== 'Super Admin')" :key="r.id" :value="r.name">
               {{ r.name }}
             </option>
           </select>
@@ -318,7 +318,7 @@
               class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
             >
               <option value="">Select a role...</option>
-              <option v-for="r in roleStore.roles" :key="r.id" :value="r.name">
+              <option v-for="r in roleStore.roles.filter(r => r.name !== 'Super Admin')" :key="r.id" :value="r.name">
                 {{ r.name }}
               </option>
             </select>
@@ -523,7 +523,7 @@ const openCreateModal = () => {
     email: '',
     password: '',
     phone: '',
-    role: roleStore.roles[0]?.name || '',
+    role: roleStore.roles.find(r => r.name !== 'Super Admin')?.name || '',
     library_id: '',
     status: 'active',
   });

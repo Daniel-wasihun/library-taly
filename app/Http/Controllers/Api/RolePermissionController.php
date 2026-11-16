@@ -72,6 +72,13 @@ class RolePermissionController extends Controller
      */
     public function updateRole(Request $request, Role $role): JsonResponse
     {
+        if ($role->name === 'Super Admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Super Admin role and its permissions cannot be modified.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:roles,name,' . $role->id],
             'permissions' => ['nullable', 'array'],

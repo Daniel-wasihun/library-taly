@@ -31,7 +31,9 @@ export const useUserStore = defineStore('users', () => {
         loading.value = true;
         try {
             const { data } = await usersApi.list(params);
-            users.value = data.data;
+            const rawUsers = data.data || [];
+            // Super Admin must not be visible in user management
+            users.value = rawUsers.filter((u: any) => !u.roles?.some((r: any) => (r.name || r) === 'Super Admin'));
             pagination.value = data.pagination;
             if (!hasFilters) {
                 isLoaded.value = true;

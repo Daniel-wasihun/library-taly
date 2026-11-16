@@ -23,7 +23,7 @@ class DutyScheduleEnforcementTest extends TestCase
     {
         // Login with username
         $response = $this->postJson('/api/auth/login', [
-            'login' => 'tigist_duty',
+            'login' => 'yohannes_attendant',
             'password' => 'password123',
         ]);
 
@@ -41,9 +41,9 @@ class DutyScheduleEnforcementTest extends TestCase
             ->assertJsonPath('user.username', 'admin');
     }
 
-    public function test_librarian_can_log_physical_attendance_for_their_branch(): void
+    public function test_attendant_can_log_physical_attendance_for_their_branch(): void
     {
-        $onDutyUser = User::where('username', 'tigist_duty')->first();
+        $onDutyUser = User::where('username', 'yohannes_attendant')->first();
 
         $response = $this->actingAs($onDutyUser)
             ->postJson('/api/physical/attendance/log', [
@@ -60,9 +60,9 @@ class DutyScheduleEnforcementTest extends TestCase
             ->assertJsonPath('data.user_type', 'student');
     }
 
-    public function test_librarian_cannot_log_attendance_for_another_library_branch(): void
+    public function test_attendant_cannot_log_attendance_for_another_library_branch(): void
     {
-        $onDutyUser = User::where('username', 'tigist_duty')->first();
+        $onDutyUser = User::where('username', 'yohannes_attendant')->first();
         $anotherBranch = Library::where('id', '!=', $onDutyUser->library_id)->first();
 
         $response = $this->actingAs($onDutyUser)
@@ -112,25 +112,118 @@ class DutyScheduleEnforcementTest extends TestCase
             ]);
     }
 
-    public function test_2_minute_deletion_rule_enforcement(): void
+    public function test_attendant_cannot_access_analytics_and_stats(): void
     {
-        $admin = User::where('username', 'admin')->first();
-        $branch = Library::first();
+        $attendant = User::where('username', 'yohannes_attendant')->first();
 
-        // Fresh attendance entry (created right now)
+        $response = $this->actingAs($attendant)
+            ->getJson('/api/physical/attendance/stats');
+
+        $response->assertStatus(403);
+    }
+
+    public function test_manager_can_access_analytics_and_stats(): void
+    {
+        $manager = User::where('username', 'kassahun_manager')->first();
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/physical/attendance/stats');
+
+        $response->assertStatus(200);
+    }
+
+    public function test_2_minute_update_rule_enforcement_for_attendant(): void
+    {
+        $attendant = User::where('username', 'yohannes_attendant')->first();
+        $branchId = $attendant->library_id;
+
+        // Fresh attendance entry (created right now - within 2 minutes)
         $fresh = LibraryAttendance::create([
-            'library_id' => $branch->id,
+            'library_id' => $branchId,
             'user_type' => 'student',
             'gender' => 'male',
             'visitor_count' => 1,
-            'staff_id' => $admin->id,
+            'staff_id' => $attendant->id,
             'entry_at' => now(),
         ]);
 
-        $response = $this->actingAs($admin)
+        // Attendant CAN update count within 2 minutes
+        $response = $this->actingAs($attendant)
+            ->patchJson("/api/physical/attendance/{$fresh->slug}/count", ['count' => 2]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.visitor_count', 2);
+
+        // Old attendance entry (created 5 minutes ago)
+        $old = LibraryAttendance::create([
+            'library_id' => $branchId,
+            'user_type' => 'student',
+            'gender' => 'male',
+            'visitor_count' => 1,
+            'staff_id' => $attendant->id,
+            'entry_at' => now()->subMinutes(5),
+        ]);
+
+        // Attendant CANNOT update count after 2 minutes
+        $failResponse = $this->actingAs($attendant)
+            ->patchJson("/api/physical/attendance/{$old->slug}/count", ['count' => 2]);
+
+        $failResponse->assertStatus(403);
+
+        // Admin CAN update count even after 2 minutes
+        $admin = User::where('username', 'admin')->first();
+        $adminResponse = $this->actingAs($admin)
+            ->patchJson("/api/physical/attendance/{$old->slug}/count", ['count' => 5]);
+
+        $adminResponse->assertStatus(200)
+            ->assertJsonPath('data.visitor_count', 5);
+    }
+
+    public function test_2_minute_deletion_rule_enforcement(): void
+    {
+        $attendant = User::where('username', 'yohannes_attendant')->first();
+        $branchId = $attendant->library_id;
+
+        // Fresh attendance entry (created right now)
+        $fresh = LibraryAttendance::create([
+            'library_id' => $branchId,
+            'user_type' => 'student',
+            'gender' => 'male',
+            'visitor_count' => 1,
+            'staff_id' => $attendant->id,
+            'entry_at' => now(),
+        ]);
+
+        // Attendant CAN delete fresh entry
+        $response = $this->actingAs($attendant)
             ->deleteJson("/api/physical/attendance/{$fresh->slug}");
 
         $response->assertStatus(200)
+            ->assertJsonPath('success', true);
+
+        // Expired attendance entry (created 5 minutes ago)
+        $expired = LibraryAttendance::create([
+            'library_id' => $branchId,
+            'user_type' => 'student',
+            'gender' => 'female',
+            'visitor_count' => 1,
+            'staff_id' => $attendant->id,
+            'entry_at' => now()->subMinutes(5),
+        ]);
+
+        // Attendant CANNOT delete expired entry
+        $failResponse = $this->actingAs($attendant)
+            ->deleteJson("/api/physical/attendance/{$expired->slug}");
+
+        $failResponse->assertStatus(403);
+
+        // Admin CAN delete expired entry
+        $admin = User::where('username', 'admin')->first();
+        $adminResponse = $this->actingAs($admin)
+            ->deleteJson("/api/physical/attendance/{$expired->slug}");
+
+        $adminResponse->assertStatus(200)
             ->assertJsonPath('success', true);
     }
 }

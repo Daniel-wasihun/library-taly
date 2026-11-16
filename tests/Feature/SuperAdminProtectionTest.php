@@ -20,7 +20,7 @@ class SuperAdminProtectionTest extends TestCase
         parent::setUp();
 
         $this->superAdminRole = Role::firstOrCreate(['name' => 'Super Admin']);
-        $librarianRole = Role::firstOrCreate(['name' => 'Desk Librarian']);
+        $librarianRole = Role::firstOrCreate(['name' => 'Librarian']);
 
         $this->superAdmin = User::factory()->create([
             'name' => 'Dr. Abebe Bekele',

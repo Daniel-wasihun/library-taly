@@ -118,6 +118,8 @@ class AuthController extends Controller
                 'code' => $user->library->code,
             ] : null,
             'can_manage_all_libraries' => $user->canManageAllLibraries(),
+            'can_manage_library' => $user->canManageLibrary(),
+            'can_manage_reporting' => $user->canManageReportingAndAnalytics(),
             'roles' => $roles,
             'permissions' => $permissions,
             'is_admin' => $user->hasAdminPrivilege() || $isSuperAdmin,

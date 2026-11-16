@@ -70,6 +70,13 @@ class AttendanceController extends Controller
     {
         $user = $request->user();
 
+        // Security check: Only attendants and authorized staff can record live attendance
+        if (!$user->hasPermissionTo('attendance.record')) {
+            return response()->json([
+                'message' => 'Unauthorized: Only attendants and authorized staff can record live attendance.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'library_id' => ['required', 'exists:libraries,id'],
             'user_type' => ['required', 'in:student,teacher,staff'],
@@ -113,6 +120,13 @@ class AttendanceController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user();
+
+        // Only users with library management permission or admin can view reporting & analytics
+        if (!$user->canManageReportingAndAnalytics()) {
+            return response()->json([
+                'message' => 'Unauthorized: Library management permission is required to view analytics and reporting.',
+            ], 403);
+        }
 
         $restrictedLibraryId = null;
         if (!$user->canManageAllLibraries()) {
@@ -187,9 +201,16 @@ class AttendanceController extends Controller
     /**
      * Export attendance data as CSV.
      */
-    public function export(Request $request): StreamedResponse
+    public function export(Request $request): StreamedResponse|JsonResponse
     {
         $user = $request->user();
+
+        // Only users with library management permission or admin can export reports
+        if (!$user->canManageReportingAndAnalytics()) {
+            return response()->json([
+                'message' => 'Unauthorized: Library management permission is required to export reports.',
+            ], 403);
+        }
 
         $query = LibraryAttendance::with(['library', 'staff']);
 
@@ -257,6 +278,14 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'Unauthorized to update attendance for this branch.'], 403);
         }
 
+        // 2-minute rule: attendant cannot change the numbers after 2 minutes; admin or superadmin can
+        $diffMinutes = Carbon::parse($attendance->entry_at)->diffInMinutes(now());
+        if ($diffMinutes > 2 && !$user->hasAdminPrivilege()) {
+            return response()->json([
+                'message' => 'Cannot adjust count: visitor counts can only be adjusted within 2 minutes of logging by attendants.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'count' => ['required', 'integer', 'min:1', 'max:100'],
         ]);
@@ -281,11 +310,12 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'Unauthorized to delete attendance for this branch.'], 403);
         }
 
-        // 2-minute rule from LMS: deletion allowed only within 2 minutes of logging
-        if (Carbon::parse($attendance->entry_at)->diffInMinutes(now()) > 2 && !$user->hasAdminPrivilege()) {
+        // 2-minute rule: deletion allowed only within 2 minutes of logging for attendants; admin/superadmin can delete at any time
+        $diffMinutes = Carbon::parse($attendance->entry_at)->diffInMinutes(now());
+        if ($diffMinutes > 2 && !$user->hasAdminPrivilege()) {
             return response()->json([
-                'message' => 'Cannot delete this log: entries can only be cancelled within 2 minutes of recording.',
-            ], 422);
+                'message' => 'Cannot delete this log: entries can only be cancelled within 2 minutes of recording by attendants.',
+            ], 403);
         }
 
         $attendance->delete();
@@ -309,6 +339,10 @@ class AttendanceController extends Controller
 
         if (!$user) {
             abort(401, 'Unauthenticated');
+        }
+
+        if (!$user->canManageReportingAndAnalytics()) {
+            abort(403, 'Unauthorized: Library management permission is required to print reports.');
         }
 
         $isAmharic = $request->query('lang') === 'am';

@@ -17,8 +17,12 @@ const emit = defineEmits<{
 const langStore = useLanguageStore();
 const authStore = useAuthStore();
 
+const canRecord = computed(() => {
+  return authStore.isSuperAdmin || authStore.isAdmin || authStore.hasPermission('attendance.record');
+});
+
 const canLog = computed(() => {
-  return Boolean(props.selectedLibrary);
+  return Boolean(props.selectedLibrary) && canRecord.value;
 });
 
 const userTypes = computed(() => [
@@ -45,6 +49,11 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 <template>
   <div class="lg:col-span-4 xl:col-span-4 2xl:col-span-3 bg-card-bg border border-card-border rounded-xl sm:rounded-2xl p-2.5 sm:p-5 flex flex-col items-center justify-start relative transition-all duration-300 shadow-2xs">
     
+    <!-- Notice if user cannot record (e.g. Manager view-only) -->
+    <div v-if="!canRecord" class="w-full mb-2.5 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] sm:text-[11px] text-center font-medium leading-tight">
+      {{ langStore.t('attendance.attendant_only_notice', 'Live visitor counting is assigned to desk attendants.') }}
+    </div>
+
     <!-- TOP: Patron Type Toggle (Mobile Standard Scaled) -->
     <div class="w-full mb-2.5 sm:mb-4">
       <div class="flex items-center justify-between mb-1.5 sm:mb-2 px-1">

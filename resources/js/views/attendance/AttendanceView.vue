@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Activity, TrendingUp, AlertCircle, Trash2 } from 'lucide-vue-next';
 import { useAttendanceStore } from '@/stores/attendanceStore';
 import { useLibraryStore } from '@/stores/libraryStore';
@@ -30,6 +30,10 @@ const showNoLibraryModal = ref(false);
 const showDeleteConfirm = ref(false);
 const logToDelete = ref<Attendance | null>(null);
 
+// Real-time ticking clock for exact 2-minute expiration
+const currentTime = ref(Date.now());
+let timerInterval: any = null;
+
 const todayStr = new Date().toISOString().split('T')[0];
 const dateRange = ref({
   from: todayStr,
@@ -38,15 +42,11 @@ const dateRange = ref({
 
 const libraryOptions = computed(() => {
   const assignedId = authStore.user?.library_id;
-  const canManageAll = authStore.isAdmin || authStore.user?.can_manage_all_libraries;
+  const canManageAll = authStore.canManageAllLibraries;
 
   let filtered = libraryStore.libraries;
-  if (!canManageAll) {
-    if (assignedId) {
-      filtered = libraryStore.libraries.filter((l) => l.id === assignedId);
-    } else {
-      return [];
-    }
+  if (!canManageAll && assignedId) {
+    filtered = libraryStore.libraries.filter((l) => Number(l.id) === Number(assignedId));
   }
 
   return filtered.map((l) => ({
@@ -105,17 +105,42 @@ const statsBreakdown = computed(() => {
   return { malePercent, femalePercent };
 });
 
-const tabs = computed(() => [
-  { id: 'counter', label: langStore.t('attendance.live_desk', 'Live Counter Desk'), icon: Activity },
-  { id: 'analytics', label: langStore.t('attendance.analytics', 'Analytics & Reporting'), icon: TrendingUp },
-]);
+const tabs = computed(() => {
+  const list = [
+    { id: 'counter', label: langStore.t('attendance.live_desk', 'Live Counter Desk'), icon: Activity },
+  ];
+  if (authStore.canManageReporting) {
+    list.push({ id: 'analytics', label: langStore.t('attendance.analytics', 'Analytics & Reporting'), icon: TrendingUp });
+  }
+  return list;
+});
 
-const canDeleteEntry = (entryAt: string) => {
-  if (authStore.isAdmin) return true;
+// Guard: if user cannot manage reporting, ensure active tab stays on counter
+watch(
+  () => authStore.canManageReporting,
+  (canReport) => {
+    if (!canReport && activeTab.value === 'analytics') {
+      activeTab.value = 'counter';
+    }
+  },
+  { immediate: true }
+);
+
+/**
+ * 2-minute modification and deletion rule:
+ * Admin / Super Admin can modify or delete at any time.
+ * Attendants are strictly disabled after 2 minutes from entry_at.
+ */
+const canModifyEntry = (entryAt: string) => {
+  if (authStore.isAdmin || authStore.isSuperAdmin) return true;
   if (!entryAt) return false;
-  const diffMinutes = Math.abs(Date.now() - new Date(entryAt).getTime()) / 60000;
+  const entryMs = new Date(entryAt).getTime();
+  const diffMinutes = Math.abs(currentTime.value - entryMs) / 60000;
   return diffMinutes <= 2;
 };
+
+const canDeleteEntry = (entryAt: string) => canModifyEntry(entryAt);
+const canUpdateEntry = (entryAt: string) => canModifyEntry(entryAt);
 
 const handleLog = async (gender: 'male' | 'female', count = 1) => {
   if (!selectedLibrary.value) {
@@ -211,6 +236,10 @@ const resetDateRange = () => {
 };
 
 onMounted(async () => {
+  timerInterval = setInterval(() => {
+    currentTime.value = Date.now();
+  }, 5000);
+
   // Use cached library list
   await libraryStore.fetchLibraries(undefined, false);
 
@@ -231,6 +260,12 @@ onMounted(async () => {
     attendanceStore.fetchLogs(1, undefined, false),
     attendanceStore.fetchStats(false),
   ]);
+});
+
+onUnmounted(() => {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
 });
 
 watch(selectedLibrary, (newVal) => {
@@ -265,6 +300,7 @@ watch(selectedLibrary, (newVal) => {
         :logs="attendanceStore.logs"
         :loading="attendanceStore.loading"
         :canDeleteEntry="canDeleteEntry"
+        :canUpdateEntry="canUpdateEntry"
         @updateCount="handleUpdateCount"
         @delete="openDeleteConfirm"
         @export="handleExport('day')"

@@ -14,6 +14,7 @@ const props = defineProps<{
   logs: Attendance[];
   loading: boolean;
   canDeleteEntry: (date: string) => boolean;
+  canUpdateEntry: (date: string) => boolean;
 }>();
 
 const emit = defineEmits<{
@@ -214,10 +215,10 @@ const getDateDisplay = (dateStr: string) => {
               <div class="inline-flex items-center gap-1 p-0.5 rounded-md border border-card-border bg-main-bg/50">
                 <button
                   type="button"
-                  :disabled="item.visitor_count <= 1 || !canDeleteEntry(item.entry_at)"
+                  :disabled="item.visitor_count <= 1 || !canUpdateEntry(item.entry_at)"
                   @click="emit('updateCount', item, -1)"
-                  class="w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center hover:bg-rose-500/10 hover:text-rose-600 text-main-text/50 disabled:opacity-20 cursor-pointer"
-                  title="Decrement count (-1)"
+                  class="w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center hover:bg-rose-500/10 hover:text-rose-600 text-main-text/50 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
+                  :title="!canUpdateEntry(item.entry_at) ? langStore.t('attendance.update_expired', 'Adjustments disabled after 2 minutes') : 'Decrement count (-1)'"
                 >
                   <Minus class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
@@ -226,10 +227,10 @@ const getDateDisplay = (dateStr: string) => {
                 </span>
                 <button
                   type="button"
-                  :disabled="item.visitor_count >= 100 || !canDeleteEntry(item.entry_at)"
+                  :disabled="item.visitor_count >= 100 || !canUpdateEntry(item.entry_at)"
                   @click="emit('updateCount', item, 1)"
-                  class="w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center hover:bg-emerald-500/10 hover:text-emerald-600 text-main-text/50 disabled:opacity-20 cursor-pointer"
-                  title="Increment count (+1)"
+                  class="w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center hover:bg-emerald-500/10 hover:text-emerald-600 text-main-text/50 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
+                  :title="!canUpdateEntry(item.entry_at) ? langStore.t('attendance.update_expired', 'Adjustments disabled after 2 minutes') : 'Increment count (+1)'"
                 >
                   <Plus class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>

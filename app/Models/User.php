@@ -66,6 +66,7 @@ class User extends Authenticatable
 
     /**
      * Determine if user has global management access across all library branches.
+     * Only Admin / Super Admin OR Managers assigned to General (library_id = null) can manage all branches.
      */
     public function canManageAllLibraries(): bool
     {
@@ -73,12 +74,34 @@ class User extends Authenticatable
             return true;
         }
 
-        if ($this->can('libraries.manage_all') || $this->can('libraries.manage')) {
+        // Managers or users with libraries.manage assigned to General (library_id = null)
+        if (($this->hasRole('Manager') || $this->can('libraries.manage')) && is_null($this->library_id)) {
             return true;
         }
 
-        // If library_id is null, the user is general/system-wide
-        return is_null($this->library_id);
+        return false;
+    }
+
+    /**
+     * Determine if user can manage library branches.
+     */
+    public function canManageLibrary(): bool
+    {
+        return $this->hasAdminPrivilege()
+            || $this->hasRole('Manager')
+            || $this->can('libraries.manage');
+    }
+
+    /**
+     * Determine if user can access reporting and analytics.
+     * Permitted only for users with library management permission or attendance analytics.
+     */
+    public function canManageReportingAndAnalytics(): bool
+    {
+        return $this->hasAdminPrivilege()
+            || $this->hasRole('Manager')
+            || $this->can('libraries.manage')
+            || $this->can('attendance.analytics');
     }
 
     /**
@@ -122,11 +145,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is Super Admin or Head Librarian (administrative override).
+     * Check if user has administrative master override (Super Admin or Admin).
      */
     public function hasAdminPrivilege(): bool
     {
-        return $this->hasRole(['Super Admin', 'Head Librarian']);
+        return $this->isSuperAdmin() || $this->hasRole(['Super Admin', 'Admin']);
     }
 
     /**

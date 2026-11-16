@@ -20,6 +20,9 @@ export const useAuthStore = defineStore(
                    (Array.isArray(u.roles) && u.roles.some((r: any) => (typeof r === 'string' ? r : r.name) === 'Super Admin'));
         });
         const isAdmin = computed(() => isSuperAdmin.value || (user.value?.is_admin ?? false));
+        const canManageAllLibraries = computed(() => isSuperAdmin.value || (user.value?.can_manage_all_libraries ?? false));
+        const canManageLibrary = computed(() => isSuperAdmin.value || (user.value as any)?.can_manage_library || hasRole('Manager') || hasPermission('libraries.manage'));
+        const canManageReporting = computed(() => isSuperAdmin.value || (user.value as any)?.can_manage_reporting || hasRole('Manager') || hasPermission('attendance.analytics') || hasPermission('libraries.manage'));
         const userRoles = computed(() => user.value?.roles ?? []);
         const isOnDutyToday = computed(() => isSuperAdmin.value || (user.value?.duty_status?.has_active_shift_today ?? false));
         const canCirculateBooks = computed(() => isSuperAdmin.value || (user.value?.duty_status?.circulation_authorized_today ?? false));
@@ -91,6 +94,9 @@ export const useAuthStore = defineStore(
             isAuthenticated,
             isAdmin,
             isSuperAdmin,
+            canManageAllLibraries,
+            canManageLibrary,
+            canManageReporting,
             userRoles,
             isOnDutyToday,
             canCirculateBooks,

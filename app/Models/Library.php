@@ -55,11 +55,11 @@ class Library extends Model
     }
 
     /**
-     * Books cataloged under this branch.
+     * Physical attendances recorded at this branch.
      */
-    public function books(): HasMany
+    public function attendances(): HasMany
     {
-        return $this->hasMany(Book::class);
+        return $this->hasMany(LibraryAttendance::class);
     }
 
     /**
@@ -68,14 +68,6 @@ class Library extends Model
     public function dutySchedules(): HasMany
     {
         return $this->hasMany(DutySchedule::class);
-    }
-
-    /**
-     * Book loans processed at this branch.
-     */
-    public function bookLoans(): HasMany
-    {
-        return $this->hasMany(BookLoan::class);
     }
 
     /**

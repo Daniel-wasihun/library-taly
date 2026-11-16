@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Book;
-use App\Models\BookLoan;
 use App\Models\DutySchedule;
+use App\Models\Library;
+use App\Models\LibraryAttendance;
 use App\Models\User;
 use App\Services\DutyScheduleService;
 use Carbon\Carbon;
@@ -20,33 +20,45 @@ class DashboardController extends Controller
     ) {}
 
     /**
-     * Get aggregate library statistics and user duty status.
+     * Get aggregate library attendance statistics and user duty status.
      */
     public function stats(Request $request): JsonResponse
     {
         $today = Carbon::today()->toDateString();
         $user = $request->user();
 
-        // Cached overall library figures
-        $stats = Cache::remember('dashboard_stats', 60, function () use ($today) {
-            $totalBooks = Book::count();
-            $totalCopies = Book::sum('total_copies');
-            $availableCopies = Book::sum('available_copies');
-            $activeLoans = BookLoan::where('status', 'borrowed')->count();
-            $overdueLoans = BookLoan::where('status', 'borrowed')
-                ->where('due_date', '<', Carbon::now())
-                ->count();
-            $totalMembers = User::role('Student Member')->count();
+        // Overall physical attendance stats
+        $stats = Cache::remember('dashboard_stats_' . ($user->library_id ?? 'all'), 30, function () use ($today, $user) {
+            $baseAttendance = LibraryAttendance::query();
+            if (!$user->canManageAllLibraries() && $user->library_id) {
+                $baseAttendance->where('library_id', $user->library_id);
+            }
+
+            $todayAttendance = (clone $baseAttendance)->whereDate('entry_at', $today);
+            $todayTotal = (int) (clone $todayAttendance)->sum('visitor_count');
+            $todayMale = (int) (clone $todayAttendance)->where('gender', 'male')->sum('visitor_count');
+            $todayFemale = (int) (clone $todayAttendance)->where('gender', 'female')->sum('visitor_count');
+
+            $totalBranches = Library::count();
+            $totalStaff = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['Super Admin', 'Head Librarian', 'Desk Librarian', 'Cataloging Specialist', 'Archive Assistant']))->count();
 
             // Staff on duty today
-            $onDutyStaff = DutySchedule::where('shift_date', $today)
+            $onDutyStaffQuery = DutySchedule::where('shift_date', $today)
                 ->whereIn('status', ['scheduled', 'active'])
-                ->with('user:id,name,username,email')
-                ->get()
+                ->with(['user:id,name,username,email', 'library:id,name,code']);
+
+            if (!$user->canManageAllLibraries() && $user->library_id) {
+                $onDutyStaffQuery->where(function ($q) use ($user) {
+                    $q->where('library_id', $user->library_id)->orWhereNull('library_id');
+                });
+            }
+
+            $onDutyStaff = $onDutyStaffQuery->get()
                 ->map(fn ($shift) => [
                     'user_id' => $shift->user_id,
-                    'user_name' => $shift->user->name,
-                    'user_username' => $shift->user->username,
+                    'user_name' => $shift->user?->name ?? 'Staff',
+                    'user_username' => $shift->user?->username ?? '',
+                    'library_name' => $shift->library?->name ?? 'All Branches',
                     'task_key' => $shift->task_key,
                     'task_name' => DutyScheduleService::TASKS[$shift->task_key] ?? $shift->task_key,
                     'start_time' => $shift->start_time,
@@ -54,34 +66,38 @@ class DashboardController extends Controller
                 ]);
 
             return [
-                'total_books' => $totalBooks,
-                'total_copies' => (int) $totalCopies,
-                'available_copies' => (int) $availableCopies,
-                'active_loans' => $activeLoans,
-                'overdue_loans' => $overdueLoans,
-                'total_members' => $totalMembers,
+                'today_total' => $todayTotal,
+                'today_male' => $todayMale,
+                'today_female' => $todayFemale,
+                'total_branches' => $totalBranches,
+                'total_staff' => $totalStaff,
                 'on_duty_staff_today' => $onDutyStaff,
             ];
         });
 
-        // User specific duty check (live, with user-level cache)
-        $circulationDuty = $this->dutyService->canPerformTask($user, 'book_circulation', $today);
+        // User specific duty check (live)
+        $deskDuty = $this->dutyService->canPerformTask($user, 'attendance_desk', $today, $user->library_id);
 
-        $recentLoans = BookLoan::with(['book:id,title,author', 'member:id,name,username'])
-            ->latest('issued_date')
-            ->limit(5)
-            ->get();
+        $recentEntriesQuery = LibraryAttendance::with(['library:id,name,code', 'staff:id,name,username'])
+            ->latest('entry_at')
+            ->limit(8);
+
+        if (!$user->canManageAllLibraries() && $user->library_id) {
+            $recentEntriesQuery->where('library_id', $user->library_id);
+        }
+
+        $recentEntries = $recentEntriesQuery->get();
 
         return response()->json([
             'success' => true,
             'stats' => $stats,
-            'recent_loans' => $recentLoans,
+            'recent_entries' => $recentEntries,
             'current_user_duty' => [
                 'is_admin' => $user->hasAdminPrivilege(),
-                'circulation_authorized' => $circulationDuty['allowed'],
-                'reason' => $circulationDuty['reason'],
-                'next_turn' => $circulationDuty['next_turn'] ?? null,
-                'task_name' => $circulationDuty['task_name'] ?? 'Book Circulation & Issue',
+                'authorized' => $deskDuty['allowed'],
+                'reason' => $deskDuty['reason'],
+                'next_turn' => $deskDuty['next_turn'] ?? null,
+                'task_name' => $deskDuty['task_name'] ?? 'Physical Attendance & Desk Logging',
             ],
         ]);
     }

@@ -9,14 +9,25 @@ export const useLibraryStore = defineStore('library', () => {
     const selectedLibrary = ref<Library | null>(null);
     const activeBranchFilter = ref<string | number>('all');
     const loading = ref(false);
+    const isLoaded = ref(false);
 
     const toast = useToastStore();
 
-    async function fetchLibraries(params?: { search?: string; active_only?: boolean }) {
+    async function fetchLibraries(params?: { search?: string; active_only?: boolean }, force = false) {
+        const hasFilters = Boolean(params && (params.search || params.active_only));
+
+        // Return cached libraries if already loaded and no filter requested
+        if (!force && isLoaded.value && !hasFilters && libraries.value.length > 0) {
+            return;
+        }
+
         loading.value = true;
         try {
             const { data } = await librariesApi.list(params);
             libraries.value = data.data || [];
+            if (!hasFilters) {
+                isLoaded.value = true;
+            }
         } catch {
             toast.error('Failed to load library branches.');
         } finally {
@@ -29,7 +40,7 @@ export const useLibraryStore = defineStore('library', () => {
         try {
             const { data } = await librariesApi.create(payload);
             toast.success(data.message || 'Library branch created successfully.');
-            await fetchLibraries();
+            await fetchLibraries(undefined, true);
             return true;
         } catch (err: any) {
             const errors = err.response?.data?.errors;
@@ -50,7 +61,7 @@ export const useLibraryStore = defineStore('library', () => {
         try {
             const { data } = await librariesApi.update(id, payload);
             toast.success(data.message || 'Library branch updated successfully.');
-            await fetchLibraries();
+            await fetchLibraries(undefined, true);
             return true;
         } catch (err: any) {
             const errors = err.response?.data?.errors;
@@ -71,7 +82,7 @@ export const useLibraryStore = defineStore('library', () => {
         try {
             const { data } = await librariesApi.destroy(id);
             toast.success(data.message || 'Library branch deleted successfully.');
-            await fetchLibraries();
+            await fetchLibraries(undefined, true);
             return true;
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to delete library branch.');
@@ -81,9 +92,8 @@ export const useLibraryStore = defineStore('library', () => {
         }
     }
 
-    function getLibraryById(id: number | null | undefined): Library | undefined {
-        if (!id) return undefined;
-        return libraries.value.find((l) => l.id === id);
+    function invalidateCache() {
+        isLoaded.value = false;
     }
 
     return {
@@ -91,10 +101,11 @@ export const useLibraryStore = defineStore('library', () => {
         selectedLibrary,
         activeBranchFilter,
         loading,
+        isLoaded,
         fetchLibraries,
         createLibrary,
         updateLibrary,
         deleteLibrary,
-        getLibraryById,
+        invalidateCache,
     };
 });

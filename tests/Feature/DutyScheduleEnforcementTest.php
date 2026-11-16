@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Book;
-use App\Models\DutySchedule;
+use App\Models\Library;
+use App\Models\LibraryAttendance;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,81 +41,96 @@ class DutyScheduleEnforcementTest extends TestCase
             ->assertJsonPath('user.username', 'admin');
     }
 
-    public function test_on_duty_librarian_can_issue_book_today(): void
+    public function test_librarian_can_log_physical_attendance_for_their_branch(): void
     {
         $onDutyUser = User::where('username', 'tigist_duty')->first();
-        $book = Book::where('library_id', $onDutyUser->library_id)->where('available_copies', '>', 0)->first();
-        $student = User::where('username', 'sara_student')->first();
 
         $response = $this->actingAs($onDutyUser)
-            ->postJson('/api/circulation/issue', [
-                'book_id' => $book->id,
-                'member_id' => $student->id,
-                'due_days' => 14,
+            ->postJson('/api/physical/attendance/log', [
+                'library_id' => $onDutyUser->library_id,
+                'user_type' => 'student',
+                'gender' => 'female',
+                'count' => 3,
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('count', 3)
+            ->assertJsonPath('data.gender', 'female')
+            ->assertJsonPath('data.user_type', 'student');
+    }
+
+    public function test_librarian_cannot_log_attendance_for_another_library_branch(): void
+    {
+        $onDutyUser = User::where('username', 'tigist_duty')->first();
+        $anotherBranch = Library::where('id', '!=', $onDutyUser->library_id)->first();
+
+        $response = $this->actingAs($onDutyUser)
+            ->postJson('/api/physical/attendance/log', [
+                'library_id' => $anotherBranch->id,
+                'user_type' => 'student',
+                'gender' => 'male',
+                'count' => 1,
+            ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_admin_can_log_attendance_for_any_branch(): void
+    {
+        $admin = User::where('username', 'admin')->first();
+        $branch = Library::first();
+
+        $response = $this->actingAs($admin)
+            ->postJson('/api/physical/attendance/log', [
+                'library_id' => $branch->id,
+                'user_type' => 'teacher',
+                'gender' => 'male',
+                'count' => 2,
             ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true);
     }
 
-    public function test_librarian_cannot_issue_book_from_another_library_branch(): void
-    {
-        $onDutyUser = User::where('username', 'tigist_duty')->first();
-        // Book from another branch (e.g. SCITECH or HEALTH)
-        $anotherBranchBook = Book::where('library_id', '!=', $onDutyUser->library_id)->first();
-        $student = User::where('username', 'sara_student')->first();
-
-        $response = $this->actingAs($onDutyUser)
-            ->postJson('/api/circulation/issue', [
-                'book_id' => $anotherBranchBook->id,
-                'member_id' => $student->id,
-                'due_days' => 14,
-            ]);
-
-        $response->assertStatus(403)
-            ->assertJsonPath('success', false)
-            ->assertJsonPath('code', 'BRANCH_RESTRICTED');
-    }
-
-    public function test_off_duty_librarian_is_blocked_by_schedule_gate(): void
-    {
-        $offDutyUser = User::where('username', 'yohannes_offduty')->first();
-        $book = Book::where('library_id', $offDutyUser->library_id)->where('available_copies', '>', 0)->first();
-        $student = User::where('username', 'sara_student')->first();
-
-        $response = $this->actingAs($offDutyUser)
-            ->postJson('/api/circulation/issue', [
-                'book_id' => $book->id,
-                'member_id' => $student->id,
-                'due_days' => 14,
-            ]);
-
-        $response->assertStatus(403)
-            ->assertJsonPath('success', false)
-            ->assertJsonPath('code', 'OUTSIDE_DUTY_TURN')
-            ->assertJsonStructure([
-                'duty_gate' => [
-                    'task',
-                    'is_on_duty_today',
-                    'next_turn',
-                ],
-            ]);
-    }
-
-    public function test_admin_has_override_privilege(): void
+    public function test_attendance_stats_endpoint(): void
     {
         $admin = User::where('username', 'admin')->first();
-        $book = Book::where('available_copies', '>', 0)->first();
-        $student = User::where('username', 'sara_student')->first();
 
         $response = $this->actingAs($admin)
-            ->postJson('/api/circulation/issue', [
-                'book_id' => $book->id,
-                'member_id' => $student->id,
-                'due_days' => 14,
-            ]);
+            ->getJson('/api/physical/attendance/stats');
 
-        $response->assertStatus(201)
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'total_users',
+                'total_male',
+                'total_female',
+                'gender_distribution',
+                'type_distribution',
+                'library_distribution',
+                'trends',
+            ]);
+    }
+
+    public function test_2_minute_deletion_rule_enforcement(): void
+    {
+        $admin = User::where('username', 'admin')->first();
+        $branch = Library::first();
+
+        // Fresh attendance entry (created right now)
+        $fresh = LibraryAttendance::create([
+            'library_id' => $branch->id,
+            'user_type' => 'student',
+            'gender' => 'male',
+            'visitor_count' => 1,
+            'staff_id' => $admin->id,
+            'entry_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->deleteJson("/api/physical/attendance/{$fresh->slug}");
+
+        $response->assertStatus(200)
             ->assertJsonPath('success', true);
     }
 }

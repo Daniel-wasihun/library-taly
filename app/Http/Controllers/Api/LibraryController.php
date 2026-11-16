@@ -22,10 +22,8 @@ class LibraryController extends Controller
         $query = Library::query()
             ->withCount([
                 'users',
-                'books',
-                'bookLoans as active_loans_count' => function ($q) {
-                    $q->where('status', 'borrowed');
-                },
+                'attendances',
+                'dutySchedules',
             ])
             ->orderBy('name', 'asc');
 
@@ -144,7 +142,7 @@ class LibraryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Library branch updated successfully.',
-            'data' => $library->loadCount(['users', 'books']),
+            'data' => $library->loadCount(['users', 'attendances']),
         ]);
     }
 
@@ -153,15 +151,6 @@ class LibraryController extends Controller
      */
     public function destroy(Library $library): JsonResponse
     {
-        // Safety check: ensure no active loans exist for this library
-        $activeLoansCount = $library->bookLoans()->where('status', 'borrowed')->count();
-        if ($activeLoansCount > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => "Cannot delete library branch '{$library->name}' because it has {$activeLoansCount} active borrowed books.",
-            ], 422);
-        }
-
         $library->delete();
 
         return response()->json([

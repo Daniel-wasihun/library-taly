@@ -102,19 +102,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Loans issued by this staff member.
+     * Physical attendances recorded by this staff member.
      */
-    public function issuedLoans(): HasMany
+    public function attendances(): HasMany
     {
-        return $this->hasMany(BookLoan::class, 'issued_by_user_id');
-    }
-
-    /**
-     * Loans borrowed by this student/patron.
-     */
-    public function borrowedLoans(): HasMany
-    {
-        return $this->hasMany(BookLoan::class, 'member_id');
+        return $this->hasMany(LibraryAttendance::class, 'staff_id');
     }
 
     /**

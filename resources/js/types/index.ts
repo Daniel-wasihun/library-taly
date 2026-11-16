@@ -72,44 +72,45 @@ export interface DutySchedule {
     library?: Partial<Library>;
 }
 
-export interface Book {
+export interface Attendance {
     id: number;
-    library_id?: number | null;
-    title: string;
-    isbn: string;
-    author: string;
-    category: string;
-    shelf_location: string | null;
-    total_copies: number;
-    available_copies: number;
-    library?: Partial<Library>;
-    created_at: string;
+    slug: string;
+    library_id: number;
+    user_type: 'student' | 'teacher' | 'staff';
+    gender: 'male' | 'female';
+    visitor_count: number;
+    entry_at: string;
+    created_at?: string;
+    library?: {
+        id: number;
+        name: string;
+        name_am: string | null;
+        code: string;
+    };
+    staff?: {
+        id: number;
+        name: string;
+        username: string;
+    };
 }
 
-export interface BookLoan {
-    id: number;
-    library_id?: number | null;
-    book_id: number;
-    member_id: number;
-    issued_by_user_id: number | null;
-    issued_date: string;
-    due_date: string;
-    returned_date: string | null;
-    status: 'borrowed' | 'returned' | 'overdue';
-    notes: string | null;
-    book?: Partial<Book>;
-    member?: Partial<User>;
-    issued_by?: Partial<User>;
-    library?: Partial<Library>;
+export interface AttendanceStats {
+    total_users: number;
+    total_male: number;
+    total_female: number;
+    gender_distribution: { gender: 'male' | 'female'; count: number }[];
+    type_distribution: { user_type: string; count: number }[];
+    library_distribution: any[];
+    trends: { date: string; count: number }[];
+    period?: { from: string; to: string };
 }
 
 export interface DashboardStats {
-    total_books: number;
-    total_copies: number;
-    available_copies: number;
-    active_loans: number;
-    overdue_loans: number;
-    total_members: number;
+    today_total: number;
+    today_male: number;
+    today_female: number;
+    total_branches: number;
+    total_staff: number;
     on_duty_staff_today: OnDutyEntry[];
 }
 

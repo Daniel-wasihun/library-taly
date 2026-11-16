@@ -58,7 +58,7 @@ class UserController extends Controller
         $users = $query->paginate(15);
 
         $items = collect($users->items())->map(function ($u) {
-            $dutyStatus = $this->dutyService->evaluateUserDutyStatus($u, 'book_circulation');
+            $dutyStatus = $this->dutyService->evaluateUserDutyStatus($u, 'attendance_desk');
             return [
                 'id' => $u->id,
                 'name' => $u->name,

@@ -16,6 +16,7 @@ export const useAuthStore = defineStore(
         const userRoles = computed(() => user.value?.roles ?? []);
         const isOnDutyToday = computed(() => user.value?.duty_status?.has_active_shift_today ?? false);
         const canCirculateBooks = computed(() => user.value?.duty_status?.circulation_authorized_today ?? false);
+        const canLogAttendance = computed(() => isAdmin.value || (user.value?.duty_status?.circulation_authorized_today ?? false));
 
         function hasRole(role: string | string[]): boolean {
             const roles = Array.isArray(role) ? role : [role];
@@ -83,6 +84,7 @@ export const useAuthStore = defineStore(
             userRoles,
             isOnDutyToday,
             canCirculateBooks,
+            canLogAttendance,
             hasRole,
             hasPermission,
             login,

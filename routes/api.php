@@ -1,8 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\BookController;
-use App\Http\Controllers\Api\CirculationController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DutyScheduleController;
 use App\Http\Controllers\Api\LibraryController;
@@ -62,14 +61,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/schedules', [DutyScheduleController::class, 'store']);
     Route::delete('/schedules/{schedule}', [DutyScheduleController::class, 'destroy']);
 
-    // Library Book Catalog
-    Route::apiResource('books', BookController::class);
-
-    // Book Circulation
-    Route::get('/circulation/loans', [CirculationController::class, 'index']);
-    Route::post('/circulation/return/{loan}', [CirculationController::class, 'returnBook']);
-
-    // Issue Book: Enforces that the staff member is on duty for 'book_circulation' today!
-    Route::post('/circulation/issue', [CirculationController::class, 'issue'])
-        ->middleware('duty.turn:book_circulation');
+    // Physical Library Attendance / Usage Counter (LMS Pattern)
+    Route::prefix('physical/attendance')->group(function () {
+        Route::get('/', [AttendanceController::class, 'index']);
+        Route::post('/log', [AttendanceController::class, 'logEntry']);
+        Route::get('/stats', [AttendanceController::class, 'stats']);
+        Route::get('/export', [AttendanceController::class, 'export']);
+        Route::patch('/{slug}/count', [AttendanceController::class, 'updateCount']);
+        Route::delete('/{slug}', [AttendanceController::class, 'destroy']);
+    });
 });

@@ -17,7 +17,7 @@
           size="sm"
           :icon="RefreshCw"
           :loading="userStore.loading"
-          @click="loadData"
+          @click="loadData(true)"
         >
           {{ langStore.t('common.refresh', 'Refresh') }}
         </Button>
@@ -68,7 +68,7 @@
             class="h-9 px-3 text-xs rounded-xl bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           >
             <option value="all">All Roles</option>
-            <option v-for="r in userStore.roles" :key="r.id" :value="r.name">
+            <option v-for="r in roleStore.roles" :key="r.id" :value="r.name">
               {{ r.name }}
             </option>
           </select>
@@ -318,7 +318,7 @@
               class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
             >
               <option value="">Select a role...</option>
-              <option v-for="r in userStore.roles" :key="r.id" :value="r.name">
+              <option v-for="r in roleStore.roles" :key="r.id" :value="r.name">
                 {{ r.name }}
               </option>
             </select>
@@ -440,6 +440,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useUserStore } from '@/stores/userStore';
 import { useLibraryStore } from '@/stores/libraryStore';
+import { useRoleStore } from '@/stores/roleStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import { rolesApi } from '@/api';
 import Button from '@/components/ui/Button.vue';
@@ -452,6 +453,7 @@ import type { User } from '@/types';
 
 const userStore = useUserStore();
 const libraryStore = useLibraryStore();
+const roleStore = useRoleStore();
 const langStore = useLanguageStore();
 
 const searchQuery = ref('');
@@ -468,7 +470,6 @@ const deletingUser = ref<User | null>(null);
 const overridesUser = ref<User | null>(null);
 
 const userDirectPerms = ref<string[]>([]);
-const availablePermissions = ref<{ id: number; name: string; group?: string }[]>([]);
 
 const userColumns = computed<ColumnDef[]>(() => [
   { key: 'user', label: langStore.t('users.name', 'User') },
@@ -493,7 +494,7 @@ const form = reactive({
 
 const groupedPermissions = computed(() => {
   const groups: Record<string, { id: number; name: string }[]> = {};
-  for (const p of availablePermissions.value) {
+  for (const p of roleStore.permissions) {
     const mod = p.name.split('.')[0] || 'general';
     if (!groups[mod]) groups[mod] = [];
     groups[mod].push(p);
@@ -501,27 +502,17 @@ const groupedPermissions = computed(() => {
   return groups;
 });
 
-const loadData = async () => {
+const loadData = async (force = false) => {
   await Promise.all([
     userStore.fetchUsers({
       search: searchQuery.value,
       library_id: selectedLibraryFilter.value !== 'all' ? selectedLibraryFilter.value : undefined,
       role: selectedRoleFilter.value !== 'all' ? selectedRoleFilter.value : undefined,
       status: selectedStatusFilter.value !== 'all' ? selectedStatusFilter.value : undefined,
-    }),
-    userStore.fetchRoles(),
-    libraryStore.fetchLibraries(),
-    loadAvailablePermissions(),
+    }, force),
+    roleStore.fetchRoles(force),
+    libraryStore.fetchLibraries(undefined, force),
   ]);
-};
-
-const loadAvailablePermissions = async () => {
-  try {
-    const { data } = await rolesApi.list();
-    availablePermissions.value = data.permissions || [];
-  } catch {
-    // fallback
-  }
 };
 
 const openCreateModal = () => {
@@ -532,7 +523,7 @@ const openCreateModal = () => {
     email: '',
     password: '',
     phone: '',
-    role: userStore.roles[0]?.name || '',
+    role: roleStore.roles[0]?.name || '',
     library_id: '',
     status: 'active',
   });

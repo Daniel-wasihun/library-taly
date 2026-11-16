@@ -11,14 +11,31 @@ export const useUserStore = defineStore('users', () => {
     const pagination = ref<Pagination>({ current_page: 1, last_page: 1, total: 0 });
     const loading = ref(false);
 
+    // Pinia Cache Flags
+    const isLoaded = ref(false);
+    const rolesLoaded = ref(false);
+
     const toast = useToastStore();
 
-    async function fetchUsers(params?: { search?: string; role?: string; status?: string; library_id?: number | string; page?: number }) {
+    async function fetchUsers(
+        params?: { search?: string; role?: string; status?: string; library_id?: number | string; page?: number },
+        force = false
+    ) {
+        const hasFilters = Boolean(params && (params.search || params.role || params.status || params.library_id || (params.page && params.page > 1)));
+
+        // Return cached users if already loaded and no specific filter params requested
+        if (!force && isLoaded.value && !hasFilters && users.value.length > 0) {
+            return;
+        }
+
         loading.value = true;
         try {
             const { data } = await usersApi.list(params);
             users.value = data.data;
             pagination.value = data.pagination;
+            if (!hasFilters) {
+                isLoaded.value = true;
+            }
         } catch {
             toast.error('Failed to load users.');
         } finally {
@@ -26,10 +43,15 @@ export const useUserStore = defineStore('users', () => {
         }
     }
 
-    async function fetchRoles() {
+    async function fetchRoles(force = false) {
+        if (!force && rolesLoaded.value && roles.value.length > 0) {
+            return;
+        }
+
         try {
             const { data } = await rolesApi.list();
             roles.value = data.roles;
+            rolesLoaded.value = true;
         } catch {
             toast.error('Failed to load roles.');
         }
@@ -40,7 +62,7 @@ export const useUserStore = defineStore('users', () => {
         try {
             await usersApi.create(formData);
             toast.success('User created successfully.');
-            await fetchUsers();
+            await fetchUsers(undefined, true);
             return true;
         } catch (err: any) {
             const errors = err.response?.data?.errors;
@@ -61,7 +83,7 @@ export const useUserStore = defineStore('users', () => {
         try {
             await usersApi.update(id, formData);
             toast.success('User updated successfully.');
-            await fetchUsers();
+            await fetchUsers(undefined, true);
             return true;
         } catch (err: any) {
             const errors = err.response?.data?.errors;
@@ -81,7 +103,7 @@ export const useUserStore = defineStore('users', () => {
         try {
             await usersApi.destroy(id);
             toast.success('User deleted.');
-            await fetchUsers();
+            await fetchUsers(undefined, true);
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to delete user.');
         }
@@ -92,7 +114,7 @@ export const useUserStore = defineStore('users', () => {
         try {
             const { data } = await usersApi.overridePermissions(userId, permissions);
             toast.success(data.message || 'Direct permissions updated successfully.');
-            await fetchUsers();
+            await fetchUsers(undefined, true);
             return true;
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to update direct permissions.');
@@ -102,17 +124,25 @@ export const useUserStore = defineStore('users', () => {
         }
     }
 
+    function invalidateCache() {
+        isLoaded.value = false;
+        rolesLoaded.value = false;
+    }
+
     return {
         users,
         selectedUser,
         roles,
         pagination,
         loading,
+        isLoaded,
+        rolesLoaded,
         fetchUsers,
         fetchRoles,
         createUser,
         updateUser,
         deleteUser,
         overridePermissions,
+        invalidateCache,
     };
 });

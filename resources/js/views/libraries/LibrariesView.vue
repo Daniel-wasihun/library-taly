@@ -18,7 +18,7 @@
           size="sm"
           :icon="RefreshCw"
           :loading="libraryStore.loading"
-          @click="loadData"
+          @click="loadData(true)"
         >
           {{ langStore.t('common.refresh', 'Refresh') }}
         </Button>
@@ -356,8 +356,8 @@ const form = reactive({
   is_active: true,
 });
 
-const loadData = async () => {
-  await libraryStore.fetchLibraries({ search: searchQuery.value });
+const loadData = async (force = false) => {
+  await libraryStore.fetchLibraries({ search: searchQuery.value }, force);
 };
 
 const openCreateModal = () => {

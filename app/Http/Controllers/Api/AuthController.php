@@ -97,8 +97,8 @@ class AuthController extends Controller
             ->whereIn('status', ['scheduled', 'active'])
             ->get();
 
-        // Check if user is on duty for primary library circulation task
-        $circulationDutyCheck = $this->dutyService->canPerformTask($user, 'book_circulation', $today);
+        // Check if user is on duty for primary library attendance desk task
+        $deskDutyCheck = $this->dutyService->canPerformTask($user, 'attendance_desk', $today, $user->library_id);
 
         return [
             'id' => $user->id,
@@ -120,9 +120,9 @@ class AuthController extends Controller
             'is_admin' => $user->hasAdminPrivilege(),
             'duty_status' => [
                 'has_active_shift_today' => $user->hasAdminPrivilege() || $todayShifts->isNotEmpty(),
-                'circulation_authorized_today' => $circulationDutyCheck['allowed'],
-                'circulation_reason' => $circulationDutyCheck['reason'] ?? '',
-                'next_turn' => $circulationDutyCheck['next_turn'] ?? null,
+                'circulation_authorized_today' => $deskDutyCheck['allowed'],
+                'circulation_reason' => $deskDutyCheck['reason'] ?? '',
+                'next_turn' => $deskDutyCheck['next_turn'] ?? null,
                 'today_shifts' => $todayShifts->map(fn ($shift) => [
                     'id' => $shift->id,
                     'task_key' => $shift->task_key,

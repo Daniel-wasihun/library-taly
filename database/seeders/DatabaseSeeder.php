@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Book;
-use App\Models\BookLoan;
 use App\Models\DutySchedule;
 use App\Models\Library;
+use App\Models\LibraryAttendance;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
@@ -43,16 +42,12 @@ class DatabaseSeeder extends Seeder
             'roles.edit',
             'roles.delete',
 
-            // Book Catalog
-            'books.view',
-            'books.create',
-            'books.edit',
-            'books.delete',
-
-            // Circulation & Loans
-            'circulation.view',
-            'circulation.issue',
-            'circulation.return',
+            // Physical Attendance & Usage Counter (LMS Pattern)
+            'attendance.view',
+            'attendance.create',
+            'attendance.edit',
+            'attendance.delete',
+            'attendance.report',
 
             // Duty Schedules
             'schedules.view',
@@ -89,13 +84,11 @@ class DatabaseSeeder extends Seeder
             'users.create',
             'users.edit',
             'roles.view',
-            'books.view',
-            'books.create',
-            'books.edit',
-            'books.delete',
-            'circulation.view',
-            'circulation.issue',
-            'circulation.return',
+            'attendance.view',
+            'attendance.create',
+            'attendance.edit',
+            'attendance.delete',
+            'attendance.report',
             'schedules.view',
             'schedules.create',
             'schedules.delete',
@@ -105,37 +98,33 @@ class DatabaseSeeder extends Seeder
 
         $deskLibrarianRole->syncPermissions([
             'libraries.view',
-            'books.view',
-            'circulation.view',
-            'circulation.issue',
-            'circulation.return',
+            'attendance.view',
+            'attendance.create',
+            'attendance.edit',
+            'attendance.delete',
+            'attendance.report',
             'schedules.view',
         ]);
 
         $catalogerRole->syncPermissions([
             'libraries.view',
-            'books.view',
-            'books.create',
-            'books.edit',
+            'attendance.view',
             'reports.view',
         ]);
 
         $archiveAssistantRole->syncPermissions([
             'libraries.view',
-            'books.view',
-            'circulation.view',
+            'attendance.view',
             'reports.view',
         ]);
 
         $facultyRole->syncPermissions([
             'libraries.view',
-            'books.view',
-            'circulation.view',
+            'attendance.view',
         ]);
 
         $studentRole->syncPermissions([
             'libraries.view',
-            'books.view',
         ]);
 
         // 3. Seed Realistic University Library Branches
@@ -461,161 +450,64 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 6. Seed University Library Books with Branch Housing
-        $books = [
-            [
-                'title' => 'Introduction to Algorithms (4th Edition)',
-                'isbn' => '978-0262046305',
-                'author' => 'Thomas H. Cormen, Charles E. Leiserson',
-                'category' => 'Computer Science',
-                'shelf_location' => 'Floor 2 - Stacks CS-101',
-                'library_id' => $sciTechLibrary->id,
-                'total_copies' => 6,
-                'available_copies' => 5,
-            ],
-            [
-                'title' => 'Operating System Concepts (10th Edition)',
-                'isbn' => '978-1119800361',
-                'author' => 'Abraham Silberschatz, Peter B. Galvin',
-                'category' => 'Computer Science',
-                'shelf_location' => 'Floor 2 - Stacks CS-104',
-                'library_id' => $sciTechLibrary->id,
-                'total_copies' => 5,
-                'available_copies' => 4,
-            ],
-            [
-                'title' => 'Harrison\'s Principles of Internal Medicine',
-                'isbn' => '978-1264268504',
-                'author' => 'J. Larry Jameson, Anthony S. Fauci',
-                'category' => 'Medicine',
-                'shelf_location' => 'Floor 3 - Medical Reference M-20',
-                'library_id' => $healthLibrary->id,
-                'total_copies' => 4,
-                'available_copies' => 3,
-            ],
-            [
-                'title' => 'Robbins & Cotran Pathologic Basis of Disease',
-                'isbn' => '978-0323531139',
-                'author' => 'Vinay Kumar, Abul K. Abbas',
-                'category' => 'Medicine',
-                'shelf_location' => 'Floor 3 - Stacks MED-08',
-                'library_id' => $healthLibrary->id,
-                'total_copies' => 3,
-                'available_copies' => 3,
-            ],
-            [
-                'title' => 'Black\'s Law Dictionary (11th Edition)',
-                'isbn' => '978-1539229759',
-                'author' => 'Bryan A. Garner',
-                'category' => 'Law',
-                'shelf_location' => 'Floor 1 - Law Archive L-02',
-                'library_id' => $lawLibrary->id,
-                'total_copies' => 3,
-                'available_copies' => 3,
-            ],
-            [
-                'title' => 'Engineering Mechanics: Statics & Dynamics',
-                'isbn' => '978-0133915426',
-                'author' => 'Russell C. Hibbeler',
-                'category' => 'Engineering',
-                'shelf_location' => 'Floor 2 - Engineering ENG-40',
-                'library_id' => $sciTechLibrary->id,
-                'total_copies' => 5,
-                'available_copies' => 5,
-            ],
-            [
-                'title' => 'Design Patterns: Elements of Reusable Object-Oriented Software',
-                'isbn' => '978-0201633610',
-                'author' => 'Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides',
-                'category' => 'Computer Science',
-                'shelf_location' => 'Floor 2 - Stacks CS-205',
-                'library_id' => $sciTechLibrary->id,
-                'total_copies' => 4,
-                'available_copies' => 4,
-            ],
-            [
-                'title' => 'Principles of Neural Science (6th Edition)',
-                'isbn' => '978-1259642234',
-                'author' => 'Eric R. Kandel, John D. Koester',
-                'category' => 'Medicine',
-                'shelf_location' => 'Floor 3 - Neuro Science M-45',
-                'library_id' => $healthLibrary->id,
-                'total_copies' => 2,
-                'available_copies' => 2,
-            ],
-            [
-                'title' => 'Ethiopian Constitutional Law and Federalism',
-                'isbn' => '978-9994400123',
-                'author' => 'Dr. Fasil Nahum',
-                'category' => 'Law',
-                'shelf_location' => 'Floor 1 - Legal Archives L-14',
-                'library_id' => $lawLibrary->id,
-                'total_copies' => 4,
-                'available_copies' => 3,
-            ],
-            [
-                'title' => 'Artificial Intelligence: A Modern Approach (4th Edition)',
-                'isbn' => '978-0134610992',
-                'author' => 'Stuart Russell, Peter Norvig',
-                'category' => 'Computer Science',
-                'shelf_location' => 'Floor 2 - Stacks CS-301',
-                'library_id' => $mainLibrary->id,
-                'total_copies' => 5,
-                'available_copies' => 4,
-            ],
-        ];
+        // 6. Seed Realistic Physical Attendance Logs (LMS Pattern)
+        if (LibraryAttendance::count() === 0) {
+            $branches = [$mainLibrary, $sciTechLibrary, $healthLibrary, $lawLibrary];
+            $userTypes = ['student', 'teacher', 'staff'];
+            $genders = ['male', 'female'];
+            $staffUsers = [$onDutyLibrarian, $cataloger, $archiveAssistant, $admin];
 
-        $createdBooks = [];
-        foreach ($books as $bookData) {
-            $createdBooks[] = Book::updateOrCreate(['isbn' => $bookData['isbn']], $bookData);
-        }
+            // Today's entries
+            foreach ($branches as $branch) {
+                for ($i = 0; $i < 6; $i++) {
+                    $uType = $userTypes[$i % 3];
+                    $gen = $genders[$i % 2];
+                    $count = ($i % 4 === 0) ? 3 : 1;
+                    $staff = $staffUsers[$i % 4];
 
-        // 7. Create Circulation Records
-        if (BookLoan::count() === 0) {
-            BookLoan::create([
-                'library_id' => $sciTechLibrary->id,
-                'book_id' => $createdBooks[0]->id,
-                'member_id' => $student1->id,
-                'issued_by_user_id' => $onDutyLibrarian->id,
-                'issued_date' => Carbon::now()->subDays(3),
-                'due_date' => Carbon::now()->addDays(11),
-                'status' => 'borrowed',
-                'notes' => 'CS final year project preparation',
-            ]);
+                    LibraryAttendance::create([
+                        'library_id' => $branch->id,
+                        'user_type' => $uType,
+                        'gender' => $gen,
+                        'visitor_count' => $count,
+                        'staff_id' => $staff->id,
+                        'entry_at' => Carbon::now()->subMinutes(rand(5, 300)),
+                    ]);
+                }
+            }
 
-            BookLoan::create([
-                'library_id' => $sciTechLibrary->id,
-                'book_id' => $createdBooks[1]->id,
-                'member_id' => $student2->id,
-                'issued_by_user_id' => $onDutyLibrarian->id,
-                'issued_date' => Carbon::now()->subDays(5),
-                'due_date' => Carbon::now()->addDays(9),
-                'status' => 'borrowed',
-                'notes' => 'OS laboratory study',
-            ]);
+            // Past week entries for trends & analytics
+            for ($d = 1; $d <= 6; $d++) {
+                $date = Carbon::now()->subDays($d);
+                foreach ($branches as $branch) {
+                    LibraryAttendance::create([
+                        'library_id' => $branch->id,
+                        'user_type' => 'student',
+                        'gender' => 'male',
+                        'visitor_count' => rand(15, 45),
+                        'staff_id' => $onDutyLibrarian->id,
+                        'entry_at' => $date->copy()->setTime(10, 15),
+                    ]);
 
-            BookLoan::create([
-                'library_id' => $healthLibrary->id,
-                'book_id' => $createdBooks[2]->id,
-                'member_id' => $student3->id,
-                'issued_by_user_id' => $onDutyLibrarian->id,
-                'issued_date' => Carbon::now()->subDays(18),
-                'due_date' => Carbon::now()->subDays(4),
-                'returned_date' => Carbon::now()->subDays(2),
-                'status' => 'returned',
-                'notes' => 'Returned in pristine condition',
-            ]);
+                    LibraryAttendance::create([
+                        'library_id' => $branch->id,
+                        'user_type' => 'student',
+                        'gender' => 'female',
+                        'visitor_count' => rand(12, 40),
+                        'staff_id' => $onDutyLibrarian->id,
+                        'entry_at' => $date->copy()->setTime(11, 45),
+                    ]);
 
-            BookLoan::create([
-                'library_id' => $lawLibrary->id,
-                'book_id' => $createdBooks[8]->id,
-                'member_id' => $faculty1->id,
-                'issued_by_user_id' => $onDutyLibrarian->id,
-                'issued_date' => Carbon::now()->subDays(7),
-                'due_date' => Carbon::now()->addDays(23),
-                'status' => 'borrowed',
-                'notes' => 'Faculty research on federal jurisprudence',
-            ]);
+                    LibraryAttendance::create([
+                        'library_id' => $branch->id,
+                        'user_type' => 'teacher',
+                        'gender' => ($d % 2 === 0) ? 'female' : 'male',
+                        'visitor_count' => rand(2, 8),
+                        'staff_id' => $cataloger->id,
+                        'entry_at' => $date->copy()->setTime(14, 20),
+                    ]);
+                }
+            }
         }
     }
 }

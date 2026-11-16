@@ -34,6 +34,15 @@
         </div>
 
         <Button
+          variant="secondary"
+          size="sm"
+          :icon="RefreshCw"
+          :loading="roleStore.loading"
+          @click="roleStore.fetchRoles(true)"
+        >
+          {{ langStore.t('common.refresh', 'Refresh') }}
+        </Button>
+        <Button
           variant="primary"
           size="sm"
           :icon="Plus"
@@ -324,24 +333,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useLanguageStore } from '@/stores/languageStore';
-import { useToastStore } from '@/stores/toastStore';
-import api from '@/api/client';
+import { useRoleStore } from '@/stores/roleStore';
 import Button from '@/components/ui/Button.vue';
 import Modal from '@/components/ui/Modal.vue';
 import RoleBadge from '@/components/ui/RoleBadge.vue';
-import { ShieldCheck, Shield, Grid, Plus, Pencil, Trash2, Users } from 'lucide-vue-next';
+import { ShieldCheck, Shield, Grid, Plus, Pencil, Trash2, Users, RefreshCw } from 'lucide-vue-next';
 
 const langStore = useLanguageStore();
-const toast = useToastStore();
+const roleStore = useRoleStore();
 
 const activeTab = ref<'catalog' | 'matrix'>('catalog');
 const viewMode = ref<'table' | 'cards'>('table');
-const loading = ref(false);
 
-const roles = ref<any[]>([]);
-const permissions = ref<any[]>([]);
+const roles = computed(() => roleStore.roles);
+const permissions = computed(() => roleStore.permissions);
 
 const showModal = ref(false);
 const showDelete = ref(false);
@@ -352,19 +359,6 @@ const form = reactive({
   name: '',
   permissions: [] as string[],
 });
-
-const fetchRolesData = async () => {
-  loading.value = true;
-  try {
-    const res = await api.get('/roles');
-    roles.value = res.data.roles;
-    permissions.value = res.data.permissions;
-  } catch {
-    toast.error('Failed to load roles and permissions.');
-  } finally {
-    loading.value = false;
-  }
-};
 
 const openCreateModal = () => {
   editingRole.value = null;
@@ -396,35 +390,24 @@ const confirmDelete = (role: any) => {
 
 const handleSubmit = async () => {
   if (!form.name.trim()) return;
-  loading.value = true;
-  try {
-    if (editingRole.value) {
-      await api.put(`/roles/${editingRole.value.id}`, form);
-      toast.success(langStore.t('roles.updated', 'Role updated successfully.'));
-    } else {
-      await api.post('/roles', form);
-      toast.success(langStore.t('roles.created', 'Role created successfully.'));
-    }
+  const success = editingRole.value
+    ? await roleStore.updateRole(editingRole.value.id, form)
+    : await roleStore.createRole(form);
+
+  if (success) {
     showModal.value = false;
-    await fetchRolesData();
-  } catch (err: any) {
-    toast.error(err.response?.data?.message || 'Failed to save role.');
-  } finally {
-    loading.value = false;
   }
 };
 
 const handleDelete = async () => {
   if (!deletingRole.value) return;
-  try {
-    await api.delete(`/roles/${deletingRole.value.id}`);
-    toast.success('Role deleted successfully.');
+  const success = await roleStore.deleteRole(deletingRole.value.id);
+  if (success) {
     showDelete.value = false;
-    await fetchRolesData();
-  } catch (err: any) {
-    toast.error(err.response?.data?.message || 'Failed to delete role.');
   }
 };
 
-onMounted(fetchRolesData);
+onMounted(() => {
+  roleStore.fetchRoles(false);
+});
 </script>

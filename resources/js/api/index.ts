@@ -1,5 +1,5 @@
 import api from './client';
-import type { User, DutySchedule, Book, BookLoan, DashboardStats, ApiRole, Library } from '@/types';
+import type { User, DutySchedule, DashboardStats, ApiRole, Library, Attendance, AttendanceStats } from '@/types';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
@@ -17,10 +17,10 @@ export const dashboardApi = {
         api.get<{
             success: boolean;
             stats: DashboardStats;
-            recent_loans: BookLoan[];
+            recent_entries: Attendance[];
             current_user_duty: {
                 is_admin: boolean;
-                circulation_authorized: boolean;
+                authorized: boolean;
                 reason: string;
                 next_turn: string | null;
                 task_name: string;
@@ -151,26 +151,40 @@ export const schedulesApi = {
     destroy: (id: number) => api.delete(`/schedules/${id}`),
 };
 
-// ── Books ─────────────────────────────────────────────────────────────────────
-export const booksApi = {
-    list: (params?: { search?: string; category?: string; available?: boolean; page?: number }) =>
-        api.get('/books', { params }),
+// ── Physical Attendance / Usage Counter (LMS Pattern) ─────────────────────────
+export const attendanceApi = {
+    list: (params?: {
+        library_id?: string | number;
+        user_type?: string;
+        gender?: string;
+        date_from?: string;
+        date_to?: string;
+        page?: number;
+        per_page?: number;
+    }) => api.get('/physical/attendance', { params }),
 
-    create: (data: Omit<Book, 'id' | 'created_at' | 'available_copies'>) =>
-        api.post('/books', data),
+    log: (data: {
+        library_id: number;
+        user_type: string;
+        gender: string;
+        count?: number;
+    }) => api.post('/physical/attendance/log', data),
 
-    update: (id: number, data: Partial<Book>) => api.put(`/books/${id}`, data),
+    stats: (params?: {
+        library_id?: string | number;
+        date_from?: string;
+        date_to?: string;
+    }) => api.get<AttendanceStats>('/physical/attendance/stats', { params }),
 
-    destroy: (id: number) => api.delete(`/books/${id}`),
-};
+    export: (params?: any) =>
+        api.get('/physical/attendance/export', {
+            params,
+            responseType: 'blob',
+        }),
 
-// ── Circulation ───────────────────────────────────────────────────────────────
-export const circulationApi = {
-    list: (params?: { status?: string; search?: string; page?: number }) =>
-        api.get('/circulation/loans', { params }),
+    updateCount: (slug: string, count: number) =>
+        api.patch(`/physical/attendance/${slug}/count`, { count }),
 
-    issue: (data: { book_id: number; member_id: number; due_days?: number; notes?: string }) =>
-        api.post('/circulation/issue', data),
-
-    return: (loanId: number) => api.post(`/circulation/return/${loanId}`),
+    destroy: (slug: string) =>
+        api.delete(`/physical/attendance/${slug}`),
 };

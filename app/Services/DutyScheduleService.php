@@ -13,10 +13,10 @@ class DutyScheduleService
      * Map internal task keys to readable titles.
      */
     public const TASKS = [
-        'book_circulation' => 'Book Circulation & Issue',
-        'inventory_audit' => 'Inventory Audit & Barcode Scan',
-        'fine_waiver' => 'Overdue Fine Waiver',
+        'attendance_desk' => 'Physical Attendance & Desk Logging',
+        'facility_audit' => 'Facility Inventory & Stack Audit',
         'archive_access' => 'Restricted Rare Archive Access',
+        'roster_management' => 'Duty Shift Roster Management',
     ];
 
     /**

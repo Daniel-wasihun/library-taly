@@ -127,40 +127,21 @@
           {{ langStore.t('nav.group_library', 'Library Operations') }}
         </div>
 
-        <!-- Book Catalog -->
+        <!-- Physical Attendance & Usage Counter (LMS Pattern) -->
         <router-link
-          to="/books"
+          to="/attendance"
           class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer relative group"
-          :class="isActive('/books')
+          :class="isActive('/attendance')
             ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
             : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'"
         >
-          <BookOpen
+          <Activity
             class="w-4 h-4 shrink-0 transition-colors"
-            :class="isActive('/books') ? 'text-nav-accent' : 'text-main-text/45 group-hover:text-nav-accent'"
+            :class="isActive('/attendance') ? 'text-nav-accent' : 'text-main-text/45 group-hover:text-nav-accent'"
           />
-          <span class="truncate">{{ langStore.t('nav.books', 'Book Catalog') }}</span>
+          <span class="truncate">{{ langStore.t('nav.attendance', 'Physical Attendance / Counter') }}</span>
           <div
-            v-if="isActive('/books')"
-            class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-nav-accent rounded-r-full"
-          ></div>
-        </router-link>
-
-        <!-- Circulation & Loans -->
-        <router-link
-          to="/circulation"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer relative group"
-          :class="isActive('/circulation')
-            ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
-            : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'"
-        >
-          <BookMarked
-            class="w-4 h-4 shrink-0 transition-colors"
-            :class="isActive('/circulation') ? 'text-nav-accent' : 'text-main-text/45 group-hover:text-nav-accent'"
-          />
-          <span class="truncate">{{ langStore.t('nav.circulation', 'Circulation & Loans') }}</span>
-          <div
-            v-if="isActive('/circulation')"
+            v-if="isActive('/attendance')"
             class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-nav-accent rounded-r-full"
           ></div>
         </router-link>
@@ -240,8 +221,7 @@ import { useLanguageStore } from '@/stores/languageStore';
 import {
   LayoutDashboard,
   Clock,
-  BookOpen,
-  BookMarked,
+  Activity,
   Users,
   ShieldCheck,
   CalendarDays,

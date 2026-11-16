@@ -83,12 +83,31 @@ const router = createRouter({
 router.beforeEach(async (to) => {
     const authStore = useAuthStore();
 
-    // Restore token from localStorage if store is empty (after page reload)
+    // Restore token from localStorage if store is empty
     if (!authStore.token) {
-        const storedToken = localStorage.getItem('auth_token');
+        let storedToken = localStorage.getItem('auth_token');
+        if (!storedToken) {
+            try {
+                const persisted = localStorage.getItem('univ-library-auth');
+                if (persisted) {
+                    storedToken = JSON.parse(persisted)?.token || null;
+                }
+            } catch {}
+        }
         if (storedToken) {
             authStore.token = storedToken;
+        }
+    }
+
+    // If token exists but user profile is missing, attempt to fetch user once safely
+    if (authStore.token && !authStore.user) {
+        try {
             await authStore.fetchMe();
+        } catch {
+            authStore.token = null;
+            authStore.user = null;
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('univ-library-auth');
         }
     }
 

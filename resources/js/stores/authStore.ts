@@ -55,7 +55,10 @@ export const useAuthStore = defineStore(
                 const response = await authApi.me();
                 user.value = response.data.user;
             } catch {
-                logout();
+                token.value = null;
+                user.value = null;
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('univ-library-auth');
             }
         }
 
@@ -68,6 +71,7 @@ export const useAuthStore = defineStore(
             token.value = null;
             user.value = null;
             localStorage.removeItem('auth_token');
+            localStorage.removeItem('univ-library-auth');
         }
 
         return {

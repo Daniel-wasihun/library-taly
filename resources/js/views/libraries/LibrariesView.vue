@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-5 max-w-7xl mx-auto">
+  <div class="space-y-5 w-full">
     <!-- Header matching Gibi-Gubae -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -149,7 +149,7 @@
       :title="editingLibrary ? 'Edit Library Branch' : 'Add University Library Branch'"
       description="Configure physical campus library facility details and code"
       :icon="editingLibrary ? Pencil : Building2"
-      size="md"
+      size="lg"
       @close="showModal = false"
     >
       <form @submit.prevent="handleSubmit" class="space-y-4">
@@ -164,7 +164,7 @@
               type="text"
               required
               placeholder="e.g. Science & Technology Library"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
             />
           </div>
 
@@ -177,7 +177,7 @@
               v-model="form.name_am"
               type="text"
               placeholder="ምሳሌ፡ የሳይንስና ቴክኖሎጂ ቤተ-መጻሕፍት"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
             />
           </div>
         </div>
@@ -194,7 +194,7 @@
               required
               maxlength="10"
               placeholder="SCITECH"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono uppercase"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono uppercase"
             />
           </div>
 
@@ -207,7 +207,7 @@
               v-model="form.location"
               type="text"
               placeholder="e.g. Technology Campus, Block C"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
             />
           </div>
         </div>
@@ -222,7 +222,7 @@
               v-model="form.phone"
               type="tel"
               placeholder="+251 111 234502"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
             />
           </div>
 
@@ -235,7 +235,7 @@
               v-model="form.email"
               type="email"
               placeholder="scitech@unilib.edu"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
             />
           </div>
         </div>
@@ -249,7 +249,7 @@
             v-model="form.description"
             rows="2"
             placeholder="Specialized library stack and faculty coverage..."
-            class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           ></textarea>
         </div>
 

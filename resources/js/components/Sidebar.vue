@@ -5,7 +5,7 @@
     <!-- Brand Header matching Senbet / Gibi-Gubae -->
     <div class="h-16 flex items-center px-5 gap-3 border-b border-card-border shrink-0">
       <!-- Crest Icon -->
-      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-blue to-blue-700 text-white flex items-center justify-center font-bold text-base shadow-xs border border-white/20 shrink-0">
+      <div class="w-9 h-9 rounded-xs bg-gradient-to-br from-brand-blue to-blue-700 text-white flex items-center justify-center font-bold text-base shadow-xs border border-white/20 shrink-0">
         📚
       </div>
       <div class="flex flex-col min-w-0">
@@ -21,7 +21,7 @@
     <!-- Active Duty Turn Status Widget in Sidebar -->
     <div class="px-3 pt-3">
       <div
-        class="p-2.5 rounded-xl border text-xs transition-colors"
+        class="p-2.5 rounded-sm border text-xs transition-colors"
         :class="authStore.isAdmin
           ? 'bg-brand-blue/10 dark:bg-brand-blue/20 border-brand-blue/25 text-brand-blue dark:text-blue-300'
           : (authStore.isOnDutyToday
@@ -66,7 +66,7 @@
         <!-- Dashboard -->
         <router-link
           to="/dashboard"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer relative group"
+          class="flex items-center gap-3 px-3 py-2 rounded-sm text-xs transition-all duration-200 cursor-pointer relative group"
           :class="isActive('/dashboard')
             ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
             : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'"
@@ -85,7 +85,7 @@
         <!-- Library Branches (LMS CRUD) -->
         <router-link
           to="/libraries"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer relative group"
+          class="flex items-center gap-3 px-3 py-2 rounded-sm text-xs transition-all duration-200 cursor-pointer relative group"
           :class="isActive('/libraries')
             ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
             : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'"
@@ -104,7 +104,7 @@
         <!-- My Turns -->
         <router-link
           to="/my-turns"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer relative group"
+          class="flex items-center gap-3 px-3 py-2 rounded-sm text-xs transition-all duration-200 cursor-pointer relative group"
           :class="isActive('/my-turns')
             ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
             : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'"
@@ -130,7 +130,7 @@
         <!-- Physical Attendance & Usage Counter (LMS Pattern) -->
         <router-link
           to="/attendance"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer relative group"
+          class="flex items-center gap-3 px-3 py-2 rounded-sm text-xs transition-all duration-200 cursor-pointer relative group"
           :class="isActive('/attendance')
             ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
             : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'"
@@ -148,7 +148,7 @@
       </div>
 
       <!-- Group 3: Administration & Security -->
-      <div v-if="authStore.isAdmin || authStore.hasRole('Head Librarian')" class="space-y-1">
+      <div v-if="authStore.isAdmin || authStore.canManageLibrary" class="space-y-1">
         <div class="px-3 text-[10px] font-bold text-main-text/45 uppercase tracking-wider mb-1.5">
           {{ langStore.t('nav.group_admin', 'Administration & Security') }}
         </div>
@@ -156,7 +156,7 @@
         <!-- Users Management -->
         <router-link
           to="/users"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer relative group"
+          class="flex items-center gap-3 px-3 py-2 rounded-sm text-xs transition-all duration-200 cursor-pointer relative group"
           :class="isActive('/users')
             ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
             : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'"
@@ -175,7 +175,7 @@
         <!-- Roles & RBAC Matrix -->
         <router-link
           to="/roles"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer relative group"
+          class="flex items-center gap-3 px-3 py-2 rounded-sm text-xs transition-all duration-200 cursor-pointer relative group"
           :class="isActive('/roles')
             ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
             : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'"
@@ -194,7 +194,7 @@
         <!-- Duty Schedules Management -->
         <router-link
           to="/schedules"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer relative group"
+          class="flex items-center gap-3 px-3 py-2 rounded-sm text-xs transition-all duration-200 cursor-pointer relative group"
           :class="isActive('/schedules')
             ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
             : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'"

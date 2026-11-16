@@ -5,7 +5,7 @@
             <div v-if="modelValue"
                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
                 @click.self="$emit('update:modelValue', false)">
-                <div class="w-full rounded-xl shadow-2xl overflow-hidden"
+                <div class="w-full rounded-sm sm:rounded shadow-2xl overflow-hidden"
                     :class="sizeClass"
                     style="background: var(--bg-card);"
                     @click.stop>
@@ -14,7 +14,7 @@
                         <h2 class="font-semibold text-sm" style="color: var(--text-primary);">{{ title }}</h2>
                         <button
                             @click="$emit('update:modelValue', false)"
-                            class="text-slate-400 hover:text-slate-600 rounded-md p-1 hover:bg-slate-100 transition-colors">
+                            class="text-slate-400 hover:text-slate-600 rounded-xs p-1 hover:bg-slate-100 transition-colors">
                             <X :size="16" />
                         </button>
                     </div>
@@ -52,9 +52,9 @@ const props = withDefaults(defineProps<Props>(), {
 defineEmits<{ 'update:modelValue': [value: boolean] }>();
 
 const sizeClass = computed(() => ({
-    sm: 'max-w-sm',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
+    sm: 'max-w-lg',
+    md: 'max-w-3xl',
+    lg: 'max-w-5xl',
+    xl: 'max-w-7xl',
 }[props.size]));
 </script>

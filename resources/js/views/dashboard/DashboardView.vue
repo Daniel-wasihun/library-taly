@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6 max-w-7xl mx-auto">
+  <div class="space-y-6 w-full">
     <!-- Header matching Gibi-Gubae -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -15,7 +15,7 @@
       <!-- Quick Duty Pill in Header -->
       <div class="flex items-center gap-2">
         <span
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border shadow-2xs"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold border shadow-2xs"
           :class="authStore.isAdmin
             ? 'bg-brand-blue/10 dark:bg-brand-blue/20 text-brand-blue dark:text-blue-300 border-brand-blue/25'
             : (authStore.isOnDutyToday
@@ -33,7 +33,7 @@
 
         <router-link
           to="/attendance"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-blue text-white hover:bg-brand-blue/90 shadow-2xs transition"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold bg-brand-blue text-white hover:bg-brand-blue/90 shadow-2xs transition"
         >
           <Activity class="w-3.5 h-3.5" />
           <span>{{ langStore.t('attendance.live_desk', 'Live Usage Counter') }}</span>
@@ -44,7 +44,7 @@
     <!-- Duty Turn Alert Banner -->
     <div
       v-if="!authStore.isAdmin && !authStore.canLogAttendance"
-      class="rounded-xl border p-4 flex items-start gap-3 bg-amber-500/10 dark:bg-amber-950/40 border-amber-500/30 text-amber-800 dark:text-amber-200"
+      class="rounded-sm border p-4 flex items-start gap-3 bg-amber-500/10 dark:bg-amber-950/40 border-amber-500/30 text-amber-800 dark:text-amber-200"
     >
       <AlertTriangle class="w-5 h-5 text-amber-600 dark:text-brand-yellow shrink-0 mt-0.5" />
       <div>
@@ -107,7 +107,7 @@
     <!-- Two-Column Section matching Gibi-Gubae -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <!-- Recent Attendance Entries -->
-      <div class="lg:col-span-2 bg-card-bg border border-card-border rounded-xl p-5 shadow-2xs">
+      <div class="lg:col-span-2 bg-card-bg border border-card-border rounded-sm p-5 shadow-2xs">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-bold text-main-text flex items-center gap-2">
             <Activity class="w-4 h-4 text-nav-accent" />
@@ -119,7 +119,7 @@
         </div>
 
         <div v-if="loading" class="space-y-2">
-          <div v-for="i in 5" :key="i" class="h-12 bg-slate-100 dark:bg-slate-800/60 rounded-lg animate-pulse" />
+          <div v-for="i in 5" :key="i" class="h-12 bg-slate-100 dark:bg-slate-800/60 rounded-xs sm:rounded-sm animate-pulse" />
         </div>
 
         <div v-else-if="!stats?.recent_entries?.length" class="py-10 text-center text-xs text-main-text/40">
@@ -130,11 +130,11 @@
           <div
             v-for="entry in stats?.recent_entries"
             :key="entry.id"
-            class="flex items-center justify-between gap-3 p-3 rounded-lg border border-card-border/60 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition text-xs"
+            class="flex items-center justify-between gap-3 p-3 rounded-xs sm:rounded-sm border border-card-border/60 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition text-xs"
           >
             <div class="flex items-center gap-3 min-w-0">
               <span
-                class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 font-mono shadow-2xs"
+                class="w-8 h-8 rounded-xs sm:rounded-sm flex items-center justify-center font-bold text-xs shrink-0 font-mono shadow-2xs"
                 :class="entry.gender === 'male'
                   ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
                   : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'"
@@ -146,7 +146,7 @@
                 <p class="font-bold text-main-text truncate flex items-center gap-2">
                   <span class="capitalize">{{ langStore.localizeGender(entry.gender) }}</span>
                   <span class="text-main-text/40 font-normal">·</span>
-                  <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border">
+                  <span class="px-1.5 py-0.5 rounded-xs text-[10px] font-semibold uppercase bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border">
                     {{ langStore.localizeType(entry.user_type) }}
                   </span>
                   <span v-if="entry.library" class="text-[11px] text-main-text/60 truncate">
@@ -167,14 +167,14 @@
       </div>
 
       <!-- On-Duty Staff Today -->
-      <div class="bg-card-bg border border-card-border rounded-xl p-5 shadow-2xs">
+      <div class="bg-card-bg border border-card-border rounded-sm p-5 shadow-2xs">
         <h3 class="text-sm font-bold text-main-text flex items-center gap-2 mb-4">
           <Users class="w-4 h-4 text-nav-accent" />
           <span>{{ langStore.t('duty.shifts_today', 'On Duty Staff Today') }}</span>
         </h3>
 
         <div v-if="loading" class="space-y-2">
-          <div v-for="i in 3" :key="i" class="h-16 bg-slate-100 dark:bg-slate-800/60 rounded-lg animate-pulse" />
+          <div v-for="i in 3" :key="i" class="h-16 bg-slate-100 dark:bg-slate-800/60 rounded-xs sm:rounded-sm animate-pulse" />
         </div>
 
         <div v-else-if="!stats?.stats?.on_duty_staff_today?.length" class="py-10 text-center space-y-2">
@@ -186,11 +186,11 @@
           <div
             v-for="entry in stats?.stats?.on_duty_staff_today"
             :key="`${entry.user_id}-${entry.task_key}`"
-            class="p-3 rounded-lg border border-emerald-500/25 bg-emerald-500/8 dark:bg-emerald-950/30 text-xs"
+            class="p-3 rounded-xs sm:rounded-sm border border-emerald-500/25 bg-emerald-500/8 dark:bg-emerald-950/30 text-xs"
           >
             <div class="flex items-center justify-between gap-2">
               <p class="font-bold text-emerald-800 dark:text-emerald-300 truncate">{{ entry.user_name }}</p>
-              <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 uppercase">
+              <span class="px-1.5 py-0.5 rounded-xs text-[9px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 uppercase">
                 Active
               </span>
             </div>

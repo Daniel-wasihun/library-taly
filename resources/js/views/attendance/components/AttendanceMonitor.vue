@@ -36,7 +36,7 @@ const getDateDisplay = (dateStr: string) => {
 </script>
 
 <template>
-  <div class="lg:col-span-8 xl:col-span-8 2xl:col-span-9 bg-card-bg border border-card-border rounded-xl sm:rounded-2xl flex flex-col shadow-2xs overflow-hidden min-h-[440px] sm:min-h-[580px]">
+  <div class="lg:col-span-8 xl:col-span-8 2xl:col-span-9 bg-card-bg border border-card-border rounded-sm sm:rounded flex flex-col shadow-2xs overflow-hidden min-h-[440px] sm:min-h-[580px]">
     
     <!-- Header with Metric Counters & Actions -->
     <div class="p-2.5 sm:px-5 sm:py-3.5 border-b border-card-border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-card-hover/20">
@@ -212,12 +212,12 @@ const getDateDisplay = (dateStr: string) => {
 
             <!-- Count + +/- quick adjustment buttons in straight line -->
             <td class="py-2 px-3 sm:py-2.5 sm:px-4 text-center whitespace-nowrap">
-              <div class="inline-flex items-center gap-1 p-0.5 rounded-md border border-card-border bg-main-bg/50">
+              <div class="inline-flex items-center gap-1 p-0.5 rounded-xs border border-card-border bg-main-bg/50">
                 <button
                   type="button"
                   :disabled="item.visitor_count <= 1 || !canUpdateEntry(item.entry_at)"
                   @click="emit('updateCount', item, -1)"
-                  class="w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center hover:bg-rose-500/10 hover:text-rose-600 text-main-text/50 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
+                  class="w-4 h-4 sm:w-5 sm:h-5 rounded-xs flex items-center justify-center hover:bg-rose-500/10 hover:text-rose-600 text-main-text/50 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
                   :title="!canUpdateEntry(item.entry_at) ? langStore.t('attendance.update_expired', 'Adjustments disabled after 2 minutes') : 'Decrement count (-1)'"
                 >
                   <Minus class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
@@ -229,7 +229,7 @@ const getDateDisplay = (dateStr: string) => {
                   type="button"
                   :disabled="item.visitor_count >= 100 || !canUpdateEntry(item.entry_at)"
                   @click="emit('updateCount', item, 1)"
-                  class="w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center hover:bg-emerald-500/10 hover:text-emerald-600 text-main-text/50 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
+                  class="w-4 h-4 sm:w-5 sm:h-5 rounded-xs flex items-center justify-center hover:bg-emerald-500/10 hover:text-emerald-600 text-main-text/50 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
                   :title="!canUpdateEntry(item.entry_at) ? langStore.t('attendance.update_expired', 'Adjustments disabled after 2 minutes') : 'Increment count (+1)'"
                 >
                   <Plus class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
@@ -261,7 +261,7 @@ const getDateDisplay = (dateStr: string) => {
                 type="button"
                 :disabled="!canDeleteEntry(item.entry_at)"
                 @click="emit('delete', item)"
-                class="p-1 rounded text-main-text/40 hover:text-rose-600 hover:bg-rose-500/10 transition disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
+                class="p-1 rounded-xs text-main-text/40 hover:text-rose-600 hover:bg-rose-500/10 transition disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
                 :title="canDeleteEntry(item.entry_at) ? langStore.t('attendance.cancel_entry', 'Cancel this entry (within 2-minute window)') : langStore.t('attendance.cancel_notice', 'Entries can be cancelled within 2 minutes of logging.')"
               >
                 <Trash2 class="w-3.5 h-3.5 sm:w-4 sm:h-4" />

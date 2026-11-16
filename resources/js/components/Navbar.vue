@@ -6,7 +6,7 @@
       <button
         type="button"
         @click="emit('toggleMobileMenu')"
-        class="lg:hidden p-2 -ml-1 rounded-xl text-main-text/70 hover:text-main-text hover:bg-card-hover/40 transition active:scale-95 cursor-pointer"
+        class="lg:hidden p-2 -ml-1 rounded-xs text-main-text/70 hover:text-main-text hover:bg-card-hover/40 transition active:scale-95 cursor-pointer"
         aria-label="Toggle navigation menu"
       >
         <Menu class="w-5 h-5" />
@@ -15,7 +15,7 @@
       <h1 class="text-xs sm:text-sm font-bold text-main-text tracking-tight truncate max-w-[150px] sm:max-w-none">
         {{ title }}
       </h1>
-      <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-brand-blue/10 text-brand-blue dark:bg-brand-yellow/15 dark:text-brand-yellow border border-brand-blue/20 dark:border-brand-yellow/30">
+      <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xs text-[10px] font-semibold bg-brand-blue/10 text-brand-blue dark:bg-brand-yellow/15 dark:text-brand-yellow border border-brand-blue/20 dark:border-brand-yellow/30">
         <span class="w-1.5 h-1.5 rounded-full bg-brand-blue dark:bg-brand-yellow animate-pulse"></span>
         UniLibrary Portal
       </span>

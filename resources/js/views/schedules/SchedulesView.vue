@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-5 max-w-7xl mx-auto">
+  <div class="space-y-5 w-full">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -27,11 +27,11 @@
       <input
         v-model="dateFilter"
         type="date"
-        class="px-3 py-2 text-xs rounded-xl bg-card-bg border border-card-border text-main-text shadow-2xs"
+        class="px-3 py-2 text-xs rounded-sm bg-card-bg border border-card-border text-main-text shadow-2xs"
       />
       <select
         v-model="taskFilter"
-        class="px-3 py-2 text-xs rounded-xl bg-card-bg border border-card-border text-main-text shadow-2xs"
+        class="px-3 py-2 text-xs rounded-sm bg-card-bg border border-card-border text-main-text shadow-2xs"
       >
         <option value="">All Tasks</option>
         <option v-for="(name, key) in scheduleStore.availableTasks" :key="key" :value="key">
@@ -100,7 +100,7 @@
       title="Assign Duty Shift"
       description="Schedule a turn for a staff member to authorize library duties."
       :icon="CalendarDays"
-      size="md"
+      size="lg"
       @close="showCreate = false"
     >
       <form @submit.prevent="handleCreate" class="space-y-4">
@@ -114,7 +114,7 @@
             min="1"
             required
             placeholder="Staff User ID (e.g. 2 for tigist_duty, 3 for yohannes_offduty)"
-            class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
           />
         </div>
 
@@ -125,7 +125,7 @@
           <select
             v-model="form.task_key"
             required
-            class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           >
             <option value="">Select task...</option>
             <option v-for="(name, key) in scheduleStore.availableTasks" :key="key" :value="key">
@@ -143,7 +143,7 @@
               v-model="form.shift_date"
               type="date"
               required
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
             />
           </div>
           <div>
@@ -151,7 +151,7 @@
             <input
               v-model="form.start_time"
               type="time"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
             />
           </div>
           <div>
@@ -159,7 +159,7 @@
             <input
               v-model="form.end_time"
               type="time"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
             />
           </div>
         </div>
@@ -170,7 +170,7 @@
             v-model="form.notes"
             rows="2"
             placeholder="Desk assignment, handover instructions..."
-            class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs resize-none"
+            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs resize-none"
           ></textarea>
         </div>
       </form>

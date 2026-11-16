@@ -142,7 +142,7 @@
         color: #93c5fd;
     }
 
-    /* Standardized Table Action Buttons & High-Visibility Icon Sizing */
+    /* Standardized Table Action Buttons & High-Visibility Icon Sizing with Crisp Small Radius */
     .table-action-btn {
         width: 36px !important;
         height: 36px !important;
@@ -152,7 +152,7 @@
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        border-radius: 8px !important;
+        border-radius: 4px !important;
     }
 
     .table-action-btn svg {
@@ -174,7 +174,7 @@
         justify-content: center !important;
         font-size: 12px !important;
         font-weight: 600 !important;
-        border-radius: 8px !important;
+        border-radius: 4px !important;
         gap: 6px !important;
     }
 
@@ -185,6 +185,13 @@
         min-height: 16px !important;
         flex-shrink: 0 !important;
         stroke-width: 2.2 !important;
+    }
+
+    /* Enterprise Small Border Radius for all Form Inputs, Selects, and Textareas */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(.rounded-full),
+    select,
+    textarea {
+        border-radius: 4px !important;
     }
 
     body {

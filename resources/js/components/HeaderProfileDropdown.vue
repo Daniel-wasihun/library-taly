@@ -4,12 +4,12 @@
     <button
       type="button"
       @click="isOpen = !isOpen"
-      class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-main-text/5 transition-colors cursor-pointer border border-transparent hover:border-card-border"
+      class="flex items-center gap-2.5 p-1.5 rounded-xs hover:bg-main-text/5 transition-colors cursor-pointer border border-transparent hover:border-card-border"
       :aria-expanded="isOpen"
       aria-label="User Profile Menu"
     >
       <!-- Initials Avatar -->
-      <div class="w-7 h-7 rounded-md bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center text-xs font-bold shadow-2xs shrink-0">
+      <div class="w-7 h-7 rounded-xs bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center text-xs font-bold shadow-2xs shrink-0">
         {{ userInitials }}
       </div>
 
@@ -36,12 +36,12 @@
     >
       <div
         v-if="isOpen"
-        class="absolute right-0 mt-2 w-72 bg-card-bg/95 backdrop-blur-md rounded-xl shadow-xl border border-card-border p-2 z-50 animate-in fade-in"
+        class="absolute right-0 mt-2 w-72 bg-card-bg/95 backdrop-blur-md rounded-sm shadow-xl border border-card-border p-2 z-50 animate-in fade-in"
       >
         <!-- User Info Header -->
-        <div class="p-2.5 rounded-lg bg-card-bg border border-card-border/80 shadow-2xs mb-2">
+        <div class="p-2.5 rounded-xs bg-card-bg border border-card-border/80 shadow-2xs mb-2">
           <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-md bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center font-bold text-xs shadow-2xs shrink-0">
+            <div class="w-8 h-8 rounded-xs bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center font-bold text-xs shadow-2xs shrink-0">
               {{ userInitials }}
             </div>
             <div class="min-w-0 flex-1">
@@ -51,7 +51,7 @@
               <p class="text-[11px] text-main-text/50 truncate font-mono">
                 @{{ authStore.user?.username }} · {{ authStore.user?.email }}
               </p>
-              <span class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-nav-accent/10 text-nav-accent border border-nav-accent/20">
+              <span class="inline-block mt-1 px-1.5 py-0.5 rounded-xs text-[9px] font-bold uppercase tracking-wider bg-nav-accent/10 text-nav-accent border border-nav-accent/20">
                 {{ userRoleLabel }}
               </span>
             </div>
@@ -59,7 +59,7 @@
         </div>
 
         <!-- Duty Status Banner in dropdown -->
-        <div class="px-2.5 py-2 mb-2 rounded-lg text-xs"
+        <div class="px-2.5 py-2 mb-2 rounded-xs text-xs"
              :class="authStore.isAdmin ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20' : (authStore.isOnDutyToday ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20')">
           <p class="font-bold flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full" :class="authStore.isAdmin ? 'bg-blue-500' : (authStore.isOnDutyToday ? 'bg-emerald-500' : 'bg-amber-500')"></span>
@@ -75,7 +75,7 @@
           <button
             type="button"
             @click="handleLogout"
-            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xs text-xs font-medium text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
           >
             <LogOut class="w-4 h-4 shrink-0 stroke-[2.2]" />
             <span>Sign Out</span>

@@ -51,7 +51,7 @@ const config = computed(() => {
 
 <template>
   <span
-    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border select-none shadow-2xs capitalize tracking-tight"
+    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xs text-[11px] font-semibold border select-none shadow-2xs capitalize tracking-tight"
     :class="config.classes"
   >
     <span class="w-1.5 h-1.5 rounded-full" :class="config.dot"></span>

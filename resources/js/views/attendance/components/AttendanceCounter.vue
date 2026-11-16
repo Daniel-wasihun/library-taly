@@ -47,10 +47,10 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 </script>
 
 <template>
-  <div class="lg:col-span-4 xl:col-span-4 2xl:col-span-3 bg-card-bg border border-card-border rounded-xl sm:rounded-2xl p-2.5 sm:p-5 flex flex-col items-center justify-start relative transition-all duration-300 shadow-2xs">
+  <div class="lg:col-span-4 xl:col-span-4 2xl:col-span-3 bg-card-bg border border-card-border rounded-sm sm:rounded p-2.5 sm:p-5 flex flex-col items-center justify-start relative transition-all duration-300 shadow-2xs">
     
     <!-- Notice if user cannot record (e.g. Manager view-only) -->
-    <div v-if="!canRecord" class="w-full mb-2.5 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] sm:text-[11px] text-center font-medium leading-tight">
+    <div v-if="!canRecord" class="w-full mb-2.5 p-2 rounded-xs bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] sm:text-[11px] text-center font-medium leading-tight">
       {{ langStore.t('attendance.attendant_only_notice', 'Live visitor counting is assigned to desk attendants.') }}
     </div>
 
@@ -61,19 +61,19 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
           <Sparkles class="w-3 h-3 text-brand-blue" />
           {{ langStore.t('attendance.select_patron_type', 'Patron Type') }}
         </span>
-        <span class="text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-main-bg border border-card-border/80 text-main-text/70 capitalize">
+        <span class="text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-xs bg-main-bg border border-card-border/80 text-main-text/70 capitalize">
           {{ langStore.localizeType(selectedUserType) }}
         </span>
       </div>
 
       <!-- Segmented Pill Selector -->
-      <div class="grid grid-cols-3 gap-1 p-0.5 sm:p-1 rounded-lg sm:rounded-xl bg-main-bg/80 border border-card-border shadow-inner">
+      <div class="grid grid-cols-3 gap-1 p-0.5 sm:p-1 rounded-sm bg-main-bg/80 border border-card-border shadow-inner">
         <button
           v-for="ut in userTypes"
           :key="ut.id"
           type="button"
           @click="emit('update:selectedUserType', ut.id)"
-          class="flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2.5 px-1.5 sm:px-2 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all duration-150 select-none cursor-pointer"
+          class="flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 sm:py-2.5 px-1.5 sm:px-2 rounded-xs sm:rounded-sm text-[10px] sm:text-xs font-bold transition-all duration-150 select-none cursor-pointer"
           :class="selectedUserType === ut.id
             ? 'bg-brand-blue text-white shadow-xs scale-[1.01]'
             : 'text-main-text/70 hover:text-main-text hover:bg-card-bg/60 active:scale-95'"
@@ -88,14 +88,14 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     <div class="grid grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2 sm:gap-4 w-full flex-1 items-start">
       
       <!-- Male Counter Column -->
-      <div class="flex flex-col items-center gap-2 sm:gap-3 w-full bg-blue-50/30 dark:bg-blue-950/20 border border-brand-blue/15 rounded-xl sm:rounded-2xl p-2 sm:p-3.5 transition-all">
+      <div class="flex flex-col items-center gap-2 sm:gap-3 w-full bg-blue-50/30 dark:bg-blue-950/20 border border-brand-blue/15 rounded-sm sm:rounded p-2 sm:p-3.5 transition-all">
         <button
           type="button"
           @click="emit('log', 'male', 1)"
           :disabled="!canLog"
-          class="w-full max-w-[100px] sm:max-w-[140px] aspect-square rounded-xl sm:rounded-3xl flex flex-col items-center justify-center border border-white/20 group/btn bg-brand-blue text-white shadow-sm sm:shadow-md hover:bg-brand-blue/90 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          class="w-full max-w-[100px] sm:max-w-[140px] aspect-square rounded-sm sm:rounded-md flex flex-col items-center justify-center border border-white/20 group/btn bg-brand-blue text-white shadow-sm sm:shadow-md hover:bg-brand-blue/90 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
-          <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-white/15 flex items-center justify-center mb-0.5 sm:mb-1 group-hover/btn:scale-110 transition-transform">
+          <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-xs sm:rounded-sm bg-white/15 flex items-center justify-center mb-0.5 sm:mb-1 group-hover/btn:scale-110 transition-transform">
             <Users2 class="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           <span class="text-[11px] sm:text-sm font-bold capitalize tracking-wide sm:tracking-widest">
@@ -116,7 +116,7 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
               type="button"
               @click="emit('log', 'male', n)"
               :disabled="!canLog"
-              class="w-6 h-6 sm:w-8 sm:h-8 rounded sm:rounded-lg border font-bold text-[10px] sm:text-xs flex items-center justify-center transition-all duration-150 active:scale-90 disabled:opacity-25 cursor-pointer bg-white/80 dark:bg-slate-900/60 text-brand-blue border-brand-blue/20 hover:bg-brand-blue hover:text-white dark:hover:bg-brand-blue dark:hover:text-white"
+              class="w-6 h-6 sm:w-8 sm:h-8 rounded-xs sm:rounded-sm border font-bold text-[10px] sm:text-xs flex items-center justify-center transition-all duration-150 active:scale-90 disabled:opacity-25 cursor-pointer bg-white/80 dark:bg-slate-900/60 text-brand-blue border-brand-blue/20 hover:bg-brand-blue hover:text-white dark:hover:bg-brand-blue dark:hover:text-white"
             >
               +{{ n }}
             </button>
@@ -125,14 +125,14 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
       </div>
 
       <!-- Female Counter Column -->
-      <div class="flex flex-col items-center gap-2 sm:gap-3 w-full bg-amber-50/30 dark:bg-amber-950/20 border border-brand-yellow/25 rounded-xl sm:rounded-2xl p-2 sm:p-3.5 transition-all">
+      <div class="flex flex-col items-center gap-2 sm:gap-3 w-full bg-amber-50/30 dark:bg-amber-950/20 border border-brand-yellow/25 rounded-sm sm:rounded p-2 sm:p-3.5 transition-all">
         <button
           type="button"
           @click="emit('log', 'female', 1)"
           :disabled="!canLog"
-          class="w-full max-w-[100px] sm:max-w-[140px] aspect-square rounded-xl sm:rounded-3xl flex flex-col items-center justify-center border border-white/20 group/btn bg-brand-yellow text-white shadow-sm sm:shadow-md hover:bg-brand-yellow/90 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          class="w-full max-w-[100px] sm:max-w-[140px] aspect-square rounded-sm sm:rounded-md flex flex-col items-center justify-center border border-white/20 group/btn bg-brand-yellow text-white shadow-sm sm:shadow-md hover:bg-brand-yellow/90 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
-          <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-white/15 flex items-center justify-center mb-0.5 sm:mb-1 group-hover/btn:scale-110 transition-transform">
+          <div class="w-7 h-7 sm:w-10 sm:h-10 rounded-xs sm:rounded-sm bg-white/15 flex items-center justify-center mb-0.5 sm:mb-1 group-hover/btn:scale-110 transition-transform">
             <Users2 class="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           <span class="text-[11px] sm:text-sm font-bold capitalize tracking-wide sm:tracking-widest">
@@ -153,7 +153,7 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
               type="button"
               @click="emit('log', 'female', n)"
               :disabled="!canLog"
-              class="w-6 h-6 sm:w-8 sm:h-8 rounded sm:rounded-lg border font-bold text-[10px] sm:text-xs flex items-center justify-center transition-all duration-150 active:scale-90 disabled:opacity-25 cursor-pointer bg-white/80 dark:bg-slate-900/60 text-amber-600 dark:text-amber-400 border-amber-500/25 hover:bg-brand-yellow hover:text-white dark:hover:bg-brand-yellow dark:hover:text-white"
+              class="w-6 h-6 sm:w-8 sm:h-8 rounded-xs sm:rounded-sm border font-bold text-[10px] sm:text-xs flex items-center justify-center transition-all duration-150 active:scale-90 disabled:opacity-25 cursor-pointer bg-white/80 dark:bg-slate-900/60 text-amber-600 dark:text-amber-400 border-amber-500/25 hover:bg-brand-yellow hover:text-white dark:hover:bg-brand-yellow dark:hover:text-white"
             >
               +{{ n }}
             </button>

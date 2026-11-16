@@ -19,10 +19,10 @@
 
     <!-- Main Login Card Area -->
     <main class="flex-1 flex items-center justify-center p-4">
-      <div class="w-full max-w-md bg-card-bg border border-card-border rounded-2xl shadow-xl p-6 sm:p-8 space-y-6">
+      <div class="w-full max-w-md bg-card-bg border border-card-border rounded-sm sm:rounded shadow-xl p-6 sm:p-8 space-y-6">
         <!-- Title -->
         <div class="text-center space-y-1">
-          <div class="w-12 h-12 rounded-xl bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center mx-auto mb-3 shadow-2xs">
+          <div class="w-12 h-12 rounded-xs sm:rounded-sm bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center mx-auto mb-3 shadow-2xs">
             <BookOpen class="w-6 h-6 stroke-[2.2]" />
           </div>
           <h2 class="text-xl font-bold text-main-text tracking-tight">
@@ -48,7 +48,7 @@
                 required
                 autocomplete="username"
                 placeholder="admin or admin@unilib.edu"
-                class="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+                class="w-full pl-9 pr-3 py-2.5 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
               />
             </div>
           </div>
@@ -66,7 +66,7 @@
                 required
                 autocomplete="current-password"
                 placeholder="password123"
-                class="w-full pl-9 pr-10 py-2.5 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+                class="w-full pl-9 pr-10 py-2.5 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
               />
               <button
                 type="button"

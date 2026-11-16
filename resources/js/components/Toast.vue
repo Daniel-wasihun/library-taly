@@ -11,7 +11,7 @@
       <div
         v-for="toast in toastStore.toasts"
         :key="toast.id"
-        class="pointer-events-auto flex items-center justify-between px-2.5 py-1.5 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl shadow-md border text-[11px] sm:text-sm font-medium transition-all"
+        class="pointer-events-auto flex items-center justify-between px-2.5 py-1.5 sm:px-4 sm:py-3 rounded-xs sm:rounded-sm shadow-md border text-[11px] sm:text-sm font-medium transition-all"
         :class="getToastClasses(toast.type)"
       >
         <div class="flex items-center space-x-2 sm:space-x-3 truncate">

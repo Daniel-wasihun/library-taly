@@ -41,15 +41,15 @@ const isIconOnly = computed(() => {
 });
 
 const SIZES: Record<NonNullable<Props['size']>, string> = {
-  sm: 'h-8 px-3 text-xs font-medium rounded-lg gap-1.5',
-  md: 'h-9 px-3.5 text-xs font-semibold rounded-lg gap-2',
-  lg: 'h-10 px-4 text-sm font-semibold rounded-lg gap-2',
+  sm: 'h-8 px-3 text-xs font-medium rounded-sm gap-1.5',
+  md: 'h-9 px-3.5 text-xs font-semibold rounded-sm gap-2',
+  lg: 'h-10 px-4 text-sm font-semibold rounded-sm gap-2',
 };
 
 const ICON_ONLY_SIZES: Record<NonNullable<Props['size']>, string> = {
-  sm: 'h-8 w-8 p-0 rounded-lg',
-  md: 'h-9 w-9 p-0 rounded-lg',
-  lg: 'h-10 w-10 p-0 rounded-lg',
+  sm: 'h-8 w-8 p-0 rounded-sm',
+  md: 'h-9 w-9 p-0 rounded-sm',
+  lg: 'h-10 w-10 p-0 rounded-sm',
 };
 
 const VARIANTS: Record<NonNullable<Props['variant']>, string> = {

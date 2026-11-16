@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6 max-w-7xl mx-auto">
+  <div class="space-y-6 w-full">
     <!-- Page Header matching Gibi-Gubae -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -14,11 +14,11 @@
 
       <div class="flex items-center gap-2">
         <!-- View switcher for catalog -->
-        <div v-if="activeTab === 'catalog'" class="flex items-center p-0.5 rounded-lg border border-card-border bg-slate-100 dark:bg-slate-800">
+        <div v-if="activeTab === 'catalog'" class="flex items-center p-0.5 rounded-sm border border-card-border bg-slate-100 dark:bg-slate-800">
           <button
             type="button"
             @click="viewMode = 'table'"
-            class="px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer"
+            class="px-2.5 py-1 rounded-xs text-xs font-semibold transition cursor-pointer"
             :class="viewMode === 'table' ? 'bg-card-bg text-main-text shadow-2xs' : 'text-main-text/50 hover:text-main-text'"
           >
             Table
@@ -26,7 +26,7 @@
           <button
             type="button"
             @click="viewMode = 'cards'"
-            class="px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer"
+            class="px-2.5 py-1 rounded-xs text-xs font-semibold transition cursor-pointer"
             :class="viewMode === 'cards' ? 'bg-card-bg text-main-text shadow-2xs' : 'text-main-text/50 hover:text-main-text'"
           >
             Cards
@@ -54,11 +54,11 @@
     </div>
 
     <!-- Navigation Tabs: Matches Gibi-Gubae styling -->
-    <div class="flex items-center gap-2 p-1 rounded-lg border border-card-border bg-card-bg/60 shadow-2xs w-fit text-xs font-semibold">
+    <div class="flex items-center gap-2 p-1 rounded-sm border border-card-border bg-card-bg/60 shadow-2xs w-fit text-xs font-semibold">
       <button
         type="button"
         @click="activeTab = 'catalog'"
-        class="flex items-center gap-2 px-3.5 py-1.5 rounded-md transition cursor-pointer select-none"
+        class="flex items-center gap-2 px-3.5 py-1.5 rounded-xs transition cursor-pointer select-none"
         :class="activeTab === 'catalog'
           ? 'bg-nav-accent text-white dark:text-slate-900 shadow-2xs'
           : 'text-main-text/70 hover:bg-main-text/5 hover:text-main-text'"
@@ -70,7 +70,7 @@
       <button
         type="button"
         @click="activeTab = 'matrix'"
-        class="flex items-center gap-2 px-3.5 py-1.5 rounded-md transition cursor-pointer select-none"
+        class="flex items-center gap-2 px-3.5 py-1.5 rounded-xs transition cursor-pointer select-none"
         :class="activeTab === 'matrix'
           ? 'bg-nav-accent text-white dark:text-slate-900 shadow-2xs'
           : 'text-main-text/70 hover:bg-main-text/5 hover:text-main-text'"
@@ -83,7 +83,7 @@
     <!-- TAB 1: Roles Catalog -->
     <div v-if="activeTab === 'catalog'">
       <!-- Table Mode -->
-      <div v-if="viewMode === 'table'" class="bg-card-bg border border-card-border rounded-xl shadow-2xs overflow-hidden">
+      <div v-if="viewMode === 'table'" class="bg-card-bg border border-card-border rounded-sm shadow-2xs overflow-hidden">
         <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="border-b border-card-border bg-slate-50/60 dark:bg-slate-800/40 select-none">
@@ -150,7 +150,7 @@
         <div
           v-for="role in roles"
           :key="role.id"
-          class="bg-card-bg border border-card-border rounded-xl p-5 shadow-2xs hover:border-nav-accent/40 transition-colors flex flex-col justify-between"
+          class="bg-card-bg border border-card-border rounded-sm p-5 shadow-2xs hover:border-nav-accent/40 transition-colors flex flex-col justify-between"
         >
           <div>
             <div class="flex items-center justify-between gap-2 mb-3">
@@ -251,7 +251,7 @@
       :title="editingRole ? langStore.t('roles.edit', 'Edit Role') : langStore.t('roles.create', 'Create Role')"
       :description="langStore.t('roles.subtitle', 'Configure role identity and assign granular permissions')"
       :icon="ShieldCheck"
-      size="lg"
+      size="xl"
       @close="showModal = false"
     >
       <form @submit.prevent="handleSubmit" class="space-y-4">
@@ -264,7 +264,7 @@
             type="text"
             required
             placeholder="e.g. Assistant Librarian"
-            class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           />
         </div>
 
@@ -277,7 +277,7 @@
             <div
               v-for="perm in permissions"
               :key="perm.id"
-              class="flex items-center gap-2.5 p-2.5 rounded-lg border border-card-border hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer"
+              class="flex items-center gap-2.5 p-2.5 rounded-sm border border-card-border hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer"
               @click="togglePermission(perm.name)"
             >
               <input

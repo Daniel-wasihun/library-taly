@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-5 max-w-7xl mx-auto">
+  <div class="space-y-5 w-full">
     <!-- Header matching Gibi-Gubae -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -52,7 +52,7 @@
           <select
             v-model="selectedLibraryFilter"
             @change="handleFilterChange"
-            class="h-9 px-3 text-xs rounded-xl bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            class="h-9 px-3 text-xs rounded-sm bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           >
             <option value="all">All Branches</option>
             <option value="general">General (All Branches)</option>
@@ -65,7 +65,7 @@
           <select
             v-model="selectedRoleFilter"
             @change="handleFilterChange"
-            class="h-9 px-3 text-xs rounded-xl bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            class="h-9 px-3 text-xs rounded-sm bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           >
             <option value="all">All Roles</option>
             <option v-for="r in roleStore.roles.filter(r => r.name !== 'Super Admin')" :key="r.id" :value="r.name">
@@ -77,7 +77,7 @@
           <select
             v-model="selectedStatusFilter"
             @change="handleFilterChange"
-            class="h-9 px-3 text-xs rounded-xl bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            class="h-9 px-3 text-xs rounded-sm bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           >
             <option value="all">All Statuses</option>
             <option value="active">Active</option>
@@ -209,7 +209,7 @@
       :title="editingUser ? langStore.t('users.edit', 'Edit User Account') : langStore.t('users.add', 'Register New User')"
       description="Configure user identity, campus library branch assignment, credentials, and Spatie roles"
       :icon="editingUser ? Pencil : UserPlus"
-      size="md"
+      size="lg"
       @close="showModal = false"
     >
       <form @submit.prevent="handleSubmit" class="space-y-4">
@@ -223,7 +223,7 @@
             type="text"
             required
             placeholder="e.g. Dr. Abebe Bekele"
-            class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           />
         </div>
 
@@ -238,7 +238,7 @@
               type="text"
               required
               placeholder="abebe_bekele"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
             />
           </div>
 
@@ -252,7 +252,7 @@
               type="email"
               required
               placeholder="abebe@unilib.edu"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
             />
           </div>
         </div>
@@ -269,7 +269,7 @@
               type="password"
               :required="!editingUser"
               :placeholder="editingUser ? 'Leave blank to retain current' : '••••••••'"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
             />
           </div>
 
@@ -282,7 +282,7 @@
               v-model="form.phone"
               type="tel"
               placeholder="+251 911 234567"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
             />
           </div>
         </div>
@@ -294,7 +294,7 @@
           </label>
           <select
             v-model="form.library_id"
-            class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           >
             <option value="">General / All Libraries (System-wide Management)</option>
             <option v-for="lib in libraryStore.libraries" :key="lib.id" :value="lib.id">
@@ -315,7 +315,7 @@
             <select
               v-model="form.role"
               required
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
             >
               <option value="">Select a role...</option>
               <option v-for="r in roleStore.roles.filter(r => r.name !== 'Super Admin')" :key="r.id" :value="r.name">
@@ -331,7 +331,7 @@
             </label>
             <select
               v-model="form.status"
-              class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs capitalize"
+              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs capitalize"
             >
               <option value="active">{{ langStore.t('common.active', 'Active') }}</option>
               <option value="inactive">{{ langStore.t('common.inactive', 'Inactive') }}</option>
@@ -362,7 +362,7 @@
       :title="`Direct Permission Overrides: ${overridesUser?.name}`"
       description="Explicit user abilities in model_has_permissions that augment or override base role permissions"
       :icon="Zap"
-      size="lg"
+      size="xl"
       @close="showOverridesModal = false"
     >
       <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
@@ -375,7 +375,7 @@
             <label
               v-for="perm in perms"
               :key="perm.name"
-              class="flex items-center gap-2 p-2 rounded-lg border border-card-border hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition select-none text-xs"
+              class="flex items-center gap-2 p-2 rounded-sm border border-card-border hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition select-none text-xs"
               :class="userDirectPerms.includes(perm.name) ? 'border-purple-500/50 bg-purple-500/5 dark:bg-purple-500/10' : ''"
             >
               <input

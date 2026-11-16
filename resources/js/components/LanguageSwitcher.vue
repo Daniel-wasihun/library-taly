@@ -3,7 +3,7 @@
     <button
       @click="isOpen = !isOpen"
       type="button"
-      class="inline-flex items-center gap-x-2 px-3 py-1.5 text-xs font-semibold rounded-xl border border-card-border bg-card-bg hover:bg-slate-100 dark:hover:bg-slate-800 text-main-text shadow-2xs transition cursor-pointer select-none"
+      class="inline-flex items-center gap-x-2 px-3 py-1.5 text-xs font-semibold rounded-xs border border-card-border bg-card-bg hover:bg-slate-100 dark:hover:bg-slate-800 text-main-text shadow-2xs transition cursor-pointer select-none"
     >
       <span>{{ currentOption?.icon }}</span>
       <span class="tracking-tight">{{ currentOption?.label || currentOption?.name }}</span>
@@ -12,7 +12,7 @@
 
     <div
       v-if="isOpen"
-      class="absolute right-0 mt-2 w-48 rounded-2xl shadow-xl bg-card-bg border border-card-border ring-1 ring-black/5 z-(--z-dropdown) py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+      class="absolute right-0 mt-2 w-48 rounded-sm shadow-xl bg-card-bg border border-card-border ring-1 ring-black/5 z-(--z-dropdown) py-1.5 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
     >
       <button
         v-for="lang in languageStore.availableLanguages"

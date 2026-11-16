@@ -23,10 +23,10 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{ (e: 'close'): void }>();
 
 const SIZES: Record<NonNullable<Props['size']>, string> = {
-  sm: 'max-w-md',
-  md: 'max-w-xl',
-  lg: 'max-w-3xl',
-  xl: 'max-w-5xl',
+  sm: 'max-w-lg',
+  md: 'max-w-3xl',
+  lg: 'max-w-5xl',
+  xl: 'max-w-7xl',
 };
 
 watch(
@@ -62,14 +62,14 @@ onUnmounted(() => {
         @click.self="emit('close')"
       >
         <div
-          class="w-full bg-card-bg border border-card-border rounded-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in"
+          class="w-full bg-card-bg border border-card-border rounded-sm sm:rounded shadow-2xl overflow-hidden my-6 sm:my-8 animate-in fade-in"
           :class="SIZES[size]"
           @click.stop
         >
           <!-- Modal Header -->
           <div class="px-6 py-4 border-b border-card-border flex items-center justify-between gap-4">
             <div class="flex items-center gap-3 min-w-0">
-              <div v-if="icon" class="w-8 h-8 rounded-lg bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center shrink-0">
+              <div v-if="icon" class="w-8 h-8 rounded-xs bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center shrink-0">
                 <component :is="icon" class="w-4 h-4 stroke-[2.2]" />
               </div>
               <div class="min-w-0">
@@ -80,7 +80,7 @@ onUnmounted(() => {
             <button
               type="button"
               @click="emit('close')"
-              class="w-8 h-8 rounded-lg flex items-center justify-center text-main-text/40 hover:text-main-text hover:bg-main-text/5 transition cursor-pointer"
+              class="w-8 h-8 rounded-xs flex items-center justify-center text-main-text/40 hover:text-main-text hover:bg-main-text/5 transition cursor-pointer"
             >
               <X class="w-4 h-4 stroke-[2.2]" />
             </button>

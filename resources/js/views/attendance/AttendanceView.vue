@@ -278,7 +278,7 @@ watch(selectedLibrary, (newVal) => {
 </script>
 
 <template>
-  <div class="space-y-3.5 sm:space-y-5 w-full mx-auto">
+  <div class="space-y-3.5 sm:space-y-5 w-full">
     <!-- Modularized Header -->
     <AttendanceHeader
       v-model:selectedLibrary="selectedLibrary"

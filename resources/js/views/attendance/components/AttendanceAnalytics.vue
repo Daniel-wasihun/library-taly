@@ -44,7 +44,7 @@ const getFormattedTrendDate = (dateStr: string) => {
 <template>
   <div class="space-y-6 pb-6">
     <!-- Controls Bar with Gregorian Inputs + Ethiopian Calendar Overlay -->
-    <div class="bg-card-bg border border-card-border rounded-2xl p-4 flex flex-col lg:flex-row lg:items-end justify-between gap-4 shadow-2xs">
+    <div class="bg-card-bg border border-card-border rounded-sm sm:rounded p-4 flex flex-col lg:flex-row lg:items-end justify-between gap-4 shadow-2xs">
       <!-- Date Range Controls -->
       <div class="flex flex-col gap-1.5 flex-1 min-w-0 lg:max-w-[500px]">
         <div class="flex items-center px-2 text-[10px] font-bold text-main-text/60 uppercase">
@@ -53,7 +53,7 @@ const getFormattedTrendDate = (dateStr: string) => {
           <div class="flex-1 ml-2">{{ langStore.t('common.to', 'To') }}</div>
         </div>
 
-        <div class="flex items-center gap-2 bg-main-bg/50 border border-card-border p-2 rounded-xl text-xs">
+        <div class="flex items-center gap-2 bg-main-bg/50 border border-card-border p-2 rounded-sm text-xs">
           <Calendar class="w-4 h-4 text-brand-blue shrink-0" />
           <input
             type="date"
@@ -111,7 +111,7 @@ const getFormattedTrendDate = (dateStr: string) => {
     <!-- Overview Metric Cards matching LMS exact colors -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       <!-- Total Visitors -->
-      <div class="bg-card-bg border border-card-border rounded-xl p-4 shadow-2xs">
+      <div class="bg-card-bg border border-card-border rounded-sm p-4 shadow-2xs">
         <span class="text-[10px] font-bold text-main-text/50 uppercase tracking-wider">
           {{ langStore.t('attendance.total_label', 'Total Visitors') }}
         </span>
@@ -119,7 +119,7 @@ const getFormattedTrendDate = (dateStr: string) => {
       </div>
 
       <!-- Students -->
-      <div class="bg-card-bg border border-card-border rounded-xl p-4 shadow-2xs">
+      <div class="bg-card-bg border border-card-border rounded-sm p-4 shadow-2xs">
         <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
           {{ langStore.localizeType('student') }}
         </span>
@@ -127,7 +127,7 @@ const getFormattedTrendDate = (dateStr: string) => {
       </div>
 
       <!-- Teachers -->
-      <div class="bg-card-bg border border-card-border rounded-xl p-4 shadow-2xs">
+      <div class="bg-card-bg border border-card-border rounded-sm p-4 shadow-2xs">
         <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
           {{ langStore.localizeType('teacher') }}
         </span>
@@ -135,7 +135,7 @@ const getFormattedTrendDate = (dateStr: string) => {
       </div>
 
       <!-- Staff -->
-      <div class="bg-card-bg border border-card-border rounded-xl p-4 shadow-2xs">
+      <div class="bg-card-bg border border-card-border rounded-sm p-4 shadow-2xs">
         <span class="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
           {{ langStore.localizeType('staff') }}
         </span>
@@ -143,7 +143,7 @@ const getFormattedTrendDate = (dateStr: string) => {
       </div>
 
       <!-- Male Ratio -->
-      <div class="bg-brand-blue/5 border border-brand-blue/15 rounded-xl p-4 shadow-2xs">
+      <div class="bg-brand-blue/5 border border-brand-blue/15 rounded-sm p-4 shadow-2xs">
         <span class="text-[10px] font-bold text-brand-blue uppercase tracking-wider">
           {{ langStore.localizeGender('male') }}
         </span>
@@ -153,7 +153,7 @@ const getFormattedTrendDate = (dateStr: string) => {
       </div>
 
       <!-- Female Ratio -->
-      <div class="bg-brand-yellow/8 border border-brand-yellow/25 rounded-xl p-4 shadow-2xs">
+      <div class="bg-brand-yellow/8 border border-brand-yellow/25 rounded-sm p-4 shadow-2xs">
         <span class="text-[10px] font-bold text-amber-700 dark:text-brand-yellow uppercase tracking-wider">
           {{ langStore.localizeGender('female') }}
         </span>
@@ -166,7 +166,7 @@ const getFormattedTrendDate = (dateStr: string) => {
     <!-- Gender Breakdown & Periodic Distribution matching LMS layout -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <!-- Gender Distribution Bar -->
-      <div class="bg-card-bg border border-card-border rounded-2xl p-6 shadow-2xs space-y-6">
+      <div class="bg-card-bg border border-card-border rounded-sm sm:rounded p-6 shadow-2xs space-y-6">
         <h4 class="text-xs font-bold text-main-text uppercase tracking-wider flex items-center gap-2">
           <BarChart3 class="w-4 h-4 text-brand-blue" />
           <span>{{ langStore.t('attendance.gender_distribution', 'Gender Ratio & Distribution') }}</span>
@@ -174,13 +174,13 @@ const getFormattedTrendDate = (dateStr: string) => {
 
         <!-- Proportional Cards -->
         <div class="grid grid-cols-2 gap-4">
-          <div class="text-center p-4 rounded-xl bg-brand-blue/5 border border-brand-blue/15">
+          <div class="text-center p-4 rounded-xs sm:rounded-sm bg-brand-blue/5 border border-brand-blue/15">
             <span class="text-[10px] font-bold text-brand-blue uppercase tracking-wider">{{ langStore.localizeGender('male') }}</span>
             <div class="text-3xl font-extrabold text-brand-blue mt-1">{{ dailyStats.male }}</div>
             <span class="text-[11px] text-brand-blue/70 font-medium mt-1 inline-block">{{ malePercent }}% {{ langStore.t('attendance.of_traffic', 'of traffic') }}</span>
           </div>
 
-          <div class="text-center p-4 rounded-xl bg-brand-yellow/10 border border-brand-yellow/20">
+          <div class="text-center p-4 rounded-xs sm:rounded-sm bg-brand-yellow/10 border border-brand-yellow/20">
             <span class="text-[10px] font-bold text-amber-700 dark:text-brand-yellow uppercase tracking-wider">{{ langStore.localizeGender('female') }}</span>
             <div class="text-3xl font-extrabold text-brand-yellow mt-1">{{ dailyStats.female }}</div>
             <span class="text-[11px] text-amber-700/80 dark:text-brand-yellow/80 font-medium mt-1 inline-block">{{ femalePercent }}% {{ langStore.t('attendance.of_traffic', 'of traffic') }}</span>
@@ -225,7 +225,7 @@ const getFormattedTrendDate = (dateStr: string) => {
       </div>
 
       <!-- Export Hub & Daily Trends matching LMS -->
-      <div class="bg-card-bg border border-card-border rounded-2xl p-6 shadow-2xs space-y-6">
+      <div class="bg-card-bg border border-card-border rounded-sm sm:rounded p-6 shadow-2xs space-y-6">
         <h4 class="text-xs font-bold text-main-text uppercase tracking-wider flex items-center gap-2">
           <Download class="w-4 h-4 text-brand-blue" />
           <span>{{ langStore.t('common.report_only', 'Automated Periodic Export Hub') }}</span>
@@ -278,10 +278,10 @@ const getFormattedTrendDate = (dateStr: string) => {
             <div
               v-for="t in trends"
               :key="t.date"
-              class="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+              class="flex items-center justify-between py-2 px-3 rounded-sm hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
             >
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-card-bg border border-card-border flex items-center justify-center text-main-text/60">
+                <div class="w-8 h-8 rounded-xs bg-card-bg border border-card-border flex items-center justify-center text-main-text/60">
                   <Clock :size="14" />
                 </div>
                 <span class="text-xs font-semibold text-main-text">

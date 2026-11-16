@@ -44,7 +44,7 @@ const badgeClasses = computed(() => {
 
 <template>
   <span
-    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border select-none shadow-2xs tracking-tight"
+    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-xs text-[11px] font-semibold border select-none shadow-2xs tracking-tight"
     :class="badgeClasses"
   >
     <span class="w-1.5 h-1.5 rounded-full bg-current opacity-70"></span>

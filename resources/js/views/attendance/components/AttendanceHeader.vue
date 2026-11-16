@@ -41,11 +41,11 @@ const internalSelectedLibrary = computed({
 </script>
 
 <template>
-  <div class="bg-card-bg border border-card-border rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4 shadow-2xs">
+  <div class="bg-card-bg border border-card-border rounded-sm sm:rounded p-2.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4 shadow-2xs">
     
     <!-- Branding Badge (Hidden on mobile as requested, shown on tablet/desktop) -->
     <div class="hidden md:flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-blue to-blue-700 text-white flex items-center justify-center font-bold shadow-xs border border-white/20 shrink-0">
+      <div class="w-10 h-10 rounded-sm bg-gradient-to-br from-brand-blue to-blue-700 text-white flex items-center justify-center font-bold shadow-xs border border-white/20 shrink-0">
         <Activity class="w-5 h-5" />
       </div>
       <div>
@@ -69,7 +69,7 @@ const internalSelectedLibrary = computed({
         <select
           v-model="internalSelectedLibrary"
           :disabled="isLibraryDisabled"
-          class="w-full h-8 sm:h-10 pl-8 sm:pl-9 pr-7 sm:pr-8 text-[11px] sm:text-xs font-semibold rounded-lg sm:rounded-xl bg-main-bg/50 border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs disabled:opacity-60 cursor-pointer"
+          class="w-full h-8 sm:h-10 pl-8 sm:pl-9 pr-7 sm:pr-8 text-[11px] sm:text-xs font-semibold rounded-sm bg-main-bg/50 border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs disabled:opacity-60 cursor-pointer"
         >
           <option v-for="lib in libraryOptions" :key="lib.value" :value="lib.value">
             {{ lib.label }}
@@ -78,13 +78,13 @@ const internalSelectedLibrary = computed({
       </div>
 
       <!-- Active Tab Switcher (Live Counter vs Analytics) -->
-      <div class="grid grid-cols-2 sm:flex items-center p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-card-border bg-main-bg/60 shadow-2xs">
+      <div class="grid grid-cols-2 sm:flex items-center p-0.5 sm:p-1 rounded-sm border border-card-border bg-main-bg/60 shadow-2xs">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           type="button"
           @click="emit('update:activeTab', tab.id)"
-          class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition cursor-pointer select-none"
+          class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xs sm:rounded-sm text-[11px] sm:text-xs font-bold transition cursor-pointer select-none"
           :class="activeTab === tab.id
             ? 'bg-brand-blue text-white shadow-2xs'
             : 'text-main-text/60 hover:text-main-text hover:bg-main-text/5'"

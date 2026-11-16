@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6 max-w-7xl mx-auto">
+  <div class="space-y-6 w-full">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -14,7 +14,7 @@
 
       <!-- Live Duty Badge -->
       <span
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border shadow-2xs w-fit"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold border shadow-2xs w-fit"
         :class="scheduleStore.isAdmin
           ? 'bg-brand-blue/10 dark:bg-brand-blue/20 text-brand-blue dark:text-blue-300 border-brand-blue/25'
           : (scheduleStore.todayTurns.length
@@ -34,7 +34,7 @@
     <!-- Admin Master Banner -->
     <div
       v-if="scheduleStore.isAdmin"
-      class="rounded-xl p-4 flex items-start gap-3 bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/25 text-brand-blue dark:text-blue-200"
+      class="rounded-sm p-4 flex items-start gap-3 bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/25 text-brand-blue dark:text-blue-200"
     >
       <Shield class="w-5 h-5 text-brand-blue dark:text-brand-yellow shrink-0 mt-0.5" />
       <div>
@@ -46,7 +46,7 @@
     </div>
 
     <!-- Today's Active Shifts -->
-    <div class="bg-card-bg border border-card-border rounded-xl p-5 shadow-2xs space-y-4">
+    <div class="bg-card-bg border border-card-border rounded-sm p-5 shadow-2xs space-y-4">
       <h3 class="text-sm font-bold text-main-text flex items-center gap-2">
         <Zap class="w-4 h-4 text-brand-yellow" />
         <span>{{ langStore.t('duty.shifts_today', "Today's Active Shifts") }}</span>
@@ -65,9 +65,9 @@
         <div
           v-for="shift in (scheduleStore.isAdmin ? [] : scheduleStore.todayTurns)"
           :key="shift.id"
-          class="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/8 dark:bg-emerald-950/30 flex items-start gap-3"
+          class="p-4 rounded-sm border border-emerald-500/30 bg-emerald-500/8 dark:bg-emerald-950/30 flex items-start gap-3"
         >
-          <div class="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
+          <div class="w-9 h-9 rounded-xs bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
             <Clock class="w-5 h-5 stroke-[2.2]" />
           </div>
           <div class="min-w-0 flex-1">
@@ -75,7 +75,7 @@
               <p class="text-xs font-bold text-emerald-800 dark:text-emerald-300 truncate">
                 {{ availableTasks[shift.task_key] || shift.task_key }}
               </p>
-              <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 uppercase">
+              <span class="px-1.5 py-0.5 rounded-xs text-[9px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 uppercase">
                 Active Turn
               </span>
             </div>
@@ -90,9 +90,9 @@
 
         <div
           v-if="scheduleStore.isAdmin"
-          class="p-4 rounded-xl border border-brand-blue/30 bg-brand-blue/8 dark:bg-brand-blue/20 flex items-start gap-3"
+          class="p-4 rounded-sm border border-brand-blue/30 bg-brand-blue/8 dark:bg-brand-blue/20 flex items-start gap-3"
         >
-          <div class="w-9 h-9 rounded-lg bg-brand-blue text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
+          <div class="w-9 h-9 rounded-xs bg-brand-blue text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
             <Shield class="w-5 h-5 stroke-[2.2]" />
           </div>
           <div>
@@ -104,7 +104,7 @@
     </div>
 
     <!-- Upcoming Turns -->
-    <div class="bg-card-bg border border-card-border rounded-xl p-5 shadow-2xs space-y-4">
+    <div class="bg-card-bg border border-card-border rounded-sm p-5 shadow-2xs space-y-4">
       <h3 class="text-sm font-bold text-main-text flex items-center gap-2">
         <CalendarDays class="w-4 h-4 text-nav-accent" />
         <span>{{ langStore.t('duty.next_turn', 'Upcoming Scheduled Turns') }}</span>

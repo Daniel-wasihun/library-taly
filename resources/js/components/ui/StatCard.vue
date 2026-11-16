@@ -31,9 +31,9 @@ const v = computed(() => VARIANTS[props.variant]);
 </script>
 
 <template>
-  <div class="flex items-center gap-3.5 bg-card-bg border border-card-border/80 rounded-xl p-4 shadow-2xs transition-colors hover:border-card-border">
+  <div class="flex items-center gap-3.5 bg-card-bg border border-card-border/80 rounded-sm p-4 shadow-2xs transition-colors hover:border-card-border">
     <!-- Icon badge -->
-    <div v-if="icon" class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border" :class="v.bg">
+    <div v-if="icon" class="w-10 h-10 rounded-xs flex items-center justify-center shrink-0 border" :class="v.bg">
       <component :is="icon" class="w-5 h-5 shrink-0 stroke-[2.2]" />
     </div>
 

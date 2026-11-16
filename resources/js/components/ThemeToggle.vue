@@ -2,7 +2,7 @@
   <button
     type="button"
     @click="themeStore.toggleTheme"
-    class="relative p-2 rounded-lg text-nav-accent hover:bg-nav-accent/10 border border-card-border/60 hover:border-nav-accent/30 cursor-pointer overflow-hidden shadow-2xs group active:scale-95 select-none"
+    class="relative p-2 rounded-xs text-nav-accent hover:bg-nav-accent/10 border border-card-border/60 hover:border-nav-accent/30 cursor-pointer overflow-hidden shadow-2xs group active:scale-95 select-none"
     :title="themeStore.isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
     aria-label="Toggle Theme"
   >

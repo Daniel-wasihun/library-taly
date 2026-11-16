@@ -100,7 +100,7 @@ const handleSort = (col: ColumnDef) => {
           :value="searchValue"
           @input="handleSearchInput"
           :placeholder="searchPlaceholder"
-          class="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-card-bg border border-card-border text-main-text placeholder:text-main-text/40 focus:outline-none focus:border-nav-accent focus:ring-1 focus:ring-nav-accent shadow-2xs transition"
+          class="w-full pl-9 pr-4 py-2 text-xs rounded-sm bg-card-bg border border-card-border text-main-text placeholder:text-main-text/40 focus:outline-none focus:border-nav-accent focus:ring-1 focus:ring-nav-accent shadow-2xs transition"
         />
       </div>
 
@@ -110,7 +110,7 @@ const handleSort = (col: ColumnDef) => {
     </div>
 
     <!-- Table Container -->
-    <div class="bg-card-bg border border-card-border rounded-xl shadow-2xs overflow-hidden">
+    <div class="bg-card-bg border border-card-border rounded-sm shadow-2xs overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
@@ -193,7 +193,7 @@ const handleSort = (col: ColumnDef) => {
             type="button"
             :disabled="currentPage <= 1"
             @click="emit('page-change', currentPage - 1)"
-            class="p-1.5 rounded-lg border border-card-border hover:bg-card-hover disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            class="p-1.5 rounded-sm border border-card-border hover:bg-card-hover disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronLeft class="w-4 h-4 stroke-[2.2]" />
           </button>
@@ -204,7 +204,7 @@ const handleSort = (col: ColumnDef) => {
             type="button"
             :disabled="currentPage >= totalPages"
             @click="emit('page-change', currentPage + 1)"
-            class="p-1.5 rounded-lg border border-card-border hover:bg-card-hover disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            class="p-1.5 rounded-sm border border-card-border hover:bg-card-hover disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             <ChevronRight class="w-4 h-4 stroke-[2.2]" />
           </button>

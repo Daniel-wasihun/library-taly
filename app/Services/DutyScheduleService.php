@@ -25,9 +25,10 @@ class DutyScheduleService
      * @param User $user
      * @param string $taskKey
      * @param string|null $date
+     * @param int|null $libraryId
      * @return array{allowed: bool, reason: string, schedule?: DutySchedule|null, next_turn?: string|null}
      */
-    public function canPerformTask(User $user, string $taskKey, ?string $date = null): array
+    public function canPerformTask(User $user, string $taskKey, ?string $date = null, ?int $libraryId = null): array
     {
         $targetDate = $date ?? Carbon::today()->toDateString();
         $taskName = self::TASKS[$taskKey] ?? $taskKey;
@@ -43,15 +44,35 @@ class DutyScheduleService
             ];
         }
 
-        // 2. Cache query for high-performance duty turn verification
-        $cacheKey = "duty_turn_{$user->id}_{$taskKey}_{$targetDate}";
+        // 2. Branch scope check: if target branch specified and user is scoped to a different branch
+        if ($libraryId && !$user->canManageAllLibraries() && (int) $user->library_id !== (int) $libraryId) {
+            $userBranchName = $user->library?->name ?? 'another branch';
+            return [
+                'allowed' => false,
+                'reason' => "Branch restricted: You are assigned to {$userBranchName} and cannot perform '{$taskName}' for another branch.",
+                'code' => 'BRANCH_RESTRICTED',
+                'task' => $taskKey,
+                'task_name' => $taskName,
+                'schedule' => null,
+            ];
+        }
 
-        return Cache::remember($cacheKey, 300, function () use ($user, $taskKey, $targetDate, $taskName) {
-            $schedule = DutySchedule::where('user_id', $user->id)
+        // 3. Cache query for high-performance duty turn verification
+        $cacheKey = "duty_turn_{$user->id}_{$taskKey}_{$targetDate}_" . ($libraryId ?? 'any');
+
+        return Cache::remember($cacheKey, 300, function () use ($user, $taskKey, $targetDate, $taskName, $libraryId) {
+            $query = DutySchedule::where('user_id', $user->id)
                 ->where('task_key', $taskKey)
                 ->where('shift_date', $targetDate)
-                ->whereIn('status', ['scheduled', 'active'])
-                ->first();
+                ->whereIn('status', ['scheduled', 'active']);
+
+            if ($libraryId && !$user->canManageAllLibraries()) {
+                $query->where(function ($q) use ($libraryId) {
+                    $q->whereNull('library_id')->orWhere('library_id', $libraryId);
+                });
+            }
+
+            $schedule = $query->first();
 
             if ($schedule) {
                 return [

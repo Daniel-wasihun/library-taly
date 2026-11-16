@@ -1,5 +1,22 @@
 // Core TypeScript types for UniLibrary System
 
+export interface Library {
+    id: number;
+    name: string;
+    name_am: string | null;
+    code: string;
+    slug: string;
+    location: string | null;
+    phone: string | null;
+    email: string | null;
+    description: string | null;
+    is_active: boolean;
+    users_count?: number;
+    books_count?: number;
+    active_loans_count?: number;
+    created_at?: string;
+}
+
 export interface User {
     id: number;
     name: string;
@@ -7,6 +24,14 @@ export interface User {
     email: string;
     phone: string | null;
     status: 'active' | 'inactive' | 'suspended';
+    library_id: number | null;
+    library?: {
+        id: number;
+        name: string;
+        name_am: string | null;
+        code: string;
+    } | null;
+    can_manage_all_libraries?: boolean;
     roles: (string | { id: number; name: string })[];
     permissions?: (string | { id: number; name: string })[];
     direct_permissions?: string[];
@@ -35,6 +60,7 @@ export interface TodayShift {
 export interface DutySchedule {
     id: number;
     user_id: number;
+    library_id?: number | null;
     task_key: string;
     task_name?: string;
     shift_date: string;
@@ -43,10 +69,12 @@ export interface DutySchedule {
     status: 'scheduled' | 'active' | 'completed' | 'cancelled';
     notes: string | null;
     user?: Partial<User>;
+    library?: Partial<Library>;
 }
 
 export interface Book {
     id: number;
+    library_id?: number | null;
     title: string;
     isbn: string;
     author: string;
@@ -54,11 +82,13 @@ export interface Book {
     shelf_location: string | null;
     total_copies: number;
     available_copies: number;
+    library?: Partial<Library>;
     created_at: string;
 }
 
 export interface BookLoan {
     id: number;
+    library_id?: number | null;
     book_id: number;
     member_id: number;
     issued_by_user_id: number | null;
@@ -70,6 +100,7 @@ export interface BookLoan {
     book?: Partial<Book>;
     member?: Partial<User>;
     issued_by?: Partial<User>;
+    library?: Partial<Library>;
 }
 
 export interface DashboardStats {

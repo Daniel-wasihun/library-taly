@@ -14,6 +14,7 @@ class DutySchedule extends Model
 
     protected $fillable = [
         'user_id',
+        'library_id',
         'task_key',
         'shift_date',
         'start_time',
@@ -32,6 +33,11 @@ class DutySchedule extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function library(): BelongsTo
+    {
+        return $this->belongsTo(Library::class);
     }
 
     /**

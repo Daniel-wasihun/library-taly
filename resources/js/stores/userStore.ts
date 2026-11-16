@@ -13,7 +13,7 @@ export const useUserStore = defineStore('users', () => {
 
     const toast = useToastStore();
 
-    async function fetchUsers(params?: { search?: string; role?: string; page?: number }) {
+    async function fetchUsers(params?: { search?: string; role?: string; status?: string; library_id?: number | string; page?: number }) {
         loading.value = true;
         try {
             const { data } = await usersApi.list(params);

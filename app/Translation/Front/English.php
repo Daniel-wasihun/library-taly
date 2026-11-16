@@ -46,6 +46,23 @@ class English
             'nav.my_turns' => 'My Duty Turns',
             'nav.books' => 'Book Catalog',
             'nav.circulation' => 'Circulation & Loans',
+            'nav.libraries' => 'Library Branches',
+
+            // Library Branches (LMS CRUD)
+            'libraries.title' => 'Library Branches Management',
+            'libraries.subtitle' => 'Campus library branches, location profiles, and scoped access control',
+            'libraries.add' => 'Add Branch',
+            'libraries.edit' => 'Edit Branch',
+            'libraries.name' => 'Branch Name (English)',
+            'libraries.name_am' => 'Branch Name (Amharic)',
+            'libraries.code' => 'Branch Code',
+            'libraries.location' => 'Campus / Building Location',
+            'libraries.phone' => 'Contact Phone',
+            'libraries.email' => 'Contact Email',
+            'libraries.description' => 'Description',
+            'libraries.created' => 'Library branch created successfully.',
+            'libraries.updated' => 'Library branch updated successfully.',
+            'libraries.deleted' => 'Library branch deleted successfully.',
 
             // Duty Status
             'duty.on_duty' => 'On Duty Today',

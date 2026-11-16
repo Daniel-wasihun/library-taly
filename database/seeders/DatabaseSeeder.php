@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Book;
 use App\Models\BookLoan;
 use App\Models\DutySchedule;
+use App\Models\Library;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
@@ -21,6 +22,14 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Create Granular Spatie Permissions
         $permissions = [
+            // Library Branches Management
+            'libraries.view',
+            'libraries.create',
+            'libraries.edit',
+            'libraries.delete',
+            'libraries.manage',
+            'libraries.manage_all',
+
             // User management
             'users.view',
             'users.create',
@@ -72,6 +81,10 @@ class DatabaseSeeder extends Seeder
         $superAdminRole->syncPermissions(Permission::all());
 
         $headLibrarianRole->syncPermissions([
+            'libraries.view',
+            'libraries.create',
+            'libraries.edit',
+            'libraries.manage_all',
             'users.view',
             'users.create',
             'users.edit',
@@ -91,6 +104,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $deskLibrarianRole->syncPermissions([
+            'libraries.view',
             'books.view',
             'circulation.view',
             'circulation.issue',
@@ -99,6 +113,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $catalogerRole->syncPermissions([
+            'libraries.view',
             'books.view',
             'books.create',
             'books.edit',
@@ -106,25 +121,85 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $archiveAssistantRole->syncPermissions([
+            'libraries.view',
             'books.view',
             'circulation.view',
             'reports.view',
         ]);
 
         $facultyRole->syncPermissions([
+            'libraries.view',
             'books.view',
             'circulation.view',
         ]);
 
         $studentRole->syncPermissions([
+            'libraries.view',
             'books.view',
         ]);
 
-        // 3. Seed Realistic Users
+        // 3. Seed Realistic University Library Branches
+        $mainLibrary = Library::firstOrCreate(
+            ['code' => 'MAIN'],
+            [
+                'name' => 'Main Central Library',
+                'name_am' => 'ዋና ማዕከላዊ ቤተ-መጻሕፍት',
+                'slug' => 'main-central-library',
+                'location' => 'Main Campus, Administration Block, 2nd Floor',
+                'phone' => '+251 111 234501',
+                'email' => 'main.library@unilib.edu',
+                'description' => 'University central academic repository, directorate office, and general multidisciplinary reference stacks.',
+                'is_active' => true,
+            ]
+        );
+
+        $sciTechLibrary = Library::firstOrCreate(
+            ['code' => 'SCITECH'],
+            [
+                'name' => 'Science & Technology Library',
+                'name_am' => 'የሳይንስና ቴክኖሎጂ ቤተ-መጻሕፍት',
+                'slug' => 'science-technology-library',
+                'location' => 'Technology Campus, Engineering Complex, Block C',
+                'phone' => '+251 111 234502',
+                'email' => 'scitech.library@unilib.edu',
+                'description' => 'Specialized collections for computer science, mechanical, electrical, and civil engineering.',
+                'is_active' => true,
+            ]
+        );
+
+        $healthLibrary = Library::firstOrCreate(
+            ['code' => 'HEALTH'],
+            [
+                'name' => 'Health Sciences Library',
+                'name_am' => 'የጤና ሳይንስ ቤተ-መጻሕፍት',
+                'slug' => 'health-sciences-library',
+                'location' => 'Medical Faculty, Hospital Wing 3rd Floor',
+                'phone' => '+251 111 234503',
+                'email' => 'health.library@unilib.edu',
+                'description' => 'Clinical medicine, pharmacology, human anatomy, and public health research archives.',
+                'is_active' => true,
+            ]
+        );
+
+        $lawLibrary = Library::firstOrCreate(
+            ['code' => 'LAW'],
+            [
+                'name' => 'Law & Humanities Library',
+                'name_am' => 'የሕግና ማኅበራዊ ሳይንስ ቤተ-መጻሕፍት',
+                'slug' => 'law-humanities-library',
+                'location' => 'Siddist Kilo Campus, Law School Building, 1st Floor',
+                'phone' => '+251 111 234504',
+                'email' => 'law.library@unilib.edu',
+                'description' => 'Federal legal gazettes, international treaties, Ethiopian jurisprudence, and political science stacks.',
+                'is_active' => true,
+            ]
+        );
+
+        // 4. Seed Realistic Users with Branch Assignment (or General / All Libraries)
         $defaultPassword = Hash::make('password123');
 
-        // Super Admin / Library Director
-        $admin = User::firstOrCreate(
+        // Super Admin: General / All Libraries (library_id = null)
+        $admin = User::updateOrCreate(
             ['username' => 'admin'],
             [
                 'name' => 'Dr. Abebe Bekele',
@@ -132,12 +207,13 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 911 234567',
+                'library_id' => null, // Global / General
             ]
         );
         $admin->syncRoles(['Super Admin']);
 
-        // Head Librarian
-        $headLibrarian = User::firstOrCreate(
+        // Head Librarian: General / All Libraries (library_id = null)
+        $headLibrarian = User::updateOrCreate(
             ['username' => 'selam_head'],
             [
                 'name' => 'Selamawit Tadesse',
@@ -145,12 +221,13 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 912 345678',
+                'library_id' => null, // Global / General
             ]
         );
         $headLibrarian->syncRoles(['Head Librarian']);
 
-        // On-Duty Desk Librarian (Scheduled for today)
-        $onDutyLibrarian = User::firstOrCreate(
+        // On-Duty Desk Librarian: Main Central Library
+        $onDutyLibrarian = User::updateOrCreate(
             ['username' => 'tigist_duty'],
             [
                 'name' => 'Tigist Alemu',
@@ -158,14 +235,14 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 922 345678',
+                'library_id' => $mainLibrary->id,
             ]
         );
         $onDutyLibrarian->syncRoles(['Desk Librarian']);
-        // Direct override example: give Tigist direct report viewing privilege
         $onDutyLibrarian->syncPermissions(['reports.view']);
 
-        // Off-Duty Desk Librarian (Scheduled 3 days later)
-        $offDutyLibrarian = User::firstOrCreate(
+        // Off-Duty Desk Librarian: Main Central Library
+        $offDutyLibrarian = User::updateOrCreate(
             ['username' => 'yohannes_offduty'],
             [
                 'name' => 'Yohannes Girma',
@@ -173,12 +250,13 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 933 456789',
+                'library_id' => $mainLibrary->id,
             ]
         );
         $offDutyLibrarian->syncRoles(['Desk Librarian']);
 
-        // Cataloging Specialist
-        $cataloger = User::firstOrCreate(
+        // Cataloging Specialist: Science & Technology Library
+        $cataloger = User::updateOrCreate(
             ['username' => 'kassahun_cat'],
             [
                 'name' => 'Kassahun Desta',
@@ -186,12 +264,13 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 914 567890',
+                'library_id' => $sciTechLibrary->id,
             ]
         );
         $cataloger->syncRoles(['Cataloging Specialist']);
 
-        // Archive Assistant
-        $archiveAssistant = User::firstOrCreate(
+        // Archive Assistant: Law & Humanities Library
+        $archiveAssistant = User::updateOrCreate(
             ['username' => 'bethlehem_arch'],
             [
                 'name' => 'Bethlehem Wolde',
@@ -199,12 +278,13 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 915 678901',
+                'library_id' => $lawLibrary->id,
             ]
         );
         $archiveAssistant->syncRoles(['Archive Assistant']);
 
-        // Faculty Researchers
-        $faculty1 = User::firstOrCreate(
+        // Faculty Researchers:
+        $faculty1 = User::updateOrCreate(
             ['username' => 'dr_tariku'],
             [
                 'name' => 'Dr. Tariku Mengesha (Associate Prof.)',
@@ -212,11 +292,12 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 916 789012',
+                'library_id' => $lawLibrary->id,
             ]
         );
         $faculty1->syncRoles(['Faculty Researcher']);
 
-        $faculty2 = User::firstOrCreate(
+        $faculty2 = User::updateOrCreate(
             ['username' => 'prof_almaz'],
             [
                 'name' => 'Prof. Almaz Haile (Dept of Medicine)',
@@ -224,12 +305,13 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 917 890123',
+                'library_id' => $healthLibrary->id,
             ]
         );
         $faculty2->syncRoles(['Faculty Researcher']);
 
-        // Student Members
-        $student1 = User::firstOrCreate(
+        // Student Members:
+        $student1 = User::updateOrCreate(
             ['username' => 'sara_student'],
             [
                 'name' => 'Sara Tadesse (CS Senior)',
@@ -237,11 +319,12 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 944 567890',
+                'library_id' => $sciTechLibrary->id,
             ]
         );
         $student1->syncRoles(['Student Member']);
 
-        $student2 = User::firstOrCreate(
+        $student2 = User::updateOrCreate(
             ['username' => 'dawit_student'],
             [
                 'name' => 'Dawit Haile (Med 4th Year)',
@@ -249,11 +332,12 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 955 678901',
+                'library_id' => $healthLibrary->id,
             ]
         );
         $student2->syncRoles(['Student Member']);
 
-        $student3 = User::firstOrCreate(
+        $student3 = User::updateOrCreate(
             ['username' => 'marta_student'],
             [
                 'name' => 'Marta Kebede (Law 3rd Year)',
@@ -261,11 +345,12 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 966 789012',
+                'library_id' => $lawLibrary->id,
             ]
         );
         $student3->syncRoles(['Student Member']);
 
-        $student4 = User::firstOrCreate(
+        $student4 = User::updateOrCreate(
             ['username' => 'robel_student'],
             [
                 'name' => 'Robel Tesfaye (Civil Eng 2nd Year)',
@@ -273,12 +358,13 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 977 890123',
+                'library_id' => $sciTechLibrary->id,
             ]
         );
         $student4->syncRoles(['Student Member']);
 
-        // Inactive User
-        $inactiveUser = User::firstOrCreate(
+        // Inactive and Suspended Users
+        $inactiveUser = User::updateOrCreate(
             ['username' => 'bereket_inactive'],
             [
                 'name' => 'Bereket Assefa (Graduated)',
@@ -286,12 +372,12 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'inactive',
                 'phone' => '+251 988 901234',
+                'library_id' => $mainLibrary->id,
             ]
         );
         $inactiveUser->syncRoles(['Student Member']);
 
-        // Suspended User (Overdue violation)
-        $suspendedUser = User::firstOrCreate(
+        $suspendedUser = User::updateOrCreate(
             ['username' => 'natnael_suspended'],
             [
                 'name' => 'Natnael Solomon (Suspended Borrower)',
@@ -299,18 +385,19 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'suspended',
                 'phone' => '+251 999 012345',
+                'library_id' => $mainLibrary->id,
             ]
         );
         $suspendedUser->syncRoles(['Student Member']);
 
-        // 4. Create Duty Schedules (Turns)
+        // 5. Create Duty Schedules (Turns) with Library Branch Scoping
         $today = Carbon::today()->toDateString();
         $tomorrow = Carbon::tomorrow()->toDateString();
         $twoDaysLater = Carbon::today()->addDays(2)->toDateString();
         $threeDaysLater = Carbon::today()->addDays(3)->toDateString();
         $nextWeek = Carbon::today()->addDays(7)->toDateString();
 
-        // Tigist is on duty TODAY for book circulation & issue
+        // Tigist is on duty TODAY for book circulation at Main Library
         DutySchedule::firstOrCreate(
             [
                 'user_id' => $onDutyLibrarian->id,
@@ -318,6 +405,7 @@ class DatabaseSeeder extends Seeder
                 'shift_date' => $today,
             ],
             [
+                'library_id' => $mainLibrary->id,
                 'start_time' => '08:00:00',
                 'end_time' => '17:30:00',
                 'status' => 'active',
@@ -325,7 +413,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Selamawit (Head Librarian) is scheduled for today for schedule management
+        // Selamawit (Head Librarian) general shift
         DutySchedule::firstOrCreate(
             [
                 'user_id' => $headLibrarian->id,
@@ -333,14 +421,15 @@ class DatabaseSeeder extends Seeder
                 'shift_date' => $today,
             ],
             [
+                'library_id' => null, // All Branches / System-wide
                 'start_time' => '08:30:00',
                 'end_time' => '17:00:00',
                 'status' => 'active',
-                'notes' => 'Head Office Operations & Shift Roster Control',
+                'notes' => 'Head Office Operations & System-Wide Roster Control',
             ]
         );
 
-        // Cataloger is scheduled for cataloging audit tomorrow
+        // Cataloger at SciTech
         DutySchedule::firstOrCreate(
             [
                 'user_id' => $cataloger->id,
@@ -348,29 +437,15 @@ class DatabaseSeeder extends Seeder
                 'shift_date' => $tomorrow,
             ],
             [
+                'library_id' => $sciTechLibrary->id,
                 'start_time' => '09:00:00',
                 'end_time' => '15:00:00',
                 'status' => 'scheduled',
-                'notes' => 'New Acquisitions Cataloging & Barcoding',
+                'notes' => 'SciTech Library New Acquisitions Cataloging',
             ]
         );
 
-        // Tigist is scheduled for inventory audit in 2 days
-        DutySchedule::firstOrCreate(
-            [
-                'user_id' => $onDutyLibrarian->id,
-                'task_key' => 'inventory_audit',
-                'shift_date' => $twoDaysLater,
-            ],
-            [
-                'start_time' => '09:00:00',
-                'end_time' => '13:00:00',
-                'status' => 'scheduled',
-                'notes' => 'Section B Book Stack Inventory Audit',
-            ]
-        );
-
-        // Yohannes is NOT on duty today; his turn is 3 days from now!
+        // Yohannes off duty today, turn in 3 days at Main Library
         DutySchedule::firstOrCreate(
             [
                 'user_id' => $offDutyLibrarian->id,
@@ -378,6 +453,7 @@ class DatabaseSeeder extends Seeder
                 'shift_date' => $threeDaysLater,
             ],
             [
+                'library_id' => $mainLibrary->id,
                 'start_time' => '08:30:00',
                 'end_time' => '17:00:00',
                 'status' => 'scheduled',
@@ -385,22 +461,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Archive assistant turn next week
-        DutySchedule::firstOrCreate(
-            [
-                'user_id' => $archiveAssistant->id,
-                'task_key' => 'archive_access',
-                'shift_date' => $nextWeek,
-            ],
-            [
-                'start_time' => '10:00:00',
-                'end_time' => '16:00:00',
-                'status' => 'scheduled',
-                'notes' => 'Historical Manuscripts Repository Shift',
-            ]
-        );
-
-        // 5. Seed University Library Books
+        // 6. Seed University Library Books with Branch Housing
         $books = [
             [
                 'title' => 'Introduction to Algorithms (4th Edition)',
@@ -408,6 +469,7 @@ class DatabaseSeeder extends Seeder
                 'author' => 'Thomas H. Cormen, Charles E. Leiserson',
                 'category' => 'Computer Science',
                 'shelf_location' => 'Floor 2 - Stacks CS-101',
+                'library_id' => $sciTechLibrary->id,
                 'total_copies' => 6,
                 'available_copies' => 5,
             ],
@@ -417,6 +479,7 @@ class DatabaseSeeder extends Seeder
                 'author' => 'Abraham Silberschatz, Peter B. Galvin',
                 'category' => 'Computer Science',
                 'shelf_location' => 'Floor 2 - Stacks CS-104',
+                'library_id' => $sciTechLibrary->id,
                 'total_copies' => 5,
                 'available_copies' => 4,
             ],
@@ -426,6 +489,7 @@ class DatabaseSeeder extends Seeder
                 'author' => 'J. Larry Jameson, Anthony S. Fauci',
                 'category' => 'Medicine',
                 'shelf_location' => 'Floor 3 - Medical Reference M-20',
+                'library_id' => $healthLibrary->id,
                 'total_copies' => 4,
                 'available_copies' => 3,
             ],
@@ -435,6 +499,7 @@ class DatabaseSeeder extends Seeder
                 'author' => 'Vinay Kumar, Abul K. Abbas',
                 'category' => 'Medicine',
                 'shelf_location' => 'Floor 3 - Stacks MED-08',
+                'library_id' => $healthLibrary->id,
                 'total_copies' => 3,
                 'available_copies' => 3,
             ],
@@ -444,6 +509,7 @@ class DatabaseSeeder extends Seeder
                 'author' => 'Bryan A. Garner',
                 'category' => 'Law',
                 'shelf_location' => 'Floor 1 - Law Archive L-02',
+                'library_id' => $lawLibrary->id,
                 'total_copies' => 3,
                 'available_copies' => 3,
             ],
@@ -453,6 +519,7 @@ class DatabaseSeeder extends Seeder
                 'author' => 'Russell C. Hibbeler',
                 'category' => 'Engineering',
                 'shelf_location' => 'Floor 2 - Engineering ENG-40',
+                'library_id' => $sciTechLibrary->id,
                 'total_copies' => 5,
                 'available_copies' => 5,
             ],
@@ -462,6 +529,7 @@ class DatabaseSeeder extends Seeder
                 'author' => 'Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides',
                 'category' => 'Computer Science',
                 'shelf_location' => 'Floor 2 - Stacks CS-205',
+                'library_id' => $sciTechLibrary->id,
                 'total_copies' => 4,
                 'available_copies' => 4,
             ],
@@ -471,6 +539,7 @@ class DatabaseSeeder extends Seeder
                 'author' => 'Eric R. Kandel, John D. Koester',
                 'category' => 'Medicine',
                 'shelf_location' => 'Floor 3 - Neuro Science M-45',
+                'library_id' => $healthLibrary->id,
                 'total_copies' => 2,
                 'available_copies' => 2,
             ],
@@ -480,6 +549,7 @@ class DatabaseSeeder extends Seeder
                 'author' => 'Dr. Fasil Nahum',
                 'category' => 'Law',
                 'shelf_location' => 'Floor 1 - Legal Archives L-14',
+                'library_id' => $lawLibrary->id,
                 'total_copies' => 4,
                 'available_copies' => 3,
             ],
@@ -489,6 +559,7 @@ class DatabaseSeeder extends Seeder
                 'author' => 'Stuart Russell, Peter Norvig',
                 'category' => 'Computer Science',
                 'shelf_location' => 'Floor 2 - Stacks CS-301',
+                'library_id' => $mainLibrary->id,
                 'total_copies' => 5,
                 'available_copies' => 4,
             ],
@@ -496,12 +567,13 @@ class DatabaseSeeder extends Seeder
 
         $createdBooks = [];
         foreach ($books as $bookData) {
-            $createdBooks[] = Book::firstOrCreate(['isbn' => $bookData['isbn']], $bookData);
+            $createdBooks[] = Book::updateOrCreate(['isbn' => $bookData['isbn']], $bookData);
         }
 
-        // 6. Create Circulation Records
+        // 7. Create Circulation Records
         if (BookLoan::count() === 0) {
             BookLoan::create([
+                'library_id' => $sciTechLibrary->id,
                 'book_id' => $createdBooks[0]->id,
                 'member_id' => $student1->id,
                 'issued_by_user_id' => $onDutyLibrarian->id,
@@ -512,6 +584,7 @@ class DatabaseSeeder extends Seeder
             ]);
 
             BookLoan::create([
+                'library_id' => $sciTechLibrary->id,
                 'book_id' => $createdBooks[1]->id,
                 'member_id' => $student2->id,
                 'issued_by_user_id' => $onDutyLibrarian->id,
@@ -522,6 +595,7 @@ class DatabaseSeeder extends Seeder
             ]);
 
             BookLoan::create([
+                'library_id' => $healthLibrary->id,
                 'book_id' => $createdBooks[2]->id,
                 'member_id' => $student3->id,
                 'issued_by_user_id' => $onDutyLibrarian->id,
@@ -533,6 +607,7 @@ class DatabaseSeeder extends Seeder
             ]);
 
             BookLoan::create([
+                'library_id' => $lawLibrary->id,
                 'book_id' => $createdBooks[8]->id,
                 'member_id' => $faculty1->id,
                 'issued_by_user_id' => $onDutyLibrarian->id,

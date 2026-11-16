@@ -8,7 +8,7 @@
           <span>{{ langStore.t('users.title', 'User Accounts & Access') }}</span>
         </h2>
         <p class="text-xs text-main-text/50 mt-0.5">
-          {{ langStore.t('users.subtitle', 'Manage user authentication, Spatie role assignments, and granular permission overrides') }}
+          {{ langStore.t('users.subtitle', 'Manage user authentication, campus branch assignments, Spatie roles, and granular permission overrides') }}
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -47,7 +47,20 @@
     >
       <!-- Filter Toolbar Slot -->
       <template #toolbar>
-        <div class="flex items-center gap-2 w-full sm:w-auto">
+        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <!-- Library Branch Filter -->
+          <select
+            v-model="selectedLibraryFilter"
+            @change="handleFilterChange"
+            class="h-9 px-3 text-xs rounded-xl bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+          >
+            <option value="all">All Branches</option>
+            <option value="general">General (All Branches)</option>
+            <option v-for="lib in libraryStore.libraries" :key="lib.id" :value="lib.id">
+              [{{ lib.code }}] {{ lib.name }}
+            </option>
+          </select>
+
           <!-- Role Filter -->
           <select
             v-model="selectedRoleFilter"
@@ -91,6 +104,23 @@
               @{{ item.username }} · {{ item.email }}
             </div>
           </div>
+        </div>
+      </template>
+
+      <!-- Library Branch Assignment Column -->
+      <template #library="{ item }">
+        <div v-if="item?.library" class="flex items-center gap-1.5" :title="item.library.name">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-main-text border border-card-border select-none shadow-2xs">
+            <Building2 class="w-3 h-3 text-brand-blue dark:text-brand-yellow" />
+            <span class="font-mono font-bold text-nav-accent">[{{ item.library.code }}]</span>
+            <span class="truncate max-w-[120px]">{{ item.library.name }}</span>
+          </span>
+        </div>
+        <div v-else class="flex items-center gap-1.5">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 select-none shadow-2xs">
+            <Shield class="w-3 h-3 text-purple-600 dark:text-purple-400" />
+            <span>All Branches (System-wide)</span>
+          </span>
         </div>
       </template>
 
@@ -177,7 +207,7 @@
     <Modal
       :show="showModal"
       :title="editingUser ? langStore.t('users.edit', 'Edit User Account') : langStore.t('users.add', 'Register New User')"
-      :description="langStore.t('users.subtitle', 'Configure user credentials, email, and role assignment')"
+      description="Configure user identity, campus library branch assignment, credentials, and Spatie roles"
       :icon="editingUser ? Pencil : UserPlus"
       size="md"
       @close="showModal = false"
@@ -255,6 +285,25 @@
               class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
             />
           </div>
+        </div>
+
+        <!-- Library Branch Assignment (LMS-style) -->
+        <div>
+          <label class="block text-xs font-semibold text-main-text mb-1">
+            Library Branch Assignment
+          </label>
+          <select
+            v-model="form.library_id"
+            class="w-full px-3 py-2 text-xs rounded-xl bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
+          >
+            <option value="">General / All Libraries (System-wide Management)</option>
+            <option v-for="lib in libraryStore.libraries" :key="lib.id" :value="lib.id">
+              [{{ lib.code }}] {{ lib.name }}
+            </option>
+          </select>
+          <p class="text-[10px] text-main-text/40 mt-1">
+            Staff assigned to a specific branch are scoped to that facility for book loans and duty shifts. General accounts manage all branches.
+          </p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -390,6 +439,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useUserStore } from '@/stores/userStore';
+import { useLibraryStore } from '@/stores/libraryStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import { rolesApi } from '@/api';
 import Button from '@/components/ui/Button.vue';
@@ -397,13 +447,15 @@ import DataTable, { ColumnDef } from '@/components/ui/DataTable.vue';
 import Modal from '@/components/ui/Modal.vue';
 import RoleBadge from '@/components/ui/RoleBadge.vue';
 import StatusBadge from '@/components/ui/StatusBadge.vue';
-import { Users, Plus, Pencil, Trash2, UserPlus, Shield, Zap, RefreshCw } from 'lucide-vue-next';
+import { Users, Plus, Pencil, Trash2, UserPlus, Shield, Zap, RefreshCw, Building2 } from 'lucide-vue-next';
 import type { User } from '@/types';
 
 const userStore = useUserStore();
+const libraryStore = useLibraryStore();
 const langStore = useLanguageStore();
 
 const searchQuery = ref('');
+const selectedLibraryFilter = ref('all');
 const selectedRoleFilter = ref('all');
 const selectedStatusFilter = ref('all');
 
@@ -420,6 +472,7 @@ const availablePermissions = ref<{ id: number; name: string; group?: string }[]>
 
 const userColumns = computed<ColumnDef[]>(() => [
   { key: 'user', label: langStore.t('users.name', 'User') },
+  { key: 'library', label: 'Branch Assignment' },
   { key: 'roles', label: langStore.t('users.role', 'Roles') },
   { key: 'direct_permissions', label: 'Direct Overrides' },
   { key: 'duty_status', label: langStore.t('duty.active_shift', 'Duty Turn') },
@@ -434,6 +487,7 @@ const form = reactive({
   password: '',
   phone: '',
   role: '',
+  library_id: '' as string | number,
   status: 'active',
 });
 
@@ -451,10 +505,12 @@ const loadData = async () => {
   await Promise.all([
     userStore.fetchUsers({
       search: searchQuery.value,
+      library_id: selectedLibraryFilter.value !== 'all' ? selectedLibraryFilter.value : undefined,
       role: selectedRoleFilter.value !== 'all' ? selectedRoleFilter.value : undefined,
       status: selectedStatusFilter.value !== 'all' ? selectedStatusFilter.value : undefined,
     }),
     userStore.fetchRoles(),
+    libraryStore.fetchLibraries(),
     loadAvailablePermissions(),
   ]);
 };
@@ -477,6 +533,7 @@ const openCreateModal = () => {
     password: '',
     phone: '',
     role: userStore.roles[0]?.name || '',
+    library_id: '',
     status: 'active',
   });
   showModal.value = true;
@@ -492,6 +549,7 @@ const openEditModal = (user: User) => {
     password: '',
     phone: user.phone || '',
     role: roleName,
+    library_id: user.library_id ?? '',
     status: user.status,
   });
   showModal.value = true;
@@ -517,7 +575,10 @@ const confirmDelete = (user: User) => {
 };
 
 const handleSubmit = async () => {
-  const payload: any = { ...form };
+  const payload: any = {
+    ...form,
+    library_id: form.library_id ? Number(form.library_id) : null,
+  };
   if (!payload.password) delete payload.password;
 
   const success = editingUser.value
@@ -539,6 +600,7 @@ const handleDelete = async () => {
 const handleFilterChange = () => {
   userStore.fetchUsers({
     search: searchQuery.value,
+    library_id: selectedLibraryFilter.value !== 'all' ? selectedLibraryFilter.value : undefined,
     role: selectedRoleFilter.value !== 'all' ? selectedRoleFilter.value : undefined,
     status: selectedStatusFilter.value !== 'all' ? selectedStatusFilter.value : undefined,
   });
@@ -547,6 +609,7 @@ const handleFilterChange = () => {
 const handlePageChange = (page: number) => {
   userStore.fetchUsers({
     search: searchQuery.value,
+    library_id: selectedLibraryFilter.value !== 'all' ? selectedLibraryFilter.value : undefined,
     role: selectedRoleFilter.value !== 'all' ? selectedRoleFilter.value : undefined,
     status: selectedStatusFilter.value !== 'all' ? selectedStatusFilter.value : undefined,
     page,

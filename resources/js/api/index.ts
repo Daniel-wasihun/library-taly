@@ -1,5 +1,5 @@
 import api from './client';
-import type { User, DutySchedule, Book, BookLoan, DashboardStats, ApiRole } from '@/types';
+import type { User, DutySchedule, Book, BookLoan, DashboardStats, ApiRole, Library } from '@/types';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
@@ -28,9 +28,46 @@ export const dashboardApi = {
         }>('/dashboard/stats'),
 };
 
+// ── Libraries (Branches) ──────────────────────────────────────────────────────
+export const librariesApi = {
+    list: (params?: { search?: string; active_only?: boolean }) =>
+        api.get<{ success: boolean; data: Library[] }>('/libraries', { params }),
+
+    show: (id: number) =>
+        api.get<{ success: boolean; data: Library }>(`/libraries/${id}`),
+
+    create: (data: {
+        name: string;
+        name_am?: string;
+        code: string;
+        location?: string;
+        phone?: string;
+        email?: string;
+        description?: string;
+        is_active?: boolean;
+    }) => api.post<{ success: boolean; message: string; data: Library }>('/libraries', data),
+
+    update: (
+        id: number,
+        data: {
+            name: string;
+            name_am?: string;
+            code: string;
+            location?: string;
+            phone?: string;
+            email?: string;
+            description?: string;
+            is_active?: boolean;
+        }
+    ) => api.put<{ success: boolean; message: string; data: Library }>(`/libraries/${id}`, data),
+
+    destroy: (id: number) =>
+        api.delete<{ success: boolean; message: string }>(`/libraries/${id}`),
+};
+
 // ── Users ─────────────────────────────────────────────────────────────────────
 export const usersApi = {
-    list: (params?: { search?: string; role?: string; status?: string; page?: number }) =>
+    list: (params?: { search?: string; role?: string; status?: string; library_id?: number | string; page?: number }) =>
         api.get('/users', { params }),
 
     show: (id: number) => api.get(`/users/${id}`),
@@ -41,6 +78,7 @@ export const usersApi = {
         email: string;
         password: string;
         role: string;
+        library_id?: number | null;
         status?: string;
         phone?: string;
     }) => api.post('/users', data),
@@ -53,6 +91,7 @@ export const usersApi = {
             email: string;
             password?: string;
             role: string;
+            library_id?: number | null;
             status: string;
             phone?: string;
         }

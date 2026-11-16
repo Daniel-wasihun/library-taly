@@ -30,7 +30,13 @@ class EnsureScheduledDutyTurn
             ], 401);
         }
 
-        $check = $this->dutyService->canPerformTask($user, $taskKey);
+        $targetLibraryId = $request->input('library_id');
+        if (!$targetLibraryId && $request->has('book_id')) {
+            $book = \App\Models\Book::find($request->input('book_id'));
+            $targetLibraryId = $book?->library_id;
+        }
+
+        $check = $this->dutyService->canPerformTask($user, $taskKey, null, $targetLibraryId ? (int)$targetLibraryId : null);
 
         if (!$check['allowed']) {
             return response()->json([

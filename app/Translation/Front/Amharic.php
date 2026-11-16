@@ -46,6 +46,23 @@ class Amharic
             'nav.my_turns' => 'የእኔ ተረኛ ፈረቃ',
             'nav.books' => 'የመጻሕፍት ማውጫ',
             'nav.circulation' => 'የመጻሕፍት ብድርና ዝውውር',
+            'nav.libraries' => 'የቤተ-መጻሕፍት ቅርንጫፎች',
+
+            // Library Branches (LMS CRUD)
+            'libraries.title' => 'የቤተ-መጻሕፍት ቅርንጫፎች አስተዳደር',
+            'libraries.subtitle' => 'የግቢ ቅርንጫፎች፣ የመገኛ አካባቢዎችና የቅርንጫፍ መዳረሻ ቁጥጥር',
+            'libraries.add' => 'አዲስ ቅርንጫፍ መዝግብ',
+            'libraries.edit' => 'ቅርንጫፍ አስተካክል',
+            'libraries.name' => 'የቅርንጫፍ ስም (በእንግሊዝኛ)',
+            'libraries.name_am' => 'የቅርንጫፍ ስም (በአማርኛ)',
+            'libraries.code' => 'የቅርንጫፍ ኮድ',
+            'libraries.location' => 'ግቢ / የሕንፃ ቦታ',
+            'libraries.phone' => 'የመገናኛ ስልክ',
+            'libraries.email' => 'የኢሜይል አድራሻ',
+            'libraries.description' => 'መግለጫ',
+            'libraries.created' => 'የቤተ-መጻሕፍት ቅርንጫፍ በተሳካ ሁኔታ ተፈጥሯል።',
+            'libraries.updated' => 'የቤተ-መጻሕፍት ቅርንጫፍ በተሳካ ሁኔታ ተሻሽሏል።',
+            'libraries.deleted' => 'የቤተ-መጻሕፍት ቅርንጫፍ በተሳካ ሁኔታ ተሰርዟል።',
 
             // Duty Status
             'duty.on_duty' => 'ዛሬ ተረኛ ነው',

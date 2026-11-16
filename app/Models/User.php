@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -19,6 +20,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'library_id',
         'name',
         'username',
         'email',
@@ -48,6 +50,47 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the library branch this user is assigned to (null = General / All Branches).
+     */
+    public function library(): BelongsTo
+    {
+        return $this->belongsTo(Library::class);
+    }
+
+    /**
+     * Determine if user has global management access across all library branches.
+     */
+    public function canManageAllLibraries(): bool
+    {
+        if ($this->hasAdminPrivilege()) {
+            return true;
+        }
+
+        if ($this->can('libraries.manage_all') || $this->can('libraries.manage')) {
+            return true;
+        }
+
+        // If library_id is null, the user is general/system-wide
+        return is_null($this->library_id);
+    }
+
+    /**
+     * Check if user can perform operations at a target library branch.
+     */
+    public function canAccessLibrary(?int $targetLibraryId): bool
+    {
+        if ($this->canManageAllLibraries()) {
+            return true;
+        }
+
+        if (is_null($targetLibraryId)) {
+            return false;
+        }
+
+        return (int) $this->library_id === (int) $targetLibraryId;
     }
 
     /**

@@ -11,6 +11,7 @@ class BookLoan extends Model
     use HasFactory;
 
     protected $fillable = [
+        'library_id',
         'book_id',
         'member_id',
         'issued_by_user_id',
@@ -28,6 +29,11 @@ class BookLoan extends Model
             'due_date' => 'datetime',
             'returned_date' => 'datetime',
         ];
+    }
+
+    public function library(): BelongsTo
+    {
+        return $this->belongsTo(Library::class);
     }
 
     public function book(): BelongsTo

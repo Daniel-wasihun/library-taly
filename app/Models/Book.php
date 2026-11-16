@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Book extends Model
@@ -11,6 +12,7 @@ class Book extends Model
     use HasFactory;
 
     protected $fillable = [
+        'library_id',
         'title',
         'isbn',
         'author',
@@ -26,6 +28,11 @@ class Book extends Model
             'total_copies' => 'integer',
             'available_copies' => 'integer',
         ];
+    }
+
+    public function library(): BelongsTo
+    {
+        return $this->belongsTo(Library::class);
     }
 
     public function loans(): HasMany

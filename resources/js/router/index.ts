@@ -24,6 +24,12 @@ const routes: RouteRecordRaw[] = [
                 meta: { title: 'Dashboard', icon: 'LayoutDashboard' },
             },
             {
+                path: 'libraries',
+                name: 'Libraries',
+                component: () => import('@/views/libraries/LibrariesView.vue'),
+                meta: { title: 'Library Branches', icon: 'Landmark', roles: ['Super Admin', 'Head Librarian'] },
+            },
+            {
                 path: 'users',
                 name: 'Users',
                 component: () => import('@/views/users/UsersView.vue'),

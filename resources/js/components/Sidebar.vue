@@ -42,6 +42,16 @@
         <p v-if="!authStore.isAdmin && authStore.user?.duty_status?.next_turn" class="text-[10px] mt-1 opacity-80 pl-4 font-mono">
           {{ langStore.t('duty.next_turn', 'Next turn') }}: {{ authStore.user.duty_status.next_turn }}
         </p>
+
+        <!-- User Branch Context (LMS-style) -->
+        <div v-if="authStore.user?.library" class="mt-2 pt-2 border-t border-current/10 text-[10px] flex items-center gap-1.5 font-medium opacity-90">
+          <Building2 class="w-3 h-3 shrink-0" />
+          <span class="truncate">Branch: {{ authStore.user.library.name }}</span>
+        </div>
+        <div v-else-if="authStore.user" class="mt-2 pt-2 border-t border-current/10 text-[10px] flex items-center gap-1.5 font-medium opacity-90">
+          <Shield class="w-3 h-3 shrink-0" />
+          <span class="truncate">All Branches Access</span>
+        </div>
       </div>
     </div>
 
@@ -68,6 +78,25 @@
           <span class="truncate">{{ langStore.t('nav.dashboard', 'Overview Dashboard') }}</span>
           <div
             v-if="isActive('/dashboard')"
+            class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-nav-accent rounded-r-full"
+          ></div>
+        </router-link>
+
+        <!-- Library Branches (LMS CRUD) -->
+        <router-link
+          to="/libraries"
+          class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer relative group"
+          :class="isActive('/libraries')
+            ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
+            : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'"
+        >
+          <Landmark
+            class="w-4 h-4 shrink-0 transition-colors"
+            :class="isActive('/libraries') ? 'text-nav-accent' : 'text-main-text/45 group-hover:text-nav-accent'"
+          />
+          <span class="truncate">{{ langStore.t('nav.libraries', 'Library Branches') }}</span>
+          <div
+            v-if="isActive('/libraries')"
             class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-nav-accent rounded-r-full"
           ></div>
         </router-link>
@@ -216,6 +245,9 @@ import {
   Users,
   ShieldCheck,
   CalendarDays,
+  Building2,
+  Shield,
+  Landmark,
 } from 'lucide-vue-next';
 
 const route = useRoute();

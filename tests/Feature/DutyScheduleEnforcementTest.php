@@ -44,7 +44,7 @@ class DutyScheduleEnforcementTest extends TestCase
     public function test_on_duty_librarian_can_issue_book_today(): void
     {
         $onDutyUser = User::where('username', 'tigist_duty')->first();
-        $book = Book::where('available_copies', '>', 0)->first();
+        $book = Book::where('library_id', $onDutyUser->library_id)->where('available_copies', '>', 0)->first();
         $student = User::where('username', 'sara_student')->first();
 
         $response = $this->actingAs($onDutyUser)
@@ -58,10 +58,29 @@ class DutyScheduleEnforcementTest extends TestCase
             ->assertJsonPath('success', true);
     }
 
+    public function test_librarian_cannot_issue_book_from_another_library_branch(): void
+    {
+        $onDutyUser = User::where('username', 'tigist_duty')->first();
+        // Book from another branch (e.g. SCITECH or HEALTH)
+        $anotherBranchBook = Book::where('library_id', '!=', $onDutyUser->library_id)->first();
+        $student = User::where('username', 'sara_student')->first();
+
+        $response = $this->actingAs($onDutyUser)
+            ->postJson('/api/circulation/issue', [
+                'book_id' => $anotherBranchBook->id,
+                'member_id' => $student->id,
+                'due_days' => 14,
+            ]);
+
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('code', 'BRANCH_RESTRICTED');
+    }
+
     public function test_off_duty_librarian_is_blocked_by_schedule_gate(): void
     {
         $offDutyUser = User::where('username', 'yohannes_offduty')->first();
-        $book = Book::where('available_copies', '>', 0)->first();
+        $book = Book::where('library_id', $offDutyUser->library_id)->where('available_copies', '>', 0)->first();
         $student = User::where('username', 'sara_student')->first();
 
         $response = $this->actingAs($offDutyUser)

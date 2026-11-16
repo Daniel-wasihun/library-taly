@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\CirculationController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DutyScheduleController;
+use App\Http\Controllers\Api\LibraryController;
 use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\TranslationController;
 use App\Http\Controllers\Api\UserController;
@@ -46,6 +47,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/roles/{role}', [RolePermissionController::class, 'updateRole']);
     Route::delete('/roles/{role}', [RolePermissionController::class, 'destroyRole']);
     Route::get('/tasks', [RolePermissionController::class, 'tasks']);
+
+    // Library Branches (Full CRUD)
+    Route::apiResource('libraries', LibraryController::class);
 
     // User Management (Full CRUD + Direct Permission Overrides)
     Route::post('/users/{user}/permissions', [UserController::class, 'overridePermissions']);

@@ -26,8 +26,9 @@ class UserController extends Controller
         $search = $request->query('search');
         $roleFilter = $request->query('role');
         $statusFilter = $request->query('status');
+        $libraryFilter = $request->query('library_id');
 
-        $query = User::with('roles', 'permissions')->latest();
+        $query = User::with(['roles', 'permissions', 'library'])->latest();
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -46,6 +47,14 @@ class UserController extends Controller
             $query->where('status', $statusFilter);
         }
 
+        if ($libraryFilter && $libraryFilter !== 'all') {
+            if ($libraryFilter === 'general' || $libraryFilter === 'null') {
+                $query->whereNull('library_id');
+            } else {
+                $query->where('library_id', $libraryFilter);
+            }
+        }
+
         $users = $query->paginate(15);
 
         $items = collect($users->items())->map(function ($u) {
@@ -58,6 +67,14 @@ class UserController extends Controller
                 'phone' => $u->phone,
                 'status' => $u->status,
                 'is_admin' => $u->hasAdminPrivilege(),
+                'library_id' => $u->library_id,
+                'library' => $u->library ? [
+                    'id' => $u->library->id,
+                    'name' => $u->library->name,
+                    'name_am' => $u->library->name_am,
+                    'code' => $u->library->code,
+                ] : null,
+                'can_manage_all_libraries' => $u->canManageAllLibraries(),
                 'roles' => $u->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name]),
                 'direct_permissions' => $u->getDirectPermissionsList(),
                 'all_permissions' => $u->getAllPermissionsList(),
@@ -89,6 +106,7 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6'],
             'role' => ['required', 'string', 'exists:roles,name'],
+            'library_id' => ['nullable', 'exists:libraries,id'],
             'status' => ['nullable', 'string', 'in:active,inactive,suspended'],
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
@@ -98,6 +116,7 @@ class UserController extends Controller
             'username' => strtolower($validated['username']),
             'email' => strtolower($validated['email']),
             'password' => Hash::make($validated['password']),
+            'library_id' => $validated['library_id'] ?? null,
             'status' => $validated['status'] ?? 'active',
             'phone' => $validated['phone'] ?? null,
         ]);
@@ -109,8 +128,8 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'User created successfully.',
-            'user' => $user->load('roles'),
-        ], 210);
+            'user' => $user->load(['roles', 'library']),
+        ], 201);
     }
 
     /**
@@ -120,7 +139,7 @@ class UserController extends Controller
     {
         return response()->json([
             'success' => true,
-            'user' => $user->load('roles', 'permissions', 'dutySchedules'),
+            'user' => $user->load(['roles', 'permissions', 'dutySchedules', 'library']),
         ]);
     }
 
@@ -135,6 +154,7 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:6'],
             'role' => ['required', 'string', 'exists:roles,name'],
+            'library_id' => ['nullable', 'exists:libraries,id'],
             'status' => ['required', 'string', 'in:active,inactive,suspended'],
             'phone' => ['nullable', 'string', 'max:20'],
         ]);
@@ -142,6 +162,7 @@ class UserController extends Controller
         $user->name = $validated['name'];
         $user->username = strtolower($validated['username']);
         $user->email = strtolower($validated['email']);
+        $user->library_id = $validated['library_id'] ?? null;
         $user->status = $validated['status'];
         $user->phone = $validated['phone'] ?? null;
 
@@ -157,7 +178,7 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'User updated successfully.',
-            'user' => $user->load('roles'),
+            'user' => $user->load(['roles', 'library']),
         ]);
     }
 

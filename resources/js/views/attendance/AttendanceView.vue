@@ -254,10 +254,10 @@ watch(selectedLibrary, (newVal) => {
     />
 
     <!-- Active Tab 1: Live Counter Desk -->
-    <div v-if="activeTab === 'counter'" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <div v-if="activeTab === 'counter'" class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
       <AttendanceCounter
         :selectedLibrary="selectedLibrary"
-        :selectedUserType="selectedUserType"
+        v-model:selectedUserType="selectedUserType"
         @log="handleLog"
       />
 

@@ -120,8 +120,8 @@
           <span>Available (1–30)</span>
         </div>
         <div class="flex items-center gap-1.5">
-          <span class="w-3.5 h-3.5 rounded-sm bg-purple-500/20 border border-purple-500/40 text-purple-700 dark:text-purple-300 flex items-center justify-center text-[9px] font-bold">🇪🇹</span>
-          <span>Ethiopian Holiday (Free/Off)</span>
+          <span class="w-3.5 h-3.5 rounded-sm bg-purple-500/20 border border-purple-500/40 text-purple-700 dark:text-purple-300 flex items-center justify-center text-[9px] font-bold">🚫</span>
+          <span>{{ langStore.t('schedules.holiday_legend', 'Ethiopian Holiday (Canceled / No Duty)') }}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="w-3.5 h-3.5 rounded-sm bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[9px] font-bold">⊘</span>
@@ -130,6 +130,86 @@
         <div class="flex items-center gap-1.5">
           <span class="w-3.5 h-3.5 rounded-sm bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 flex items-center justify-center text-[9px] font-bold">🔒</span>
           <span>Assigned to Other Group</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Explicit Ethiopian Holidays Header Banner (Explicitly at the Top of the Month) -->
+    <div
+      class="rounded-sm border p-4 transition-all duration-200"
+      :class="monthHolidaysList.length > 0
+        ? 'bg-purple-950/10 dark:bg-purple-950/25 border-purple-500/35 shadow-2xs'
+        : 'bg-card-bg/60 border-card-border/60'"
+    >
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-start sm:items-center gap-3">
+          <div
+            class="w-9 h-9 rounded-sm flex items-center justify-center shrink-0 border text-base"
+            :class="monthHolidaysList.length > 0
+              ? 'bg-purple-500/15 border-purple-500/30 text-purple-700 dark:text-purple-300'
+              : 'bg-card-bg border-card-border text-main-text/40'"
+          >
+            🇪🇹
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-xs font-bold text-main-text tracking-tight">
+                {{ langStore.t('schedules.holidays_heading', 'Official Ethiopian Holidays for') }}
+                <span class="text-nav-accent ml-1 font-mono font-bold">{{ currentMonthName }} {{ selectedYear }} ዓ.ም</span>
+              </h3>
+              <span
+                v-if="monthHolidaysList.length > 0"
+                class="px-2 py-0.5 rounded-sm bg-purple-500/20 text-purple-700 dark:text-purple-300 font-bold text-[10px] border border-purple-500/30 uppercase tracking-wider"
+              >
+                {{ monthHolidaysList.length }} {{ langStore.t('schedules.holidays_detected_count', 'Holiday(s) Detected') }}
+              </span>
+              <span
+                v-else
+                class="px-2 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-medium text-[10px] border border-emerald-500/20"
+              >
+                {{ langStore.t('schedules.no_holidays_in_month', 'No Public Holidays this Month') }}
+              </span>
+            </div>
+            <p class="text-[11px] text-main-text/60 mt-0.5">
+              {{ monthHolidaysList.length > 0
+                ? langStore.t('schedules.holidays_rule_desc', 'Official Ethiopian public and religious holidays are canceled in the schedule. Duty shifts cannot be assigned and are automatically removed from duty rosters.')
+                : langStore.t('schedules.regular_month_desc', 'All days (1–30) in this Ethiopian month are normal operating duty days.') }}
+            </p>
+          </div>
+        </div>
+
+        <div v-if="monthHolidaysList.length > 0" class="shrink-0 self-start sm:self-auto">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 font-bold text-[11px]">
+            🚫 {{ langStore.t('schedules.shifts_canceled_badge', 'All Duty Shifts Canceled on Holidays') }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Explicit Holiday Cards Grid when holidays exist -->
+      <div v-if="monthHolidaysList.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mt-3 pt-3 border-t border-purple-500/20">
+        <div
+          v-for="h in monthHolidaysList"
+          :key="h.day"
+          class="flex items-center justify-between gap-3 p-2.5 rounded-sm bg-card-bg/90 border border-purple-500/30 shadow-2xs"
+        >
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-sm bg-purple-600 text-white font-mono font-bold text-xs flex flex-col items-center justify-center shrink-0 shadow-xs">
+              <span class="text-[9px] uppercase leading-none opacity-80">ቀን</span>
+              <span class="text-xs leading-none font-bold">{{ h.day }}</span>
+            </div>
+            <div class="min-w-0">
+              <p class="font-bold text-main-text text-xs truncate">
+                {{ h.name_am }}
+                <span class="text-main-text/50 font-normal ml-1 text-[11px]">({{ h.name_en }})</span>
+              </p>
+              <p class="text-[10px] text-purple-700 dark:text-purple-300 truncate mt-0.5">
+                {{ h.description || 'Official National / Religious Holiday' }}
+              </p>
+            </div>
+          </div>
+          <span class="px-2 py-1 rounded-xs bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/30 text-[10px] font-bold shrink-0 flex items-center gap-1">
+            🚫 <span>{{ langStore.t('schedules.canceled', 'Canceled') }}</span>
+          </span>
         </div>
       </div>
     </div>
@@ -236,24 +316,31 @@
               @click="toggleDay(shift.id, day)"
             >
               <!-- Day Number in Ethiopian Calendar -->
-              <span class="text-sm font-bold font-mono tracking-tight leading-none">
+              <span
+                class="text-sm font-bold font-mono tracking-tight leading-none"
+                :class="{ 'line-through opacity-70 text-purple-700/80 dark:text-purple-300/80': getHoliday(day) }"
+              >
                 {{ day }}
               </span>
-              <span class="text-[9px] mt-1 leading-none font-medium truncate max-w-full px-1">
+              <span
+                class="text-[9px] mt-1 leading-none font-medium truncate max-w-full px-1"
+                :class="{ 'font-bold text-purple-700 dark:text-purple-300': getHoliday(day) }"
+              >
                 {{ getDayLabel(shift.id, day) }}
               </span>
 
               <!-- Status Dot / Icon -->
               <span
-                v-if="isDaySelected(shift.id, day)"
+                v-if="getHoliday(day)"
+                class="absolute top-1 right-1 text-[9px] leading-none text-purple-600 dark:text-purple-400"
+                title="Holiday - Duty Canceled"
+              >
+                🚫
+              </span>
+              <span
+                v-else-if="isDaySelected(shift.id, day)"
                 class="absolute top-1 right-1 w-2 h-2 rounded-full bg-white shadow-xs"
               ></span>
-              <span
-                v-else-if="getHoliday(day)"
-                class="absolute top-1 right-1 text-[9px] leading-none"
-              >
-                🇪🇹
-              </span>
               <span
                 v-else-if="isDayDisabled(shift.id, day).isOtherGroup"
                 class="absolute top-1 right-1 text-[9px] leading-none"
@@ -468,6 +555,14 @@ const selectedYear = ref<number>(2019);
 const selectedMonth = ref<number>(3); // Hidar default
 const selectedGroupId = ref<number | ''>('');
 
+const currentMonthName = computed(() => {
+  const m = (shiftStore.matrixData?.ethiopian_months || defaultMonths).find(
+    (month) => month.number === Number(selectedMonth.value)
+  );
+  if (!m) return `Month #${selectedMonth.value}`;
+  return `${m.name_am} (${m.name_en})`;
+});
+
 // Shift Selections: shift_id => Array of selected days [1, 2, ... 30]
 const shiftSelections = reactive<Record<number, number[]>>({});
 
@@ -586,11 +681,11 @@ const syncGroupDaysFromMatrix = () => {
     shiftSelections[shift.id] = [];
   }
 
-  // Populate from existing schedules
+  // Populate from existing schedules (filter out holidays cleanly)
   for (const sched of existingGroupScheds) {
     const shiftId = sched.shift_id;
     if (Array.isArray(sched.days)) {
-      shiftSelections[shiftId] = [...sched.days];
+      shiftSelections[shiftId] = sched.days.filter((d: number) => !getHoliday(d));
     }
   }
 };
@@ -603,6 +698,18 @@ const isDayDisabled = (
   shiftId: number,
   day: number
 ): { disabled: boolean; isOtherShift: boolean; otherShiftName?: string; isOtherGroup: boolean; otherGroupName?: string; isHoliday: boolean } => {
+  // 0. RULE 0: Official Ethiopian Holiday (Duty Canceled)
+  // "and that day will be canceled in the schedule ui cleanly"
+  const holiday = getHoliday(day);
+  if (holiday) {
+    return {
+      disabled: true,
+      isOtherShift: false,
+      isOtherGroup: false,
+      isHoliday: true,
+    };
+  }
+
   if (isDaySelected(shiftId, day)) {
     return { disabled: false, isOtherShift: false, isOtherGroup: false, isHoliday: false };
   }
@@ -639,14 +746,17 @@ const isDayDisabled = (
 };
 
 const getDayButtonClasses = (shiftId: number, day: number) => {
-  const selected = isDaySelected(shiftId, day);
-  const status = isDayDisabled(shiftId, day);
   const holiday = getHoliday(day);
+  if (holiday) {
+    return 'bg-purple-500/10 dark:bg-purple-950/25 text-purple-700 dark:text-purple-300 border-purple-500/35 cursor-not-allowed opacity-85 shadow-2xs';
+  }
 
+  const selected = isDaySelected(shiftId, day);
   if (selected) {
     return 'bg-emerald-600 text-white border-emerald-700 shadow-xs cursor-pointer hover:bg-emerald-700';
   }
 
+  const status = isDayDisabled(shiftId, day);
   if (status.isOtherGroup) {
     return 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20 cursor-not-allowed opacity-60';
   }
@@ -655,19 +765,15 @@ const getDayButtonClasses = (shiftId: number, day: number) => {
     return 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 cursor-not-allowed opacity-60';
   }
 
-  if (holiday) {
-    return 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30 hover:border-purple-500 cursor-pointer shadow-2xs';
-  }
-
   return 'bg-card-bg text-main-text border-card-border hover:border-nav-accent hover:bg-nav-accent/5 cursor-pointer shadow-2xs';
 };
 
 const getDayLabel = (shiftId: number, day: number): string => {
+  const holiday = getHoliday(day);
+  if (holiday) return langStore.t('schedules.canceled_holiday', 'Canceled / በዓል');
+
   const selected = isDaySelected(shiftId, day);
   if (selected) return 'Active';
-
-  const holiday = getHoliday(day);
-  if (holiday) return holiday.name_am;
 
   const status = isDayDisabled(shiftId, day);
   if (status.isOtherGroup) return status.otherGroupName || 'Occupied';
@@ -677,13 +783,13 @@ const getDayLabel = (shiftId: number, day: number): string => {
 };
 
 const getDayTooltip = (shiftId: number, day: number): string => {
-  const selected = isDaySelected(shiftId, day);
-  if (selected) return `Day ${day}: Selected for this shift. Click to remove.`;
-
   const holiday = getHoliday(day);
   if (holiday) {
-    return `Day ${day}: Ethiopian Holiday — ${holiday.name_am} (${holiday.name_en}). Excluded from automated schedules.`;
+    return `Day ${day}: Official Ethiopian Holiday — ${holiday.name_am} (${holiday.name_en}). All duty shifts are canceled on this date.`;
   }
+
+  const selected = isDaySelected(shiftId, day);
+  if (selected) return `Day ${day}: Selected for this shift. Click to remove.`;
 
   const status = isDayDisabled(shiftId, day);
   if (status.isOtherGroup) {
@@ -699,7 +805,10 @@ const getDayTooltip = (shiftId: number, day: number): string => {
 const toggleDay = (shiftId: number, day: number) => {
   const status = isDayDisabled(shiftId, day);
   if (status.disabled) {
-    if (status.isOtherGroup) {
+    if (status.isHoliday) {
+      const h = getHoliday(day);
+      toast.warning(`Day ${day} is an official Ethiopian Holiday (${h?.name_am || ''} / ${h?.name_en || ''}). Duty shifts are canceled on this date.`);
+    } else if (status.isOtherGroup) {
       toast.warning(`Day ${day} is already assigned to ${status.otherGroupName} for this shift.`);
     } else if (status.isOtherShift) {
       toast.warning(`Day ${day} is already selected for ${status.otherShiftName} in this group.`);
@@ -792,7 +901,7 @@ const handleSaveSchedule = async () => {
 
   const payloadShifts = activeShifts.value.map((s) => ({
     shift_id: s.id,
-    days: shiftSelections[s.id] || [],
+    days: (shiftSelections[s.id] || []).filter((d) => !getHoliday(d)),
   }));
 
   const success = await shiftStore.assignSchedule({

@@ -156,6 +156,15 @@ const DEFAULT_ENGLISH: Record<string, string> = {
     'schedules.active_shift': 'Active Shift (Available for Scheduling)',
     'schedules.holiday_badge': 'Ethiopian Holiday (Free/Off)',
     'schedules.next_day': 'Next Day (+1 day)',
+    'schedules.holidays_heading': 'Official Ethiopian Holidays for',
+    'schedules.holidays_detected_count': 'Holiday(s) Detected',
+    'schedules.no_holidays_in_month': 'No Public Holidays this Month',
+    'schedules.holidays_rule_desc': 'Official Ethiopian public and religious holidays are canceled in the schedule. Duty shifts cannot be assigned and are automatically removed from duty rosters.',
+    'schedules.regular_month_desc': 'All days (1–30) in this Ethiopian month are normal operating duty days.',
+    'schedules.shifts_canceled_badge': 'All Duty Shifts Canceled on Holidays',
+    'schedules.holiday_legend': 'Ethiopian Holiday (Canceled / No Duty)',
+    'schedules.canceled': 'Canceled',
+    'schedules.canceled_holiday': 'Canceled / በዓል',
 };
 
 const DEFAULT_AMHARIC: Record<string, string> = {
@@ -303,6 +312,15 @@ const DEFAULT_AMHARIC: Record<string, string> = {
     'schedules.active_shift': 'ንቁ ፈረቃ (ለመመደብ ዝግጁ)',
     'schedules.holiday_badge': 'የኢትዮጵያ በዓል (የዕረፍት ቀን)',
     'schedules.next_day': 'ቀጣይ ቀን (+1 ቀን)',
+    'schedules.holidays_heading': 'የኢትዮጵያ ይፋዊ የበዓላት ቀናት —',
+    'schedules.holidays_detected_count': 'በዓላት ተገኝተዋል',
+    'schedules.no_holidays_in_month': 'በዚህ ወር ውስጥ ይፋዊ በዓላት የሉም',
+    'schedules.holidays_rule_desc': 'በዚህ ወር ያሉ ይፋዊ የኢትዮጵያ በዓላት በፈረቃው ውስጥ ተሰርዘዋል። በእነዚህ ቀናት ፈረቃ አይመደብም እንዲሁም ከመርሐ-ግብሩ ይወገዳሉ።',
+    'schedules.regular_month_desc': 'በዚህ የኢትዮጵያ ወር ውስጥ ያሉት ሁሉም 30 ቀናት መደበኛ የሥራ ቀናት ናቸው።',
+    'schedules.shifts_canceled_badge': 'በበዓላት ቀናት ሁሉም ፈረቃዎች ተሰርዘዋል',
+    'schedules.holiday_legend': 'የኢትዮጵያ በዓል (የተሰረዘ / ዕረፍት)',
+    'schedules.canceled': 'ተሰርዟል',
+    'schedules.canceled_holiday': 'ተሰርዟል / በዓል',
 };
 
 export const useLanguageStore = defineStore('language', () => {

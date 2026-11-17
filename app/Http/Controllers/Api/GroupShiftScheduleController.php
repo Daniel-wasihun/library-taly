@@ -228,6 +228,31 @@ class GroupShiftScheduleController extends Controller
         $allShifts = Shift::all()->keyBy('id');
 
         // =========================================================================
+        // RULE 0: Ethiopian Holiday cancellation check
+        // "and that day will be canceled in the schedule ui cleanly"
+        // =========================================================================
+        $monthHolidays = EthiopianHolidayService::getHolidaysForMonth($year, $month);
+        foreach ($validated['shifts'] as $shiftAssignment) {
+            $shiftId = (int)$shiftAssignment['shift_id'];
+            $days = array_values(array_unique(array_map('intval', $shiftAssignment['days'])));
+            $shiftObj = $allShifts->get($shiftId);
+            $shiftTitle = $shiftObj ? $shiftObj->name : "Shift #{$shiftId}";
+
+            foreach ($days as $day) {
+                if (isset($monthHolidays[$day])) {
+                    $holidayMeta = $monthHolidays[$day];
+                    return response()->json([
+                        'message' => "Holiday Conflict: Day {$day} is an official Ethiopian Holiday ({$holidayMeta['name_am']} / {$holidayMeta['name_en']}). All duty shifts are canceled on this day.",
+                        'conflict_type' => 'HOLIDAY_CONFLICT',
+                        'day' => $day,
+                        'shift' => $shiftTitle,
+                        'holiday' => $holidayMeta,
+                    ], 422);
+                }
+            }
+        }
+
+        // =========================================================================
         // RULE 1: Intra-group cross-shift conflict check
         // "if the date is selected in one shift it must be disabled for another shif in the shchedule of the same scheduule assigning"
         // =========================================================================

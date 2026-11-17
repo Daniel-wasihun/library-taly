@@ -227,7 +227,85 @@ class DatabaseSeeder extends Seeder
         );
         $librarianUser->syncRoles(['Librarian']);
 
-        // Attendant: Main Central Library
+        // 6. Seed Realistic Users with Roles & Branch Assignments
+        $defaultPassword = Hash::make('password123');
+
+        // Super Admin (Hidden, Global / All Libraries)
+        $superAdminUser = User::updateOrCreate(
+            ['email' => 'admin@unilib.edu'],
+            [
+                'username' => 'admin',
+                'name' => 'Dr. Abebe Bekele',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 911 234567',
+                'library_id' => null, // Global
+            ]
+        );
+        $superAdminUser->syncRoles(['Super Admin']);
+
+        // System Admin (Visible in user list, Global / All Libraries)
+        $adminUser = User::updateOrCreate(
+            ['email' => 'dawit.admin@unilib.edu'],
+            [
+                'username' => 'admin_dawit',
+                'name' => 'Dawit Haile',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 911 345678',
+                'library_id' => null, // Global
+            ]
+        );
+        $adminUser->syncRoles(['Admin']);
+
+        // General Manager (Manages all branch reporting & analytics)
+        $generalManager = User::updateOrCreate(
+            ['email' => 'selamawit@unilib.edu'],
+            [
+                'username' => 'selam_manager',
+                'name' => 'Selamawit Tadesse',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 912 345678',
+                'library_id' => null, // Global / General
+            ]
+        );
+        $generalManager->syncRoles(['Manager']);
+
+        // Branch Manager (Assigned to Main Library: manages reporting for Main Library ONLY)
+        $branchManagerMain = User::updateOrCreate(
+            ['email' => 'kassahun@unilib.edu'],
+            [
+                'username' => 'kassahun_manager',
+                'name' => 'Kassahun Desta',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 914 567890',
+                'library_id' => $mainLibrary->id,
+            ]
+        );
+        $branchManagerMain->syncRoles(['Manager']);
+
+        // Librarian (Assigned to Science & Tech Library)
+        $librarianUser = User::updateOrCreate(
+            ['email' => 'tigist@unilib.edu'],
+            [
+                'username' => 'tigist_lib',
+                'name' => 'Tigist Alemu',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 922 345678',
+                'library_id' => $sciTechLibrary->id,
+            ]
+        );
+        $librarianUser->syncRoles(['Librarian']);
+
+        // =========================================================================
+        // DISTINCT ATTENDANTS SEEDING (Strict 1-group-per-branch assignment, 0 overlap)
+        // =========================================================================
+
+        // --- Main Central Library Attendants ---
+        // Group A Attendants
         $attendantMain = User::updateOrCreate(
             ['email' => 'yohannes@unilib.edu'],
             [
@@ -241,7 +319,169 @@ class DatabaseSeeder extends Seeder
         );
         $attendantMain->syncRoles(['Attendant']);
 
-        // Attendant: Health Sciences Library
+        $attendantAlmaz = User::updateOrCreate(
+            ['email' => 'almaz@unilib.edu'],
+            [
+                'username' => 'almaz_attendant',
+                'name' => 'Almaz Kebede',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 933 112233',
+                'library_id' => $mainLibrary->id,
+            ]
+        );
+        $attendantAlmaz->syncRoles(['Attendant']);
+
+        $attendantDawitM = User::updateOrCreate(
+            ['email' => 'dawit.m@unilib.edu'],
+            [
+                'username' => 'dawit_m_attendant',
+                'name' => 'Dawit Mengistu',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 933 223344',
+                'library_id' => $mainLibrary->id,
+            ]
+        );
+        $attendantDawitM->syncRoles(['Attendant']);
+
+        // Group B Attendants
+        $attendantBethlehemT = User::updateOrCreate(
+            ['email' => 'bethlehem.t@unilib.edu'],
+            [
+                'username' => 'bethlehem_t_attendant',
+                'name' => 'Bethlehem Tadesse',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 933 334455',
+                'library_id' => $mainLibrary->id,
+            ]
+        );
+        $attendantBethlehemT->syncRoles(['Attendant']);
+
+        $attendantHenok = User::updateOrCreate(
+            ['email' => 'henok@unilib.edu'],
+            [
+                'username' => 'henok_attendant',
+                'name' => 'Henok Berhanu',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 933 445566',
+                'library_id' => $mainLibrary->id,
+            ]
+        );
+        $attendantHenok->syncRoles(['Attendant']);
+
+        $attendantSenait = User::updateOrCreate(
+            ['email' => 'senait@unilib.edu'],
+            [
+                'username' => 'senait_attendant',
+                'name' => 'Senait Tefera',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 933 556677',
+                'library_id' => $mainLibrary->id,
+            ]
+        );
+        $attendantSenait->syncRoles(['Attendant']);
+
+        // Group C Attendants
+        $attendantErmias = User::updateOrCreate(
+            ['email' => 'ermias@unilib.edu'],
+            [
+                'username' => 'ermias_attendant',
+                'name' => 'Ermias Assefa',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 933 667788',
+                'library_id' => $mainLibrary->id,
+            ]
+        );
+        $attendantErmias->syncRoles(['Attendant']);
+
+        $attendantMahlet = User::updateOrCreate(
+            ['email' => 'mahlet@unilib.edu'],
+            [
+                'username' => 'mahlet_attendant',
+                'name' => 'Mahlet Desta',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 933 778899',
+                'library_id' => $mainLibrary->id,
+            ]
+        );
+        $attendantMahlet->syncRoles(['Attendant']);
+
+        $attendantYared = User::updateOrCreate(
+            ['email' => 'yared@unilib.edu'],
+            [
+                'username' => 'yared_attendant',
+                'name' => 'Yared Getachew',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 933 889900',
+                'library_id' => $mainLibrary->id,
+            ]
+        );
+        $attendantYared->syncRoles(['Attendant']);
+
+        // --- Science & Technology Library Attendants ---
+        // Group A Attendants
+        $attendantAbel = User::updateOrCreate(
+            ['email' => 'abel@unilib.edu'],
+            [
+                'username' => 'abel_attendant',
+                'name' => 'Abel Hailu',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 922 112233',
+                'library_id' => $sciTechLibrary->id,
+            ]
+        );
+        $attendantAbel->syncRoles(['Attendant']);
+
+        $attendantHiwot = User::updateOrCreate(
+            ['email' => 'hiwot@unilib.edu'],
+            [
+                'username' => 'hiwot_attendant',
+                'name' => 'Hiwot Lemma',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 922 223344',
+                'library_id' => $sciTechLibrary->id,
+            ]
+        );
+        $attendantHiwot->syncRoles(['Attendant']);
+
+        // Group B Attendants
+        $attendantSamuel = User::updateOrCreate(
+            ['email' => 'samuel@unilib.edu'],
+            [
+                'username' => 'samuel_attendant',
+                'name' => 'Samuel Worku',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 922 334455',
+                'library_id' => $sciTechLibrary->id,
+            ]
+        );
+        $attendantSamuel->syncRoles(['Attendant']);
+
+        $attendantRahel = User::updateOrCreate(
+            ['email' => 'rahel@unilib.edu'],
+            [
+                'username' => 'rahel_attendant',
+                'name' => 'Rahel Bekele',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 922 445566',
+                'library_id' => $sciTechLibrary->id,
+            ]
+        );
+        $attendantRahel->syncRoles(['Attendant']);
+
+        // --- Health Sciences Library Attendants ---
+        // Group A Attendants
         $attendantHealth = User::updateOrCreate(
             ['email' => 'bethlehem@unilib.edu'],
             [
@@ -255,7 +495,48 @@ class DatabaseSeeder extends Seeder
         );
         $attendantHealth->syncRoles(['Attendant']);
 
-        // Attendant: Law & Humanities Library
+        $attendantDaniel = User::updateOrCreate(
+            ['email' => 'daniel@unilib.edu'],
+            [
+                'username' => 'daniel_attendant',
+                'name' => 'Daniel Fikre',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 915 112233',
+                'library_id' => $healthLibrary->id,
+            ]
+        );
+        $attendantDaniel->syncRoles(['Attendant']);
+
+        // Group B Attendants
+        $attendantYonas = User::updateOrCreate(
+            ['email' => 'yonas@unilib.edu'],
+            [
+                'username' => 'yonas_attendant',
+                'name' => 'Yonas Kassa',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 915 223344',
+                'library_id' => $healthLibrary->id,
+            ]
+        );
+        $attendantYonas->syncRoles(['Attendant']);
+
+        $attendantSelamG = User::updateOrCreate(
+            ['email' => 'selam.g@unilib.edu'],
+            [
+                'username' => 'selam_g_attendant',
+                'name' => 'Selamawit Gashaw',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 915 334455',
+                'library_id' => $healthLibrary->id,
+            ]
+        );
+        $attendantSelamG->syncRoles(['Attendant']);
+
+        // --- Law & Humanities Library Attendants ---
+        // Group A Attendants
         $attendantLaw = User::updateOrCreate(
             ['email' => 'natnael@unilib.edu'],
             [
@@ -269,7 +550,47 @@ class DatabaseSeeder extends Seeder
         );
         $attendantLaw->syncRoles(['Attendant']);
 
-        // General Attendant (Floating Attendant across branches)
+        $attendantKalkidan = User::updateOrCreate(
+            ['email' => 'kalkidan@unilib.edu'],
+            [
+                'username' => 'kalkidan_attendant',
+                'name' => 'Kalkidan Abebe',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 999 112233',
+                'library_id' => $lawLibrary->id,
+            ]
+        );
+        $attendantKalkidan->syncRoles(['Attendant']);
+
+        // Group B Attendants
+        $attendantBiniyam = User::updateOrCreate(
+            ['email' => 'biniyam@unilib.edu'],
+            [
+                'username' => 'biniyam_attendant',
+                'name' => 'Biniyam Tesfaye',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 999 223344',
+                'library_id' => $lawLibrary->id,
+            ]
+        );
+        $attendantBiniyam->syncRoles(['Attendant']);
+
+        $attendantMeron = User::updateOrCreate(
+            ['email' => 'meron@unilib.edu'],
+            [
+                'username' => 'meron_attendant',
+                'name' => 'Meron Haile',
+                'password' => $defaultPassword,
+                'status' => 'active',
+                'phone' => '+251 999 334455',
+                'library_id' => $lawLibrary->id,
+            ]
+        );
+        $attendantMeron->syncRoles(['Attendant']);
+
+        // Floating General Attendant (across branches)
         $attendantGeneral = User::updateOrCreate(
             ['email' => 'sara@unilib.edu'],
             [
@@ -278,13 +599,19 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 944 567890',
-                'library_id' => null, // General Attendant
+                'library_id' => null, // Floating General Attendant
             ]
         );
         $attendantGeneral->syncRoles(['Attendant']);
 
         // 7. Seed Attendance Records for Today and Past Days
-        $staffMembers = [$attendantMain, $attendantHealth, $attendantLaw, $attendantGeneral, $librarianUser, $superAdminUser];
+        $staffMembers = [
+            $attendantMain, $attendantAlmaz, $attendantDawitM,
+            $attendantBethlehemT, $attendantHenok, $attendantSenait,
+            $attendantAbel, $attendantSamuel, $attendantHealth,
+            $attendantDaniel, $attendantLaw, $attendantKalkidan,
+            $attendantGeneral, $librarianUser, $superAdminUser,
+        ];
         $libraries = [$mainLibrary, $sciTechLibrary, $healthLibrary, $lawLibrary];
         $userTypes = ['student', 'teacher', 'staff'];
         $genders = ['male', 'female'];
@@ -342,8 +669,8 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 9. Seed Separate Shift Groups strictly per library branch
-        // Main Central Library Groups (e.g. Group A, Group B, Group C)
+        // 9. Seed Separate Shift Groups strictly per library branch (Zero staff overlap!)
+        // Main Central Library Groups (Group A, Group B, Group C)
         $groupMainA = ShiftGroup::updateOrCreate(
             ['library_id' => $mainLibrary->id, 'name' => 'Group A'],
             [
@@ -351,7 +678,7 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $groupMainA->users()->sync([$attendantMain->id, $attendantGeneral->id]);
+        $groupMainA->users()->sync([$attendantMain->id, $attendantAlmaz->id, $attendantDawitM->id]);
 
         $groupMainB = ShiftGroup::updateOrCreate(
             ['library_id' => $mainLibrary->id, 'name' => 'Group B'],
@@ -360,8 +687,7 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        // Attendant can be in multiple groups at a time in the same library
-        $groupMainB->users()->sync([$attendantMain->id, $attendantGeneral->id]);
+        $groupMainB->users()->sync([$attendantBethlehemT->id, $attendantHenok->id, $attendantSenait->id]);
 
         $groupMainC = ShiftGroup::updateOrCreate(
             ['library_id' => $mainLibrary->id, 'name' => 'Group C'],
@@ -370,9 +696,9 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $groupMainC->users()->sync([$attendantGeneral->id]);
+        $groupMainC->users()->sync([$attendantErmias->id, $attendantMahlet->id, $attendantYared->id]);
 
-        // Science & Technology Library Groups (Separate Group A, Group B)
+        // Science & Technology Library Groups (Group A, Group B)
         $groupSciA = ShiftGroup::updateOrCreate(
             ['library_id' => $sciTechLibrary->id, 'name' => 'Group A'],
             [
@@ -380,7 +706,7 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $groupSciA->users()->sync([$librarianUser->id, $attendantGeneral->id]);
+        $groupSciA->users()->sync([$attendantAbel->id, $attendantHiwot->id]);
 
         $groupSciB = ShiftGroup::updateOrCreate(
             ['library_id' => $sciTechLibrary->id, 'name' => 'Group B'],
@@ -389,9 +715,28 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $groupSciB->users()->sync([$librarianUser->id]);
+        $groupSciB->users()->sync([$attendantSamuel->id, $attendantRahel->id]);
 
-        // Law & Humanities Library Groups (Separate Group A, Group B)
+        // Health Sciences Library Groups (Group A, Group B)
+        $groupHealthA = ShiftGroup::updateOrCreate(
+            ['library_id' => $healthLibrary->id, 'name' => 'Group A'],
+            [
+                'description' => 'Health Library clinical desk group.',
+                'is_active' => true,
+            ]
+        );
+        $groupHealthA->users()->sync([$attendantHealth->id, $attendantDaniel->id]);
+
+        $groupHealthB = ShiftGroup::updateOrCreate(
+            ['library_id' => $healthLibrary->id, 'name' => 'Group B'],
+            [
+                'description' => 'Health Library evening & emergency ward group.',
+                'is_active' => true,
+            ]
+        );
+        $groupHealthB->users()->sync([$attendantYonas->id, $attendantSelamG->id]);
+
+        // Law & Humanities Library Groups (Group A, Group B)
         $groupLawA = ShiftGroup::updateOrCreate(
             ['library_id' => $lawLibrary->id, 'name' => 'Group A'],
             [
@@ -399,7 +744,7 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $groupLawA->users()->sync([$attendantLaw->id, $attendantGeneral->id]);
+        $groupLawA->users()->sync([$attendantLaw->id, $attendantKalkidan->id]);
 
         $groupLawB = ShiftGroup::updateOrCreate(
             ['library_id' => $lawLibrary->id, 'name' => 'Group B'],
@@ -408,19 +753,9 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $groupLawB->users()->sync([$attendantLaw->id]);
+        $groupLawB->users()->sync([$attendantBiniyam->id, $attendantMeron->id]);
 
-        // Health Sciences Library Groups (Separate Group A, Group B)
-        $groupHealthA = ShiftGroup::updateOrCreate(
-            ['library_id' => $healthLibrary->id, 'name' => 'Group A'],
-            [
-                'description' => 'Health Library clinical desk group.',
-                'is_active' => true,
-            ]
-        );
-        $groupHealthA->users()->sync([$attendantHealth->id, $attendantGeneral->id]);
-
-        // 10. Seed Sample Ethiopian Calendar Schedules for Main Library and Law Library
+        // 10. Seed Sample Ethiopian Calendar Schedules (Official Holiday Day 12 Hidar Zion Excluded)
         // Main Library Group A
         GroupShiftSchedule::updateOrCreate(
             [
@@ -431,9 +766,9 @@ class DatabaseSeeder extends Seeder
                 'ethiopian_month' => 3,
             ],
             [
-                'days' => [2, 6, 8, 12, 16, 20, 24, 28],
+                'days' => [2, 6, 8, 14, 16, 20, 24, 28], // Day 12 excluded (Hidar Zion Holiday)
                 'status' => 'active',
-                'notes' => 'Main Library Group A daytime duty for Hidar 2019',
+                'notes' => 'Main Library Group A daytime duty for Hidar 2019 (Holiday Day 12 excluded)',
             ]
         );
 
@@ -477,7 +812,7 @@ class DatabaseSeeder extends Seeder
                 'ethiopian_month' => 3,
             ],
             [
-                'days' => [4, 10, 14, 18, 22, 26, 30],
+                'days' => [4, 10, 18, 22, 26, 30],
                 'status' => 'active',
                 'notes' => 'Main Library Group B night duty for Hidar 2019',
             ]

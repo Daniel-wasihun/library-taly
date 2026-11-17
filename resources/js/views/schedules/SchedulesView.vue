@@ -5,10 +5,10 @@
       <div>
         <h2 class="text-xl font-bold text-main-text tracking-tight flex items-center gap-2">
           <CalendarDays class="w-6 h-6 text-brand-blue dark:text-brand-yellow" />
-          <span>{{ langStore.t('nav.schedules', 'Daily Shift Schedules & Ethiopian Roster') }}</span>
+          <span>{{ langStore.t('schedules.title', 'Daily Shift Schedules & Ethiopian Roster') }}</span>
         </h2>
         <p class="text-xs text-main-text/60 mt-0.5">
-          Schedule duty shifts for groups (Group A, B...) across day & night shifts in the Ethiopian calendar.
+          {{ langStore.t('schedules.subtitle', 'Schedule duty shifts for groups (Group A, B...) across day & night shifts in the Ethiopian calendar.') }}
         </p>
       </div>
     </div>
@@ -24,7 +24,7 @@
         @click="activeTab = 'ethiopian_calendar'"
       >
         <CalendarDays class="w-4 h-4" />
-        <span>Ethiopian Monthly Scheduler</span>
+        <span>{{ langStore.t('schedules.tab_calendar', 'Ethiopian Monthly Scheduler') }}</span>
       </button>
 
       <button
@@ -36,7 +36,7 @@
         @click="activeTab = 'groups'"
       >
         <Users class="w-4 h-4" />
-        <span>Shift Groups (Group A, B...)</span>
+        <span>{{ langStore.t('schedules.tab_groups', 'Shift Groups (Group A, B...)') }}</span>
       </button>
 
       <button
@@ -48,7 +48,7 @@
         @click="activeTab = 'shifts'"
       >
         <Clock class="w-4 h-4" />
-        <span>Shift Definitions (Day / Night)</span>
+        <span>{{ langStore.t('schedules.tab_shifts', 'Shift Definitions (Day / Night)') }}</span>
       </button>
 
       <button
@@ -60,7 +60,7 @@
         @click="activeTab = 'duty_logs'"
       >
         <ClipboardList class="w-4 h-4" />
-        <span>Individual Duty Turns</span>
+        <span>{{ langStore.t('schedules.tab_turns', 'Individual Duty Turns') }}</span>
       </button>
     </div>
 

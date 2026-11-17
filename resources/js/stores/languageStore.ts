@@ -105,6 +105,57 @@ const DEFAULT_ENGLISH: Record<string, string> = {
     'attendance.quick_log': 'Quick Log Patron',
     'attendance.batch_increment': 'Batch Increments',
     'attendance.cancel_notice': 'Entries can be cancelled within 2 minutes of logging.',
+    // Schedules, Shifts & Groups translations
+    'schedules.title': 'Daily Shift Schedules & Ethiopian Roster',
+    'schedules.subtitle': 'Schedule duty shifts for groups (Group A, B...) across day & night shifts in the Ethiopian calendar.',
+    'schedules.tab_calendar': 'Ethiopian Monthly Scheduler',
+    'schedules.tab_groups': 'Shift Groups (Group A, B...)',
+    'schedules.tab_shifts': 'Shift Definitions (Day / Night)',
+    'schedules.tab_turns': 'Individual Duty Turns',
+    'schedules.auto_generate': 'Auto-Generate Schedule',
+    'schedules.auto_modal_title': 'Auto-Generate Monthly Shift Schedule',
+    'schedules.auto_modal_desc': 'Automatically calculate and assign shifts with equal workload across groups in this branch only, excluding official Ethiopian holidays.',
+    'schedules.library_branch': 'Library Branch',
+    'schedules.ethiopian_year': 'Ethiopian Year',
+    'schedules.ethiopian_month': 'Ethiopian Month',
+    'schedules.duty_group': 'Duty Group',
+    'schedules.shift_name': 'Shift Name',
+    'schedules.shift_name_am': 'Amharic Title',
+    'schedules.shift_code': 'Shift Code',
+    'schedules.start_time': 'Start Time',
+    'schedules.end_time': 'End Time',
+    'schedules.ethiopian_time': 'Ethiopian Local Time',
+    'schedules.standard_time': 'Standard 24h Time',
+    'schedules.input_mode': 'Time Input System',
+    'schedules.input_ethiopian': 'Ethiopian Clock (12h)',
+    'schedules.input_standard': 'Standard International (24h)',
+    'schedules.time_windows_desc': 'Time Windows & Automatic Conversion',
+    'schedules.converted_preview': 'Real-Time Converted Time Window',
+    'schedules.hour': 'Hour',
+    'schedules.minute': 'Minute',
+    'schedules.period': 'Period',
+    'schedules.period_morning': 'Morning (ጠዋት)',
+    'schedules.period_afternoon': 'Afternoon (ከቀኑ)',
+    'schedules.period_evening': 'Evening (ከምሽቱ)',
+    'schedules.period_night': 'Late Night / Dawn (ከሌሊቱ)',
+    'schedules.detected_holidays': 'Detected Ethiopian Holidays for this Month',
+    'schedules.exclude_holidays': 'Exclude Ethiopian Holidays (1 day off per holiday)',
+    'schedules.overwrite_existing': 'Overwrite existing schedules for this month and branch',
+    'schedules.overlap_warning': 'Staff Multi-Group Overlap Detected',
+    'schedules.overlap_desc': 'One person cannot belong to multiple groups for auto-scheduled shifts in a given library branch. Please assign each attendant to a single group.',
+    'schedules.odd_days': 'Odd Days (1, 3, 5...)',
+    'schedules.even_days': 'Even Days (2, 4, 6...)',
+    'schedules.clear_days': 'Clear',
+    'schedules.save_schedule': 'Save Shift Schedule',
+    'schedules.reset_changes': 'Reset Changes',
+    'schedules.create_group': 'Create Group',
+    'schedules.edit_group': 'Edit Shift Group',
+    'schedules.create_shift': 'Define New Shift',
+    'schedules.edit_shift': 'Edit Shift Definition',
+    'schedules.shift_status': 'Shift Status',
+    'schedules.active_shift': 'Active Shift (Available for Scheduling)',
+    'schedules.holiday_badge': 'Ethiopian Holiday (Free/Off)',
+    'schedules.next_day': 'Next Day (+1 day)',
 };
 
 const DEFAULT_AMHARIC: Record<string, string> = {
@@ -201,6 +252,57 @@ const DEFAULT_AMHARIC: Record<string, string> = {
     'attendance.quick_log': 'ፈጣን መዝግብ',
     'attendance.batch_increment': 'በቡድን ማከል',
     'attendance.cancel_notice': 'የተመዘገበው መረጃ በተመዘገበ በ2 ደቂቃ ውስጥ ብቻ መሰረዝ ይችላል።',
+    // Schedules, Shifts & Groups translations (Amharic)
+    'schedules.title': 'የዕለት ፈረቃዎችና የኢትዮጵያ የቀን መቁጠሪያ መርሃ-ግብር',
+    'schedules.subtitle': 'በኢትዮጵያ የቀን አቆጣጠር የፈረቃ ቡድኖችን የቀንና የማታ ፈረቃዎችን ይመድቡና ያስተዳድሩ።',
+    'schedules.tab_calendar': 'የኢትዮጵያ ወርሃዊ ፈረቃ አዘጋጅ',
+    'schedules.tab_groups': 'የፈረቃ ቡድኖች (ምድብ ሀ፣ ለ...)',
+    'schedules.tab_shifts': 'የፈረቃ አይነቶች (ቀን / ማታ)',
+    'schedules.tab_turns': 'የግል ተረኛ ፈረቃዎች',
+    'schedules.auto_generate': 'መርሃ-ግብር በራስ-ሰር አዘጋጅ',
+    'schedules.auto_modal_title': 'ወርሃዊ ፈረቃን በራስ-ሰር አዘጋጅ',
+    'schedules.auto_modal_desc': 'በዚህ ቅርንጫፍ ላሉ ቡድኖች እኩል የሥራ ድርሻ በማስላትና የኢትዮጵያ ይፋዊ በዓላትን በማስቀረት ፈረቃዎችን በራስ-ሰር ይመድቡ።',
+    'schedules.library_branch': 'የቤተ-መጻሕፍት ቅርንጫፍ',
+    'schedules.ethiopian_year': 'የኢትዮጵያ ዓመተ ምሕረት',
+    'schedules.ethiopian_month': 'የኢትዮጵያ ወር',
+    'schedules.duty_group': 'ተረኛ ቡድን',
+    'schedules.shift_name': 'የፈረቃ ስም (በእንግሊዝኛ)',
+    'schedules.shift_name_am': 'የፈረቃ ስም (በአማርኛ)',
+    'schedules.shift_code': 'የፈረቃ መለያ ኮድ',
+    'schedules.start_time': 'የመጀመሪያ ሰዓት',
+    'schedules.end_time': 'የማብቂያ ሰዓት',
+    'schedules.ethiopian_time': 'የኢትዮጵያ ሰዓት',
+    'schedules.standard_time': 'ዓለም አቀፍ 24-ሰዓት',
+    'schedules.input_mode': 'የሰዓት ማስገቢያ ሥርዓት',
+    'schedules.input_ethiopian': 'የኢትዮጵያ አቆጣጠር (12-ሰዓት)',
+    'schedules.input_standard': 'ዓለም አቀፍ አቆጣጠር (24-ሰዓት)',
+    'schedules.time_windows_desc': 'የሰዓት መስኮትና ራስ-ሰር ልወጣ',
+    'schedules.converted_preview': 'በቀጥታ የተለወጠ የሰዓት መስኮት',
+    'schedules.hour': 'ሰዓት',
+    'schedules.minute': 'ደቂቃ',
+    'schedules.period': 'ክፍለ ጊዜ',
+    'schedules.period_morning': 'ጠዋት',
+    'schedules.period_afternoon': 'ከቀኑ',
+    'schedules.period_evening': 'ከምሽቱ',
+    'schedules.period_night': 'ከሌሊቱ (የሌሊት 11 ሰዓት ጨምሮ)',
+    'schedules.detected_holidays': 'በዚህ ወር የተገኙ ይፋዊ የኢትዮጵያ በዓላት',
+    'schedules.exclude_holidays': 'የኢትዮጵያ በዓላትን ከፈረቃ አስቀር (በዓሉ የዕረፍት ቀን ይሆናል)',
+    'schedules.overwrite_existing': 'የነበሩትን የዚህ ወር ፈረቃዎች በሙሉ በድጋሚ ይተኩ',
+    'schedules.overlap_warning': 'የሠራተኛ በሁለት ቡድን ውስጥ መገኘት ታይቷል',
+    'schedules.overlap_desc': 'በአንድ ቅርንጫፍ ውስጥ አንድ ሰው በአንድ ጊዜ በሁለት ቡድኖች ውስጥ መሆን አይችልም። እባክዎ ለእያንዳንዱ ሠራተኛ አንድ ቡድን ብቻ ይምረጡ።',
+    'schedules.odd_days': 'ኢ-ተጋማሽ ቀናት (1፣ 3፣ 5...)',
+    'schedules.even_days': 'ተጋማሽ ቀናት (2፣ 4፣ 6...)',
+    'schedules.clear_days': 'አጽዳ',
+    'schedules.save_schedule': 'የፈረቃ መርሃ-ግብር አስቀምጥ',
+    'schedules.reset_changes': 'ለውጦችን መልስ',
+    'schedules.create_group': 'አዲስ ቡድን ፍጠር',
+    'schedules.edit_group': 'የፈረቃ ቡድን አስተካክል',
+    'schedules.create_shift': 'አዲስ ፈረቃ መዝግብ',
+    'schedules.edit_shift': 'የፈረቃ ዝርዝር አስተካክል',
+    'schedules.shift_status': 'የፈረቃ ሁኔታ',
+    'schedules.active_shift': 'ንቁ ፈረቃ (ለመመደብ ዝግጁ)',
+    'schedules.holiday_badge': 'የኢትዮጵያ በዓል (የዕረፍት ቀን)',
+    'schedules.next_day': 'ቀጣይ ቀን (+1 ቀን)',
 };
 
 export const useLanguageStore = defineStore('language', () => {
@@ -236,15 +338,18 @@ export const useLanguageStore = defineStore('language', () => {
         }
 
         isLoading.value = true;
+        const defaultDict = lang === 'am' ? DEFAULT_AMHARIC : DEFAULT_ENGLISH;
         try {
             const res = await api.get<{ success: boolean; translations: Record<string, string> }>(`/translations/front/${lang}`);
             if (res.data?.translations) {
-                translations.value = res.data.translations;
-                translationCache.value[lang] = res.data.translations;
+                translations.value = { ...defaultDict, ...res.data.translations };
+                translationCache.value[lang] = translations.value;
+            } else {
+                translations.value = defaultDict;
             }
         } catch {
             // fallback to default dictionary
-            translations.value = lang === 'am' ? DEFAULT_AMHARIC : DEFAULT_ENGLISH;
+            translations.value = defaultDict;
         } finally {
             isLoading.value = false;
         }

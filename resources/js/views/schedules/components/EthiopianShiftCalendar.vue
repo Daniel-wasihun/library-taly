@@ -750,9 +750,16 @@ const clearShiftDays = (shiftId: number) => {
  * Open Auto Generate Modal & Check Overlaps
  */
 const openAutoGenerateModal = async () => {
-  const overlapRes = await shiftStore.checkStaffOverlap(selectedLibraryId.value);
-  overlapState.has_overlap = overlapRes.has_overlap;
-  overlapState.overlaps = overlapRes.overlaps;
+  try {
+    const overlapRes = typeof shiftStore.checkStaffOverlap === 'function'
+      ? await shiftStore.checkStaffOverlap(selectedLibraryId.value)
+      : { has_overlap: false, overlaps: [] };
+    overlapState.has_overlap = Boolean(overlapRes?.has_overlap);
+    overlapState.overlaps = overlapRes?.overlaps || [];
+  } catch (err) {
+    overlapState.has_overlap = false;
+    overlapState.overlaps = [];
+  }
   showAutoModal.value = true;
 };
 

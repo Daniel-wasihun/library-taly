@@ -5,115 +5,185 @@
       <div>
         <h2 class="text-xl font-bold text-main-text tracking-tight flex items-center gap-2">
           <CalendarDays class="w-6 h-6 text-brand-blue dark:text-brand-yellow" />
-          <span>{{ langStore.t('nav.schedules', 'Duty Shift Schedules') }}</span>
+          <span>{{ langStore.t('nav.schedules', 'Daily Shift Schedules & Ethiopian Roster') }}</span>
         </h2>
-        <p class="text-xs text-main-text/50 mt-0.5">
-          Assign, inspect, and enforce staff duty shifts for library operations
+        <p class="text-xs text-main-text/60 mt-0.5">
+          Schedule duty shifts for groups (Group A, B...) across day & night shifts in the Ethiopian calendar.
         </p>
       </div>
-
-      <Button
-        variant="primary"
-        size="sm"
-        :icon="Plus"
-        @click="showCreate = true"
-      >
-        Assign Shift
-      </Button>
     </div>
 
-    <!-- Filters Toolbar -->
-    <div class="flex flex-col sm:flex-row gap-3">
-      <input
-        v-model="dateFilter"
-        type="date"
-        class="px-3 py-2 text-xs rounded-sm bg-card-bg border border-card-border text-main-text shadow-2xs"
-      />
-      <select
-        v-model="taskFilter"
-        class="px-3 py-2 text-xs rounded-sm bg-card-bg border border-card-border text-main-text shadow-2xs"
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-card-border overflow-x-auto custom-scrollbar pb-px">
+      <button
+        type="button"
+        class="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-t-sm transition-all cursor-pointer whitespace-nowrap border-b-2"
+        :class="activeTab === 'ethiopian_calendar'
+          ? 'border-nav-accent text-nav-accent bg-nav-accent/5'
+          : 'border-transparent text-main-text/60 hover:text-main-text hover:bg-card-bg'"
+        @click="activeTab = 'ethiopian_calendar'"
       >
-        <option value="">All Tasks</option>
-        <option v-for="(name, key) in scheduleStore.availableTasks" :key="key" :value="key">
-          {{ name }}
-        </option>
-      </select>
+        <CalendarDays class="w-4 h-4" />
+        <span>Ethiopian Monthly Scheduler</span>
+      </button>
+
+      <button
+        type="button"
+        class="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-t-sm transition-all cursor-pointer whitespace-nowrap border-b-2"
+        :class="activeTab === 'groups'
+          ? 'border-nav-accent text-nav-accent bg-nav-accent/5'
+          : 'border-transparent text-main-text/60 hover:text-main-text hover:bg-card-bg'"
+        @click="activeTab = 'groups'"
+      >
+        <Users class="w-4 h-4" />
+        <span>Shift Groups (Group A, B...)</span>
+      </button>
+
+      <button
+        type="button"
+        class="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-t-sm transition-all cursor-pointer whitespace-nowrap border-b-2"
+        :class="activeTab === 'shifts'
+          ? 'border-nav-accent text-nav-accent bg-nav-accent/5'
+          : 'border-transparent text-main-text/60 hover:text-main-text hover:bg-card-bg'"
+        @click="activeTab = 'shifts'"
+      >
+        <Clock class="w-4 h-4" />
+        <span>Shift Definitions (Day / Night)</span>
+      </button>
+
+      <button
+        type="button"
+        class="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-t-sm transition-all cursor-pointer whitespace-nowrap border-b-2"
+        :class="activeTab === 'duty_logs'
+          ? 'border-nav-accent text-nav-accent bg-nav-accent/5'
+          : 'border-transparent text-main-text/60 hover:text-main-text hover:bg-card-bg'"
+        @click="activeTab = 'duty_logs'"
+      >
+        <ClipboardList class="w-4 h-4" />
+        <span>Individual Duty Turns</span>
+      </button>
     </div>
 
-    <!-- DataTable -->
-    <DataTable
-      :columns="columns"
-      :items="scheduleStore.schedules"
-      :loading="scheduleStore.loading"
-      :total="scheduleStore.pagination.total"
-      :per-page="15"
-      :current-page="scheduleStore.pagination.current_page"
-      @page-change="handlePageChange"
-    >
-      <template #user="{ item }">
-        <div class="flex items-center gap-2.5">
-          <div class="w-7 h-7 rounded-lg bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center font-bold text-xs shrink-0">
-            {{ (item.user?.name || '?').charAt(0).toUpperCase() }}
-          </div>
-          <div class="min-w-0">
-            <p class="font-bold text-main-text truncate">{{ item.user?.name }}</p>
-            <p class="text-[11px] text-main-text/50 font-mono truncate">@{{ item.user?.username }}</p>
-          </div>
-        </div>
-      </template>
+    <!-- Tab 1: Ethiopian Monthly Calendar Scheduler -->
+    <div v-if="activeTab === 'ethiopian_calendar'">
+      <EthiopianShiftCalendar />
+    </div>
 
-      <template #task="{ item }">
-        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/25">
-          {{ scheduleStore.availableTasks[item.task_key] || item.task_key }}
-        </span>
-      </template>
+    <!-- Tab 2: Shift Groups Management -->
+    <div v-else-if="activeTab === 'groups'">
+      <ShiftGroupsTab />
+    </div>
 
-      <template #shift_date="{ item }">
-        <span class="text-xs font-mono text-main-text/70">{{ formatDate(item.shift_date) }}</span>
-      </template>
+    <!-- Tab 3: Shift Definitions CRUD -->
+    <div v-else-if="activeTab === 'shifts'">
+      <ShiftDefinitionsTab />
+    </div>
 
-      <template #time="{ item }">
-        <span class="text-xs font-mono text-main-text/70">{{ item.start_time }} – {{ item.end_time }}</span>
-      </template>
-
-      <template #status="{ item }">
-        <StatusBadge :status="item.status" />
-      </template>
-
-      <template #actions="{ item }">
-        <div class="flex items-center justify-end">
-          <button
-            type="button"
-            class="table-action-btn text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
-            title="Cancel Shift"
-            @click="confirmDelete(item)"
+    <!-- Tab 4: Individual Duty Turns & Logs -->
+    <div v-else-if="activeTab === 'duty_logs'" class="space-y-4">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <input
+            v-model="dateFilter"
+            type="date"
+            class="px-3 py-2 text-xs rounded-sm bg-card-bg border border-card-border text-main-text shadow-2xs"
+          />
+          <select
+            v-model="taskFilter"
+            class="px-3 py-2 text-xs rounded-sm bg-card-bg border border-card-border text-main-text shadow-2xs"
           >
-            <Trash2 class="w-4 h-4 stroke-[2.2]" />
-          </button>
+            <option value="">All Tasks</option>
+            <option v-for="(name, key) in scheduleStore.availableTasks" :key="key" :value="key">
+              {{ name }}
+            </option>
+          </select>
         </div>
-      </template>
-    </DataTable>
 
-    <!-- Assign Shift Modal -->
+        <Button
+          variant="primary"
+          size="sm"
+          :icon="Plus"
+          @click="showCreateIndividual = true"
+        >
+          Assign Turn
+        </Button>
+      </div>
+
+      <!-- DataTable -->
+      <DataTable
+        :columns="columns"
+        :items="scheduleStore.schedules"
+        :loading="scheduleStore.loading"
+        :total="scheduleStore.pagination.total"
+        :per-page="15"
+        :current-page="scheduleStore.pagination.current_page"
+        @page-change="handlePageChange"
+      >
+        <template #user="{ item }">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-sm bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center font-bold text-xs shrink-0">
+              {{ (item.user?.name || '?').charAt(0).toUpperCase() }}
+            </div>
+            <div class="min-w-0">
+              <p class="font-bold text-main-text truncate">{{ item.user?.name }}</p>
+              <p class="text-[11px] text-main-text/50 font-mono truncate">@{{ item.user?.username }}</p>
+            </div>
+          </div>
+        </template>
+
+        <template #task="{ item }">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-sm text-[11px] font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/25">
+            {{ scheduleStore.availableTasks[item.task_key] || item.task_key }}
+          </span>
+        </template>
+
+        <template #shift_date="{ item }">
+          <span class="text-xs font-mono text-main-text/70">{{ formatDate(item.shift_date) }}</span>
+        </template>
+
+        <template #time="{ item }">
+          <span class="text-xs font-mono text-main-text/70">{{ item.start_time }} – {{ item.end_time }}</span>
+        </template>
+
+        <template #status="{ item }">
+          <StatusBadge :status="item.status" />
+        </template>
+
+        <template #actions="{ item }">
+          <div class="flex items-center justify-end">
+            <button
+              type="button"
+              class="table-action-btn text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
+              title="Cancel Shift"
+              @click="confirmDeleteIndividual(item)"
+            >
+              <Trash2 class="w-4 h-4 stroke-[2.2]" />
+            </button>
+          </div>
+        </template>
+      </DataTable>
+    </div>
+
+    <!-- Individual Turn Modal -->
     <Modal
-      :show="showCreate"
-      title="Assign Duty Shift"
-      description="Schedule a turn for a staff member to authorize library duties."
+      :show="showCreateIndividual"
+      title="Assign Individual Duty Turn"
+      description="Schedule a single turn for an individual staff member."
       :icon="CalendarDays"
-      size="lg"
-      @close="showCreate = false"
+      size="md"
+      @close="showCreateIndividual = false"
     >
-      <form @submit.prevent="handleCreate" class="space-y-4">
+      <form @submit.prevent="handleCreateIndividual" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
             Staff Member User ID <span class="text-rose-500">*</span>
           </label>
           <input
-            v-model.number="form.user_id"
+            v-model.number="individualForm.user_id"
             type="number"
             min="1"
             required
-            placeholder="Staff User ID (e.g. 2 for tigist_duty, 3 for yohannes_offduty)"
+            placeholder="Staff User ID"
             class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
           />
         </div>
@@ -123,7 +193,7 @@
             Library Duty Task <span class="text-rose-500">*</span>
           </label>
           <select
-            v-model="form.task_key"
+            v-model="individualForm.task_key"
             required
             class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
           >
@@ -140,7 +210,7 @@
               Shift Date <span class="text-rose-500">*</span>
             </label>
             <input
-              v-model="form.shift_date"
+              v-model="individualForm.shift_date"
               type="date"
               required
               class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
@@ -149,7 +219,7 @@
           <div>
             <label class="block text-xs font-semibold text-main-text mb-1">Start Time</label>
             <input
-              v-model="form.start_time"
+              v-model="individualForm.start_time"
               type="time"
               class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
             />
@@ -157,61 +227,51 @@
           <div>
             <label class="block text-xs font-semibold text-main-text mb-1">End Time</label>
             <input
-              v-model="form.end_time"
+              v-model="individualForm.end_time"
               type="time"
               class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
             />
           </div>
         </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-main-text mb-1">Notes (optional)</label>
-          <textarea
-            v-model="form.notes"
-            rows="2"
-            placeholder="Desk assignment, handover instructions..."
-            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs resize-none"
-          ></textarea>
-        </div>
       </form>
 
       <template #footer>
-        <Button variant="secondary" size="sm" @click="showCreate = false">
+        <Button variant="secondary" size="sm" @click="showCreateIndividual = false">
           {{ langStore.t('common.cancel', 'Cancel') }}
         </Button>
         <Button
           variant="primary"
           size="sm"
           :loading="scheduleStore.loading"
-          @click="handleCreate"
+          @click="handleCreateIndividual"
         >
-          Assign Shift
+          Assign Turn
         </Button>
       </template>
     </Modal>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Individual Turn Delete Modal -->
     <Modal
-      :show="showDelete"
-      title="Cancel Duty Shift"
+      :show="showDeleteIndividual"
+      title="Cancel Duty Turn"
       size="sm"
-      @close="showDelete = false"
+      @close="showDeleteIndividual = false"
     >
       <div class="text-center py-2 space-y-3">
         <div class="w-12 h-12 rounded-full mx-auto flex items-center justify-center bg-rose-500/10 text-rose-600 border border-rose-500/20">
           <Trash2 class="w-6 h-6 stroke-[2.2]" />
         </div>
         <p class="text-xs text-main-text">
-          Cancel and delete this assigned duty shift?
+          Cancel and delete this assigned individual duty turn?
         </p>
       </div>
 
       <template #footer>
-        <Button variant="secondary" size="sm" @click="showDelete = false">
-          {{ langStore.t('common.cancel', 'Cancel') }}
+        <Button variant="secondary" size="sm" @click="showDeleteIndividual = false">
+          Cancel
         </Button>
-        <Button variant="danger" size="sm" @click="handleDelete">
-          Cancel Shift
+        <Button variant="danger" size="sm" @click="handleDeleteIndividual">
+          Cancel Turn
         </Button>
       </template>
     </Modal>
@@ -222,21 +282,34 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useScheduleStore } from '@/stores/scheduleStore';
 import { useLanguageStore } from '@/stores/languageStore';
+import EthiopianShiftCalendar from './components/EthiopianShiftCalendar.vue';
+import ShiftGroupsTab from './components/ShiftGroupsTab.vue';
+import ShiftDefinitionsTab from './components/ShiftDefinitionsTab.vue';
 import Button from '@/components/ui/Button.vue';
 import DataTable, { ColumnDef } from '@/components/ui/DataTable.vue';
 import Modal from '@/components/ui/Modal.vue';
 import StatusBadge from '@/components/ui/StatusBadge.vue';
-import { CalendarDays, Plus, Trash2 } from 'lucide-vue-next';
+import {
+  CalendarDays,
+  Users,
+  Clock,
+  ClipboardList,
+  Plus,
+  Trash2,
+} from 'lucide-vue-next';
 import type { DutySchedule } from '@/types';
 
 const scheduleStore = useScheduleStore();
 const langStore = useLanguageStore();
 
+const activeTab = ref<'ethiopian_calendar' | 'groups' | 'shifts' | 'duty_logs'>('ethiopian_calendar');
+
+// Individual Turn Table State
 const dateFilter = ref('');
 const taskFilter = ref('');
-const showCreate = ref(false);
-const showDelete = ref(false);
-const deletingId = ref<number | null>(null);
+const showCreateIndividual = ref(false);
+const showDeleteIndividual = ref(false);
+const deletingIndividualId = ref<number | null>(null);
 
 const columns = computed<ColumnDef[]>(() => [
   { key: 'user', label: 'Staff Member' },
@@ -247,9 +320,9 @@ const columns = computed<ColumnDef[]>(() => [
   { key: 'actions', label: langStore.t('common.actions', 'Actions'), align: 'right' },
 ]);
 
-const form = reactive({
+const individualForm = reactive({
   user_id: 2,
-  task_key: 'book_circulation',
+  task_key: 'attendance_desk',
   shift_date: new Date().toISOString().split('T')[0],
   start_time: '08:00',
   end_time: '17:00',
@@ -265,22 +338,22 @@ const formatDate = (d: string) => {
   });
 };
 
-const confirmDelete = (s: DutySchedule) => {
-  deletingId.value = s.id;
-  showDelete.value = true;
+const confirmDeleteIndividual = (s: DutySchedule) => {
+  deletingIndividualId.value = s.id;
+  showDeleteIndividual.value = true;
 };
 
-const handleCreate = async () => {
-  const success = await scheduleStore.createSchedule({ ...form });
+const handleCreateIndividual = async () => {
+  const success = await scheduleStore.createSchedule({ ...individualForm });
   if (success) {
-    showCreate.value = false;
+    showCreateIndividual.value = false;
   }
 };
 
-const handleDelete = async () => {
-  if (deletingId.value) {
-    await scheduleStore.deleteSchedule(deletingId.value);
-    showDelete.value = false;
+const handleDeleteIndividual = async () => {
+  if (deletingIndividualId.value) {
+    await scheduleStore.deleteSchedule(deletingIndividualId.value);
+    showDeleteIndividual.value = false;
   }
 };
 
@@ -299,5 +372,7 @@ watch([dateFilter, taskFilter], () => {
   });
 });
 
-onMounted(() => scheduleStore.fetchSchedules());
+onMounted(() => {
+  scheduleStore.fetchSchedules();
+});
 </script>

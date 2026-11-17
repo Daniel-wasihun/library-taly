@@ -156,3 +156,85 @@ export interface Toast {
     type: ToastType;
     message: string;
 }
+
+export interface Shift {
+    id: number;
+    name: string;
+    name_am?: string | null;
+    code: string;
+    start_time: string;
+    end_time: string;
+    ethiopian_start_time: string;
+    ethiopian_end_time: string;
+    description?: string | null;
+    library_id?: number | null;
+    is_active: boolean;
+    created_at?: string;
+}
+
+export interface ShiftGroup {
+    id: number;
+    name: string;
+    library_id: number | null;
+    library?: Library | null;
+    description?: string | null;
+    is_active: boolean;
+    users?: Partial<User>[];
+    users_count?: number;
+    created_at?: string;
+}
+
+export interface GroupShiftSchedule {
+    id: number;
+    library_id: number;
+    shift_group_id: number;
+    shift_id: number;
+    ethiopian_year: number;
+    ethiopian_month: number;
+    days: number[];
+    status: string;
+    notes?: string | null;
+    group?: Partial<ShiftGroup>;
+    shift?: Partial<Shift>;
+    library?: Partial<Library>;
+}
+
+export interface EthiopianMonth {
+    number: number;
+    name_am: string;
+    name_en: string;
+    label: string;
+    days_count: number;
+}
+
+export interface ShiftConflictInfo {
+    group_id: number;
+    group_name: string;
+    shift_id: number;
+    shift_name: string;
+}
+
+export interface ShiftMatrixResponse {
+    success: boolean;
+    current_ethiopian_date: {
+        year: number;
+        month: number;
+        day: number;
+        month_name_am: string;
+        month_name_en: string;
+        formatted_am: string;
+        formatted_en: string;
+        time_ethiopian: string;
+    };
+    ethiopian_months: EthiopianMonth[];
+    ethiopian_year: number;
+    ethiopian_month: number;
+    library: Library;
+    shifts: Shift[];
+    groups: ShiftGroup[];
+    schedules: GroupShiftSchedule[];
+    conflict_matrix: {
+        by_shift: Record<number, Record<number, ShiftConflictInfo>>;
+        by_group: Record<number, Record<number, number[]>>;
+    };
+}

@@ -71,6 +71,22 @@ class Library extends Model
     }
 
     /**
+     * Shift groups for this branch.
+     */
+    public function shiftGroups(): HasMany
+    {
+        return $this->hasMany(ShiftGroup::class);
+    }
+
+    /**
+     * Group shift schedules for this branch.
+     */
+    public function groupShiftSchedules(): HasMany
+    {
+        return $this->hasMany(GroupShiftSchedule::class);
+    }
+
+    /**
      * Scope for active library branches.
      */
     public function scopeActive($query)

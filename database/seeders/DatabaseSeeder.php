@@ -2,8 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\GroupShiftSchedule;
 use App\Models\Library;
 use App\Models\LibraryAttendance;
+use App\Models\Shift;
+use App\Models\ShiftGroup;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
@@ -309,5 +312,127 @@ class DatabaseSeeder extends Seeder
                 'entry_at' => $entryTime,
             ]);
         }
+
+        // 8. Seed Default Shifts (Day & Night) with Ethiopian Local Time
+        $dayShift = Shift::updateOrCreate(
+            ['code' => 'day'],
+            [
+                'name' => 'Day Shift',
+                'name_am' => 'የቀን ፈረቃ',
+                'start_time' => '08:00',
+                'end_time' => '17:00',
+                'ethiopian_start_time' => '02:00 ጠዋት',
+                'ethiopian_end_time' => '11:00 ከቀኑ',
+                'description' => 'Regular daytime library shift from 02:00 morning to 11:00 afternoon Ethiopian time.',
+                'is_active' => true,
+            ]
+        );
+
+        $nightShift = Shift::updateOrCreate(
+            ['code' => 'night'],
+            [
+                'name' => 'Night Shift',
+                'name_am' => 'የማታ ፈረቃ',
+                'start_time' => '17:00',
+                'end_time' => '23:00',
+                'ethiopian_start_time' => '11:00 ከቀኑ',
+                'ethiopian_end_time' => '05:00 ከምሽቱ',
+                'description' => 'Evening and night library duty shift from 11:00 afternoon to 05:00 night Ethiopian time.',
+                'is_active' => true,
+            ]
+        );
+
+        // 9. Seed Shift Groups for Main Central Library
+        $groupA = ShiftGroup::updateOrCreate(
+            ['name' => 'Group A', 'library_id' => $mainLibrary->id],
+            [
+                'description' => 'Primary duty group for Main Central Library desk and reading rooms.',
+                'is_active' => true,
+            ]
+        );
+        $groupA->users()->sync([$attendantMain->id, $attendantGeneral->id]);
+
+        $groupB = ShiftGroup::updateOrCreate(
+            ['name' => 'Group B', 'library_id' => $mainLibrary->id],
+            [
+                'description' => 'Secondary duty group for Main Central Library weekend and night coverage.',
+                'is_active' => true,
+            ]
+        );
+        $groupB->users()->sync([$attendantGeneral->id]);
+
+        // Shift Groups for Science & Technology Library
+        $groupSciA = ShiftGroup::updateOrCreate(
+            ['name' => 'Group A (SciTech)', 'library_id' => $sciTechLibrary->id],
+            [
+                'description' => 'Science & Tech duty roster group.',
+                'is_active' => true,
+            ]
+        );
+        $groupSciA->users()->sync([$librarianUser->id, $attendantGeneral->id]);
+
+        // 10. Seed Sample Ethiopian Calendar Schedules
+        // Current Ethiopian Date: Hidar (Month 3), Year 2019 E.C.
+        // Group A: Day Shift on [2, 6, 8, 12, 16, 20, 24, 28], Night Shift on [1, 5, 9, 13, 17, 21, 25, 29]
+        GroupShiftSchedule::updateOrCreate(
+            [
+                'library_id' => $mainLibrary->id,
+                'shift_group_id' => $groupA->id,
+                'shift_id' => $dayShift->id,
+                'ethiopian_year' => 2019,
+                'ethiopian_month' => 3,
+            ],
+            [
+                'days' => [2, 6, 8, 12, 16, 20, 24, 28],
+                'status' => 'active',
+                'notes' => 'Group A daytime duty schedule for Hidar 2019',
+            ]
+        );
+
+        GroupShiftSchedule::updateOrCreate(
+            [
+                'library_id' => $mainLibrary->id,
+                'shift_group_id' => $groupA->id,
+                'shift_id' => $nightShift->id,
+                'ethiopian_year' => 2019,
+                'ethiopian_month' => 3,
+            ],
+            [
+                'days' => [1, 5, 9, 13, 17, 21, 25, 29],
+                'status' => 'active',
+                'notes' => 'Group A night duty schedule for Hidar 2019',
+            ]
+        );
+
+        // Group B: Day Shift on [3, 7, 11, 15, 19, 23, 27], Night Shift on [4, 8, 12, 16, 20, 24, 28] (non-overlapping)
+        GroupShiftSchedule::updateOrCreate(
+            [
+                'library_id' => $mainLibrary->id,
+                'shift_group_id' => $groupB->id,
+                'shift_id' => $dayShift->id,
+                'ethiopian_year' => 2019,
+                'ethiopian_month' => 3,
+            ],
+            [
+                'days' => [3, 7, 11, 15, 19, 23, 27],
+                'status' => 'active',
+                'notes' => 'Group B daytime duty schedule for Hidar 2019',
+            ]
+        );
+
+        GroupShiftSchedule::updateOrCreate(
+            [
+                'library_id' => $mainLibrary->id,
+                'shift_group_id' => $groupB->id,
+                'shift_id' => $nightShift->id,
+                'ethiopian_year' => 2019,
+                'ethiopian_month' => 3,
+            ],
+            [
+                'days' => [4, 10, 14, 18, 22, 26, 30],
+                'status' => 'active',
+                'notes' => 'Group B night duty schedule for Hidar 2019',
+            ]
+        );
     }
 }

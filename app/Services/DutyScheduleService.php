@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DutySchedule;
+use App\Models\GroupShiftSchedule;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -82,6 +83,46 @@ class DutyScheduleService
                     'task_name' => $taskName,
                     'schedule' => $schedule,
                 ];
+            }
+
+            // 4. Check Ethiopian Calendar Monthly Group Shift Schedule
+            $targetCarbon = Carbon::parse($targetDate);
+            [$eyear, $emonth, $eday] = EthiopianCalendarService::gregorianToEthiopian(
+                (int)$targetCarbon->year,
+                (int)$targetCarbon->month,
+                (int)$targetCarbon->day
+            );
+
+            $userGroupIds = $user->shiftGroups()->pluck('shift_groups.id');
+            if ($userGroupIds->isNotEmpty()) {
+                $groupSchedQuery = GroupShiftSchedule::with(['shift', 'group'])
+                    ->whereIn('shift_group_id', $userGroupIds)
+                    ->where('ethiopian_year', $eyear)
+                    ->where('ethiopian_month', $emonth)
+                    ->where('status', 'active');
+
+                if ($libraryId && !$user->canManageAllLibraries()) {
+                    $groupSchedQuery->where('library_id', $libraryId);
+                }
+
+                $activeGroupSched = $groupSchedQuery->get()->first(function ($sched) use ($eday) {
+                    $days = is_array($sched->days) ? $sched->days : [];
+                    return in_array((int)$eday, array_map('intval', $days), true);
+                });
+
+                if ($activeGroupSched) {
+                    $shiftName = $activeGroupSched->shift ? $activeGroupSched->shift->name : 'Scheduled Shift';
+                    $groupName = $activeGroupSched->group ? $activeGroupSched->group->name : 'Duty Group';
+                    $timeInfo = $activeGroupSched->shift ? ($activeGroupSched->shift->ethiopian_start_time . ' - ' . $activeGroupSched->shift->ethiopian_end_time) : '';
+
+                    return [
+                        'allowed' => true,
+                        'reason' => "Active group duty turn verified ({$groupName} – {$shiftName} [{$timeInfo}]) on Ethiopian date {$eday}/{$emonth}/{$eyear} E.C.",
+                        'task' => $taskKey,
+                        'task_name' => $taskName,
+                        'group_schedule' => $activeGroupSched,
+                    ];
+                }
             }
 
             // User does not have a duty shift today: find upcoming turn

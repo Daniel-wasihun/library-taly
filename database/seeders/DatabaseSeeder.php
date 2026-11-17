@@ -342,42 +342,90 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 9. Seed Shift Groups for Main Central Library
-        $groupA = ShiftGroup::updateOrCreate(
-            ['name' => 'Group A', 'library_id' => $mainLibrary->id],
+        // 9. Seed Separate Shift Groups strictly per library branch
+        // Main Central Library Groups (e.g. Group A, Group B, Group C)
+        $groupMainA = ShiftGroup::updateOrCreate(
+            ['library_id' => $mainLibrary->id, 'name' => 'Group A'],
             [
-                'description' => 'Primary duty group for Main Central Library desk and reading rooms.',
+                'description' => 'Main Central Library primary day duty group.',
                 'is_active' => true,
             ]
         );
-        $groupA->users()->sync([$attendantMain->id, $attendantGeneral->id]);
+        $groupMainA->users()->sync([$attendantMain->id, $attendantGeneral->id]);
 
-        $groupB = ShiftGroup::updateOrCreate(
-            ['name' => 'Group B', 'library_id' => $mainLibrary->id],
+        $groupMainB = ShiftGroup::updateOrCreate(
+            ['library_id' => $mainLibrary->id, 'name' => 'Group B'],
             [
-                'description' => 'Secondary duty group for Main Central Library weekend and night coverage.',
+                'description' => 'Main Central Library evening & night duty group.',
                 'is_active' => true,
             ]
         );
-        $groupB->users()->sync([$attendantGeneral->id]);
+        // Attendant can be in multiple groups at a time in the same library
+        $groupMainB->users()->sync([$attendantMain->id, $attendantGeneral->id]);
 
-        // Shift Groups for Science & Technology Library
+        $groupMainC = ShiftGroup::updateOrCreate(
+            ['library_id' => $mainLibrary->id, 'name' => 'Group C'],
+            [
+                'description' => 'Main Central Library weekend rotation group.',
+                'is_active' => true,
+            ]
+        );
+        $groupMainC->users()->sync([$attendantGeneral->id]);
+
+        // Science & Technology Library Groups (Separate Group A, Group B)
         $groupSciA = ShiftGroup::updateOrCreate(
-            ['name' => 'Group A (SciTech)', 'library_id' => $sciTechLibrary->id],
+            ['library_id' => $sciTechLibrary->id, 'name' => 'Group A'],
             [
-                'description' => 'Science & Tech duty roster group.',
+                'description' => 'Science & Tech primary circulation group.',
                 'is_active' => true,
             ]
         );
         $groupSciA->users()->sync([$librarianUser->id, $attendantGeneral->id]);
 
-        // 10. Seed Sample Ethiopian Calendar Schedules
-        // Current Ethiopian Date: Hidar (Month 3), Year 2019 E.C.
-        // Group A: Day Shift on [2, 6, 8, 12, 16, 20, 24, 28], Night Shift on [1, 5, 9, 13, 17, 21, 25, 29]
+        $groupSciB = ShiftGroup::updateOrCreate(
+            ['library_id' => $sciTechLibrary->id, 'name' => 'Group B'],
+            [
+                'description' => 'Science & Tech archive & evening duty group.',
+                'is_active' => true,
+            ]
+        );
+        $groupSciB->users()->sync([$librarianUser->id]);
+
+        // Law & Humanities Library Groups (Separate Group A, Group B)
+        $groupLawA = ShiftGroup::updateOrCreate(
+            ['library_id' => $lawLibrary->id, 'name' => 'Group A'],
+            [
+                'description' => 'Law Library weekday duty group.',
+                'is_active' => true,
+            ]
+        );
+        $groupLawA->users()->sync([$attendantLaw->id, $attendantGeneral->id]);
+
+        $groupLawB = ShiftGroup::updateOrCreate(
+            ['library_id' => $lawLibrary->id, 'name' => 'Group B'],
+            [
+                'description' => 'Law Library weekend & night rotation group.',
+                'is_active' => true,
+            ]
+        );
+        $groupLawB->users()->sync([$attendantLaw->id]);
+
+        // Health Sciences Library Groups (Separate Group A, Group B)
+        $groupHealthA = ShiftGroup::updateOrCreate(
+            ['library_id' => $healthLibrary->id, 'name' => 'Group A'],
+            [
+                'description' => 'Health Library clinical desk group.',
+                'is_active' => true,
+            ]
+        );
+        $groupHealthA->users()->sync([$attendantHealth->id, $attendantGeneral->id]);
+
+        // 10. Seed Sample Ethiopian Calendar Schedules for Main Library and Law Library
+        // Main Library Group A
         GroupShiftSchedule::updateOrCreate(
             [
                 'library_id' => $mainLibrary->id,
-                'shift_group_id' => $groupA->id,
+                'shift_group_id' => $groupMainA->id,
                 'shift_id' => $dayShift->id,
                 'ethiopian_year' => 2019,
                 'ethiopian_month' => 3,
@@ -385,14 +433,14 @@ class DatabaseSeeder extends Seeder
             [
                 'days' => [2, 6, 8, 12, 16, 20, 24, 28],
                 'status' => 'active',
-                'notes' => 'Group A daytime duty schedule for Hidar 2019',
+                'notes' => 'Main Library Group A daytime duty for Hidar 2019',
             ]
         );
 
         GroupShiftSchedule::updateOrCreate(
             [
                 'library_id' => $mainLibrary->id,
-                'shift_group_id' => $groupA->id,
+                'shift_group_id' => $groupMainA->id,
                 'shift_id' => $nightShift->id,
                 'ethiopian_year' => 2019,
                 'ethiopian_month' => 3,
@@ -400,15 +448,15 @@ class DatabaseSeeder extends Seeder
             [
                 'days' => [1, 5, 9, 13, 17, 21, 25, 29],
                 'status' => 'active',
-                'notes' => 'Group A night duty schedule for Hidar 2019',
+                'notes' => 'Main Library Group A night duty for Hidar 2019',
             ]
         );
 
-        // Group B: Day Shift on [3, 7, 11, 15, 19, 23, 27], Night Shift on [4, 8, 12, 16, 20, 24, 28] (non-overlapping)
+        // Main Library Group B
         GroupShiftSchedule::updateOrCreate(
             [
                 'library_id' => $mainLibrary->id,
-                'shift_group_id' => $groupB->id,
+                'shift_group_id' => $groupMainB->id,
                 'shift_id' => $dayShift->id,
                 'ethiopian_year' => 2019,
                 'ethiopian_month' => 3,
@@ -416,14 +464,14 @@ class DatabaseSeeder extends Seeder
             [
                 'days' => [3, 7, 11, 15, 19, 23, 27],
                 'status' => 'active',
-                'notes' => 'Group B daytime duty schedule for Hidar 2019',
+                'notes' => 'Main Library Group B daytime duty for Hidar 2019',
             ]
         );
 
         GroupShiftSchedule::updateOrCreate(
             [
                 'library_id' => $mainLibrary->id,
-                'shift_group_id' => $groupB->id,
+                'shift_group_id' => $groupMainB->id,
                 'shift_id' => $nightShift->id,
                 'ethiopian_year' => 2019,
                 'ethiopian_month' => 3,
@@ -431,7 +479,23 @@ class DatabaseSeeder extends Seeder
             [
                 'days' => [4, 10, 14, 18, 22, 26, 30],
                 'status' => 'active',
-                'notes' => 'Group B night duty schedule for Hidar 2019',
+                'notes' => 'Main Library Group B night duty for Hidar 2019',
+            ]
+        );
+
+        // Law Library Group A (Completely independent schedule in Law branch)
+        GroupShiftSchedule::updateOrCreate(
+            [
+                'library_id' => $lawLibrary->id,
+                'shift_group_id' => $groupLawA->id,
+                'shift_id' => $dayShift->id,
+                'ethiopian_year' => 2019,
+                'ethiopian_month' => 3,
+            ],
+            [
+                'days' => [1, 2, 3, 4, 5, 10, 15, 20],
+                'status' => 'active',
+                'notes' => 'Law Library Group A daytime duty for Hidar 2019',
             ]
         );
     }

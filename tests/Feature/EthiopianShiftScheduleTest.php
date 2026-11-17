@@ -314,4 +314,81 @@ class EthiopianShiftScheduleTest extends TestCase
         $this->assertTrue($check['allowed']);
         $this->assertStringContainsString('Group A', $check['reason']);
     }
+
+    /**
+     * Test separate groups per library branch:
+     * - Main Library and Science Library can both have "Group A"
+     * - Attendant can belong to multiple groups at the same library
+     * - Shift schedule for Main Library does not conflict with Science Library
+     */
+    public function test_separate_groups_per_library_and_multi_group_attendant(): void
+    {
+        // 1. Create Group A for Main Library with attendantMain
+        $resMain = $this->actingAs($this->admin)->postJson('/api/shift-groups', [
+            'name' => 'Group A',
+            'library_id' => $this->mainLibrary->id,
+            'user_ids' => [$this->attendantMain->id],
+        ]);
+        $resMain->assertStatus(201);
+        $mainGroupId = $resMain->json('data.id');
+
+        // 2. Create Group B for Main Library ALSO containing attendantMain (attendant in multiple groups in same library)
+        $resMainB = $this->actingAs($this->admin)->postJson('/api/shift-groups', [
+            'name' => 'Group B',
+            'library_id' => $this->mainLibrary->id,
+            'user_ids' => [$this->attendantMain->id],
+        ]);
+        $resMainB->assertStatus(201);
+        $mainGroupBId = $resMainB->json('data.id');
+
+        // Verify attendantMain belongs to both groups
+        $this->assertDatabaseHas('shift_group_user', [
+            'shift_group_id' => $mainGroupId,
+            'user_id' => $this->attendantMain->id,
+        ]);
+        $this->assertDatabaseHas('shift_group_user', [
+            'shift_group_id' => $mainGroupBId,
+            'user_id' => $this->attendantMain->id,
+        ]);
+
+        // 3. Create Group A for Science Library (same name "Group A", separate library branch)
+        $resSci = $this->actingAs($this->admin)->postJson('/api/shift-groups', [
+            'name' => 'Group A',
+            'library_id' => $this->sciLibrary->id,
+            'user_ids' => [$this->attendantSci->id],
+        ]);
+        $resSci->assertStatus(201);
+        $sciGroupId = $resSci->json('data.id');
+
+        // 4. Duplicate name within the SAME library is rejected
+        $resDuplicate = $this->actingAs($this->admin)->postJson('/api/shift-groups', [
+            'name' => 'Group A',
+            'library_id' => $this->mainLibrary->id,
+        ]);
+        $resDuplicate->assertStatus(422);
+
+        // 5. Scheduling Day 5 on Night Shift in Main Library
+        $schedMain = $this->actingAs($this->admin)->postJson('/api/shift-schedules/assign', [
+            'library_id' => $this->mainLibrary->id,
+            'shift_group_id' => $mainGroupId,
+            'ethiopian_year' => 2019,
+            'ethiopian_month' => 3,
+            'shifts' => [
+                ['shift_id' => $this->nightShift->id, 'days' => [5]],
+            ],
+        ]);
+        $schedMain->assertStatus(200);
+
+        // 6. Scheduling Day 5 on Night Shift in Science Library is completely allowed (separate library!)
+        $schedSci = $this->actingAs($this->admin)->postJson('/api/shift-schedules/assign', [
+            'library_id' => $this->sciLibrary->id,
+            'shift_group_id' => $sciGroupId,
+            'ethiopian_year' => 2019,
+            'ethiopian_month' => 3,
+            'shifts' => [
+                ['shift_id' => $this->nightShift->id, 'days' => [5]],
+            ],
+        ]);
+        $schedSci->assertStatus(200);
+    }
 }

@@ -42,10 +42,7 @@ class GroupShiftScheduleController extends Controller
         $shifts = Shift::where('is_active', true)->orderBy('start_time')->get();
 
         $groups = ShiftGroup::with(['users:id,name,username'])
-            ->where(function ($q) use ($libraryId) {
-                $q->where('library_id', $libraryId)
-                  ->orWhereNull('library_id');
-            })
+            ->where('library_id', $libraryId)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
@@ -143,6 +140,12 @@ class GroupShiftScheduleController extends Controller
 
         $group = ShiftGroup::findOrFail($groupId);
         $library = Library::findOrFail($libraryId);
+
+        if ((int)$group->library_id !== $libraryId) {
+            return response()->json([
+                'message' => "Group '{$group->name}' does not belong to {$library->name}. Groups are set separately for each library branch.",
+            ], 422);
+        }
 
         // Fetch shift names for clear error reporting
         $allShifts = Shift::all()->keyBy('id');

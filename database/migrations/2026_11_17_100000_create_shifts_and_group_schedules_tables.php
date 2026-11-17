@@ -27,15 +27,16 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 2. Shift Groups table (e.g., Group A, Group B, Group C, Group D)
+        // 2. Shift Groups table (e.g., Group A, Group B, Group C... strictly owned per library branch)
         Schema::create('shift_groups', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // e.g., 'Group A', 'Group B'
-            $table->foreignId('library_id')->nullable()->constrained('libraries')->nullOnDelete(); // null = General Branch
+            $table->foreignId('library_id')->constrained('libraries')->cascadeOnDelete(); // Strictly per library branch
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
+            $table->unique(['library_id', 'name']);
             $table->index(['library_id', 'is_active']);
         });
 

@@ -338,11 +338,11 @@ const isBranchScoped = computed(() => {
   return !authStore.user?.can_manage_all_libraries && !!authStore.user?.library_id;
 });
 
-// Filter groups belonging to current library branch (or general)
+// Filter groups belonging strictly to current library branch
 const filteredGroups = computed(() => {
   const libId = selectedLibraryId.value;
   return (shiftStore.groups || []).filter((g) => {
-    return !g.library_id || g.library_id === libId;
+    return g.library_id === libId;
   });
 });
 

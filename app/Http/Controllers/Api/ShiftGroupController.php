@@ -8,6 +8,7 @@ use App\Models\ShiftGroup;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ShiftGroupController extends Controller
 {
@@ -29,10 +30,7 @@ class ShiftGroupController extends Controller
             ->orderBy('name', 'asc');
 
         if ($libraryId) {
-            $query->where(function ($q) use ($libraryId) {
-                $q->where('library_id', $libraryId)
-                  ->orWhereNull('library_id');
-            });
+            $query->where('library_id', $libraryId);
         }
 
         $groups = $query->get();
@@ -54,18 +52,26 @@ class ShiftGroupController extends Controller
             return response()->json(['message' => 'Unauthorized to create shift groups.'], 403);
         }
 
+        $targetLibraryId = $request->input('library_id');
+        if (!$user->canManageAllLibraries() && $user->library_id) {
+            $targetLibraryId = $user->library_id;
+        }
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'library_id' => ['nullable', 'exists:libraries,id'],
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('shift_groups')->where(fn ($q) => $q->where('library_id', $targetLibraryId)),
+            ],
+            'library_id' => ['required', 'exists:libraries,id'],
             'description' => ['nullable', 'string', 'max:500'],
             'is_active' => ['boolean'],
             'user_ids' => ['nullable', 'array'],
             'user_ids.*' => ['integer', 'exists:users,id'],
         ]);
 
-        $targetLibraryId = $validated['library_id'] ?? null;
-
-        // If scoped manager, force branch to their own branch
+        $targetLibraryId = (int)$validated['library_id'];
         if (!$user->canManageAllLibraries() && $user->library_id) {
             $targetLibraryId = $user->library_id;
         }
@@ -88,7 +94,7 @@ class ShiftGroupController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Shift Group '{$group->name}' created successfully.",
+            'message' => "Shift Group '{$group->name}' created successfully for this branch.",
             'data' => $group->load(['library', 'users:id,name,username,email,library_id']),
         ], 201);
     }
@@ -108,19 +114,26 @@ class ShiftGroupController extends Controller
             return response()->json(['message' => 'Cannot modify a shift group belonging to another branch.'], 403);
         }
 
+        $targetLibraryId = $request->input('library_id', $shiftGroup->library_id);
+        if (!$user->canManageAllLibraries() && $user->library_id) {
+            $targetLibraryId = $user->library_id;
+        }
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'library_id' => ['nullable', 'exists:libraries,id'],
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('shift_groups')->where(fn ($q) => $q->where('library_id', $targetLibraryId))->ignore($shiftGroup->id),
+            ],
+            'library_id' => ['required', 'exists:libraries,id'],
             'description' => ['nullable', 'string', 'max:500'],
             'is_active' => ['boolean'],
             'user_ids' => ['nullable', 'array'],
             'user_ids.*' => ['integer', 'exists:users,id'],
         ]);
 
-        $targetLibraryId = array_key_exists('library_id', $validated)
-            ? $validated['library_id']
-            : $shiftGroup->library_id;
-
+        $targetLibraryId = (int)$validated['library_id'];
         if (!$user->canManageAllLibraries() && $user->library_id) {
             $targetLibraryId = $user->library_id;
         }

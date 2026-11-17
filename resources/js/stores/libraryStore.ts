@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { librariesApi } from '@/api';
 import { useToastStore } from './toastStore';
 import type { Library } from '@/types';
@@ -96,8 +96,13 @@ export const useLibraryStore = defineStore('library', () => {
         isLoaded.value = false;
     }
 
+    const activeLibraries = computed(() => {
+        return (libraries.value || []).filter((l) => l.is_active);
+    });
+
     return {
         libraries,
+        activeLibraries,
         selectedLibrary,
         activeBranchFilter,
         loading,

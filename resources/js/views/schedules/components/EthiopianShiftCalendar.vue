@@ -341,7 +341,7 @@ const isBranchScoped = computed(() => {
 // Filter groups belonging to current library branch (or general)
 const filteredGroups = computed(() => {
   const libId = selectedLibraryId.value;
-  return shiftStore.groups.filter((g) => {
+  return (shiftStore.groups || []).filter((g) => {
     return !g.library_id || g.library_id === libId;
   });
 });
@@ -352,11 +352,11 @@ const selectedGroup = computed<ShiftGroup | undefined>(() => {
 });
 
 const activeShifts = computed(() => {
-  return shiftStore.shifts.filter((s) => s.is_active);
+  return (shiftStore.shifts || []).filter((s) => s.is_active);
 });
 
 const currentLibraryName = computed(() => {
-  const lib = libraryStore.libraries.find((l) => l.id === selectedLibraryId.value);
+  const lib = (libraryStore.libraries || []).find((l) => l.id === selectedLibraryId.value);
   return lib ? lib.name : 'Selected Library';
 });
 
@@ -620,7 +620,7 @@ const handleSaveSchedule = async () => {
 watch(
   () => libraryStore.activeLibraries,
   (libs) => {
-    if (libs.length > 0 && !selectedLibraryId.value) {
+    if (libs && libs.length > 0 && !selectedLibraryId.value) {
       if (authStore.user?.library_id) {
         selectedLibraryId.value = authStore.user.library_id;
       } else {

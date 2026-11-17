@@ -245,6 +245,56 @@ export const useShiftStore = defineStore('shift', () => {
     };
 
     /**
+     * Auto-generate balanced shift schedule with holiday exclusion & overlap check
+     */
+    const autoGenerateSchedule = async (payload: {
+        library_id: number;
+        ethiopian_year: number;
+        ethiopian_month: number;
+        exclude_holidays?: boolean;
+        overwrite_existing?: boolean;
+    }) => {
+        try {
+            saving.value = true;
+            const res = await api.post('/shift-schedules/auto-generate', payload);
+            toast.success(res.data.message || 'Schedule auto-generated successfully with equal workload');
+            await fetchMatrix({
+                library_id: payload.library_id,
+                ethiopian_year: payload.ethiopian_year,
+                ethiopian_month: payload.ethiopian_month,
+            });
+            return res.data;
+        } catch (err: any) {
+            const errorMsg =
+                err.response?.data?.errors?.staff_overlap?.[0] ||
+                err.response?.data?.errors?.groups?.[0] ||
+                err.response?.data?.message ||
+                'Failed to auto-generate schedule';
+            toast.error(errorMsg);
+            return null;
+        } finally {
+            saving.value = false;
+        }
+    };
+
+    /**
+     * Check if any staff member is in multiple groups in the specified library branch
+     */
+    const checkStaffOverlap = async (libraryId: number) => {
+        try {
+            const res = await api.get('/shift-schedules/check-overlap', {
+                params: { library_id: libraryId },
+            });
+            return res.data as {
+                has_overlap: boolean;
+                overlaps: { user_id: number; user_name: string; username: string; groups: string[] }[];
+            };
+        } catch {
+            return { has_overlap: false, overlaps: [] };
+        }
+    };
+
+    /**
      * Delete group schedule entry
      */
     const deleteGroupSchedule = async (
@@ -285,6 +335,8 @@ export const useShiftStore = defineStore('shift', () => {
         deleteGroup,
         fetchMatrix,
         assignSchedule,
+        autoGenerateSchedule,
+        checkStaffOverlap,
         deleteGroupSchedule,
     };
 });

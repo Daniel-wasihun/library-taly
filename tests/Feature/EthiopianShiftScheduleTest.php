@@ -391,4 +391,80 @@ class EthiopianShiftScheduleTest extends TestCase
         ]);
         $schedSci->assertStatus(200);
     }
+
+    /**
+     * Test Auto-generate:
+     * - Rejects when a person is in multiple groups in the branch.
+     * - Successfully generates equal workload schedule when staff are properly partitioned.
+     * - Excludes Ethiopian public holidays (e.g. Meskerem 1 and 17).
+     */
+    public function test_auto_generate_schedule_with_overlap_detection_and_holiday_exclusion(): void
+    {
+        // 1. Create two groups in Main Library
+        $grpA = ShiftGroup::create([
+            'name' => 'Team Alpha',
+            'library_id' => $this->mainLibrary->id,
+        ]);
+        $grpB = ShiftGroup::create([
+            'name' => 'Team Beta',
+            'library_id' => $this->mainLibrary->id,
+        ]);
+
+        // Place attendantMain in BOTH groups (violates the auto-scheduling single group constraint)
+        $grpA->users()->attach([$this->attendantMain->id]);
+        $grpB->users()->attach([$this->attendantMain->id]);
+
+        // Attempt auto-generate -> MUST fail with staff overlap detection
+        $resOverlap = $this->actingAs($this->admin)->postJson('/api/shift-schedules/auto-generate', [
+            'library_id' => $this->mainLibrary->id,
+            'ethiopian_year' => 2019,
+            'ethiopian_month' => 1, // Meskerem (contains Meskerem 1 Enkutatash & Meskerem 17 Meskel)
+            'exclude_holidays' => true,
+        ]);
+
+        $resOverlap->assertStatus(422)
+            ->assertJsonStructure(['errors' => ['staff_overlap']]);
+
+        // 2. Resolve overlap: Assign attendantMain to Team Alpha only, attendantGeneral to Team Beta only
+        $grpA->users()->sync([$this->attendantMain->id]);
+        $grpB->users()->sync([$this->attendantGeneral->id]);
+
+        // 3. Run auto-generate for Meskerem (Month 1) with holiday exclusion
+        $resGen = $this->actingAs($this->admin)->postJson('/api/shift-schedules/auto-generate', [
+            'library_id' => $this->mainLibrary->id,
+            'ethiopian_year' => 2019,
+            'ethiopian_month' => 1,
+            'exclude_holidays' => true,
+        ]);
+
+        $resGen->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('total_calendar_days', 30)
+            ->assertJsonPath('working_days_scheduled', 28); // 30 minus Day 1 & Day 17 = 28 days!
+
+        // Verify detected and excluded holidays
+        $excludedHolidays = $resGen->json('excluded_holidays');
+        $excludedDays = array_column($excludedHolidays, 'day');
+        $this->assertContains(1, $excludedDays); // Enkutatash
+        $this->assertContains(17, $excludedDays); // Meskel
+
+        // 4. Verify in DB that Day 1 and Day 17 are completely removed / NOT scheduled for any group in this branch
+        $schedules = GroupShiftSchedule::where('library_id', $this->mainLibrary->id)
+            ->where('ethiopian_year', 2019)
+            ->where('ethiopian_month', 1)
+            ->get();
+
+        foreach ($schedules as $sched) {
+            $days = $sched->days ?? [];
+            $this->assertNotContains(1, $days, 'Holiday Day 1 (Enkutatash) must not be scheduled');
+            $this->assertNotContains(17, $days, 'Holiday Day 17 (Meskel) must not be scheduled');
+        }
+
+        // 5. Verify Equal Workload:
+        // 28 working days with 2 shifts = 56 total shift slots across 2 groups -> 28 shifts per group!
+        $workloadStats = $resGen->json('workload_stats');
+        $this->assertCount(2, $workloadStats);
+        $this->assertEquals(28, $workloadStats[0]['total_assigned_days']);
+        $this->assertEquals(28, $workloadStats[1]['total_assigned_days']);
+    }
 }

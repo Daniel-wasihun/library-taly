@@ -9,12 +9,17 @@ use App\Models\Shift;
 use App\Models\ShiftGroup;
 use App\Services\DutyScheduleService;
 use App\Services\EthiopianCalendarService;
+use App\Services\EthiopianHolidayService;
+use App\Services\ShiftAutoSchedulerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class GroupShiftScheduleController extends Controller
 {
+    public function __construct(
+        protected ShiftAutoSchedulerService $autoScheduler
+    ) {}
     /**
      * Get the Ethiopian calendar monthly shift schedule matrix and conflict data.
      */
@@ -99,10 +104,82 @@ class GroupShiftScheduleController extends Controller
             'shifts' => $shifts,
             'groups' => $groups,
             'schedules' => $schedules,
+            'holidays' => EthiopianHolidayService::getHolidaysForMonth($selectedYear, $selectedMonth),
             'conflict_matrix' => [
                 'by_shift' => $byShift,
                 'by_group' => $byGroup,
             ],
+        ]);
+    }
+
+    /**
+     * Auto-generate balanced shift schedule for a library branch with holiday detection & exclusion.
+     */
+    public function autoGenerate(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->canManageLibrary()) {
+            return response()->json(['message' => 'Unauthorized to auto-generate shift schedules.'], 403);
+        }
+
+        $validated = $request->validate([
+            'library_id' => ['required', 'exists:libraries,id'],
+            'ethiopian_year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'ethiopian_month' => ['required', 'integer', 'min:1', 'max:13'],
+            'exclude_holidays' => ['nullable', 'boolean'],
+            'overwrite_existing' => ['nullable', 'boolean'],
+        ]);
+
+        $libraryId = (int)$validated['library_id'];
+        $year = (int)$validated['ethiopian_year'];
+        $month = (int)$validated['ethiopian_month'];
+        $excludeHolidays = $validated['exclude_holidays'] ?? true;
+        $overwriteExisting = $validated['overwrite_existing'] ?? true;
+
+        if (!$user->canManageAllLibraries() && $user->library_id && (int)$user->library_id !== $libraryId) {
+            return response()->json(['message' => 'Unauthorized: You may only schedule shifts for your assigned branch.'], 403);
+        }
+
+        $result = $this->autoScheduler->autoGenerateSchedule(
+            $libraryId,
+            $year,
+            $month,
+            $excludeHolidays,
+            $overwriteExisting
+        );
+
+        return response()->json($result);
+    }
+
+    /**
+     * Check for staff overlapping multiple groups in a library branch before scheduling.
+     */
+    public function checkOverlap(Request $request): JsonResponse
+    {
+        $libraryId = (int)$request->query('library_id');
+        if (!$libraryId) {
+            return response()->json(['has_overlap' => false, 'overlaps' => []]);
+        }
+
+        $result = $this->autoScheduler->detectStaffOverlapInBranch($libraryId);
+        return response()->json($result);
+    }
+
+    /**
+     * Get Ethiopian holidays for a specific month.
+     */
+    public function holidays(Request $request): JsonResponse
+    {
+        $year = (int)($request->query('ethiopian_year') ?: 2019);
+        $month = (int)($request->query('ethiopian_month') ?: 1);
+
+        $holidays = EthiopianHolidayService::getHolidaysForMonth($year, $month);
+
+        return response()->json([
+            'success' => true,
+            'ethiopian_year' => $year,
+            'ethiopian_month' => $month,
+            'holidays' => $holidays,
         ]);
     }
 

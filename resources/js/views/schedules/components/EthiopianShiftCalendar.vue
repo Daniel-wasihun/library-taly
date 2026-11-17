@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-5 w-full">
-    <!-- Top Selector Bar: Branch, Ethiopian Year, Month, Group -->
+    <!-- Top Selector Bar: Branch, Ethiopian Year, Month, Group, Auto-Generate -->
     <div class="bg-card-bg border border-card-border rounded-sm p-4 shadow-2xs space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         <!-- 1. Library Branch Selector -->
@@ -78,9 +78,9 @@
         </div>
       </div>
 
-      <!-- Live Context Banner -->
+      <!-- Live Context Banner & Auto-Generate Action -->
       <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-card-border text-xs text-main-text/75">
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-brand-blue/10 text-brand-blue dark:text-brand-yellow font-bold text-[11px] border border-brand-blue/20">
             🇪🇹 {{ currentMonthNameAm }} {{ selectedYear }} ዓ.ም
           </span>
@@ -96,24 +96,40 @@
           </span>
         </div>
 
-        <!-- Legend -->
-        <div class="flex flex-wrap items-center gap-3 text-[11px]">
-          <div class="flex items-center gap-1.5">
-            <span class="w-3.5 h-3.5 rounded-sm bg-emerald-600 border border-emerald-700 text-white flex items-center justify-center text-[9px] font-bold">✓</span>
-            <span>Selected</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="w-3.5 h-3.5 rounded-sm bg-card-bg border border-card-border"></span>
-            <span>Available (1–30)</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="w-3.5 h-3.5 rounded-sm bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[9px] font-bold">⊘</span>
-            <span>In Another Shift (Group)</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="w-3.5 h-3.5 rounded-sm bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 flex items-center justify-center text-[9px] font-bold">🔒</span>
-            <span>Assigned to Other Group</span>
-          </div>
+        <div class="flex items-center gap-2">
+          <Button
+            v-if="canManageSchedule"
+            variant="secondary"
+            size="sm"
+            :icon="Sparkles"
+            @click="openAutoGenerateModal"
+          >
+            Auto-Generate Schedule
+          </Button>
+        </div>
+      </div>
+
+      <!-- Legend (Selected, Available, Holiday, Overlaps) -->
+      <div class="flex flex-wrap items-center gap-3.5 pt-2 border-t border-card-border/60 text-[11px]">
+        <div class="flex items-center gap-1.5">
+          <span class="w-3.5 h-3.5 rounded-sm bg-emerald-600 border border-emerald-700 text-white flex items-center justify-center text-[9px] font-bold">✓</span>
+          <span>Selected</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-3.5 h-3.5 rounded-sm bg-card-bg border border-card-border"></span>
+          <span>Available (1–30)</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-3.5 h-3.5 rounded-sm bg-purple-500/20 border border-purple-500/40 text-purple-700 dark:text-purple-300 flex items-center justify-center text-[9px] font-bold">🇪🇹</span>
+          <span>Ethiopian Holiday (Free/Off)</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-3.5 h-3.5 rounded-sm bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[9px] font-bold">⊘</span>
+          <span>In Another Shift (Group)</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-3.5 h-3.5 rounded-sm bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 flex items-center justify-center text-[9px] font-bold">🔒</span>
+          <span>Assigned to Other Group</span>
         </div>
       </div>
     </div>
@@ -127,8 +143,8 @@
     <!-- No Group Selected Prompt -->
     <div v-else-if="!selectedGroupId" class="bg-card-bg border border-card-border rounded-sm p-8 text-center text-xs text-main-text/60 space-y-2">
       <Users class="w-10 h-10 stroke-[1.5] text-main-text/30 mx-auto" />
-      <p class="font-semibold text-main-text text-sm">No Duty Group Selected</p>
-      <p>Please select a duty group above or create one in the Shift Groups tab to assign monthly shifts.</p>
+      <p class="font-semibold text-main-text text-sm">No Duty Group Selected for this Branch</p>
+      <p>Please select a duty group above or click "Auto-Generate Schedule" to automatically configure shifts for all groups in {{ currentLibraryName }}.</p>
     </div>
 
     <!-- Shift Calendar Sections (Day Shift, Night Shift, etc.) -->
@@ -233,6 +249,12 @@
                 class="absolute top-1 right-1 w-2 h-2 rounded-full bg-white shadow-xs"
               ></span>
               <span
+                v-else-if="getHoliday(day)"
+                class="absolute top-1 right-1 text-[9px] leading-none"
+              >
+                🇪🇹
+              </span>
+              <span
                 v-else-if="isDayDisabled(shift.id, day).isOtherGroup"
                 class="absolute top-1 right-1 text-[9px] leading-none"
               >
@@ -279,6 +301,120 @@
         </div>
       </div>
     </div>
+
+    <!-- Auto-Generate Schedule Modal -->
+    <Modal
+      :show="showAutoModal"
+      title="Auto-Generate Monthly Shift Schedule"
+      description="Automatically calculate and assign shifts with equal workload across groups in this branch only, excluding official Ethiopian holidays."
+      :icon="Sparkles"
+      size="md"
+      @close="showAutoModal = false"
+    >
+      <div class="space-y-4">
+        <!-- Branch & Month Context Box -->
+        <div class="p-3 rounded-sm bg-input-bg border border-input-border text-xs space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-main-text/60">Target Library Branch:</span>
+            <strong class="text-main-text font-bold">{{ currentLibraryName }}</strong>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-main-text/60">Ethiopian Month & Year:</span>
+            <strong class="text-nav-accent font-bold">{{ currentMonthNameAm }} {{ selectedYear }} ዓ.ም</strong>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-main-text/60">Active Groups in Branch:</span>
+            <span class="font-semibold text-main-text">{{ filteredGroups.length }} groups ({{ filteredGroups.map(g => g.name).join(', ') }})</span>
+          </div>
+        </div>
+
+        <!-- Detected Holidays for this Month -->
+        <div class="p-3 rounded-sm border border-purple-500/30 bg-purple-500/10 text-xs space-y-2">
+          <div class="flex items-center justify-between font-bold text-purple-800 dark:text-purple-300">
+            <span class="flex items-center gap-1.5">
+              <span>🇪🇹</span>
+              <span>Detected Ethiopian Holidays for this Month:</span>
+            </span>
+            <span>{{ monthHolidaysList.length }} Holiday(s)</span>
+          </div>
+
+          <div v-if="monthHolidaysList.length > 0" class="space-y-1 text-[11px]">
+            <div
+              v-for="h in monthHolidaysList"
+              :key="h.day"
+              class="flex items-center justify-between py-1 border-t border-purple-500/20"
+            >
+              <span><strong>Day {{ h.day }}:</strong> {{ h.name_am }} ({{ h.name_en }})</span>
+              <span class="text-purple-700 dark:text-purple-300 font-bold uppercase text-[9px] px-1.5 py-0.5 rounded-sm bg-purple-500/20">
+                1 Day Excluded (Off)
+              </span>
+            </div>
+          </div>
+          <p v-else class="text-[11px] text-main-text/60 italic">
+            No fixed national holidays in this Ethiopian month. All days will be scheduled.
+          </p>
+        </div>
+
+        <!-- Staff Overlap Detection Warning Box -->
+        <div v-if="overlapState.has_overlap" class="p-3 rounded-sm border border-rose-500/40 bg-rose-500/10 text-xs space-y-2">
+          <div class="flex items-center gap-2 font-bold text-rose-700 dark:text-rose-400">
+            <AlertCircle class="w-4 h-4 shrink-0" />
+            <span>Staff Multi-Group Overlap Detected</span>
+          </div>
+          <p class="text-[11px] text-main-text/80">
+            In this branch, the following attendant(s) currently belong to two or more groups at the same time:
+          </p>
+          <ul class="list-disc pl-5 text-[11px] space-y-1 text-rose-800 dark:text-rose-300 font-medium">
+            <li v-for="o in overlapState.overlaps" :key="o.user_id">
+              <strong>{{ o.user_name }}</strong> (@{{ o.username }}) belongs to: <u>{{ o.groups.join(', ') }}</u>
+            </li>
+          </ul>
+          <p class="text-[11px] text-rose-700 dark:text-rose-400 font-semibold pt-1">
+            ⚠️ One person cannot be in multiple groups for auto-scheduled shifts in a given library branch. Please assign each attendant to a single group in the Shift Groups tab before auto-generating.
+          </p>
+        </div>
+
+        <!-- Options -->
+        <div class="space-y-2 pt-1 text-xs">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              v-model="autoForm.exclude_holidays"
+              type="checkbox"
+              class="rounded-xs border-input-border text-nav-accent focus:ring-0 cursor-pointer"
+            />
+            <span class="font-semibold text-main-text">
+              Exclude Ethiopian Holidays (remove 1 day from duty roster for each holiday)
+            </span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              v-model="autoForm.overwrite_existing"
+              type="checkbox"
+              class="rounded-xs border-input-border text-nav-accent focus:ring-0 cursor-pointer"
+            />
+            <span class="font-semibold text-main-text">
+              Overwrite existing schedules for this month and branch
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button variant="secondary" size="sm" @click="showAutoModal = false">
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          :icon="Sparkles"
+          :disabled="overlapState.has_overlap || filteredGroups.length === 0"
+          :loading="shiftStore.saving"
+          @click="handleRunAutoGenerate"
+        >
+          {{ overlapState.has_overlap ? 'Resolve Overlaps First' : 'Generate & Assign Schedule' }}
+        </Button>
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -290,13 +426,16 @@ import { useAuthStore } from '@/stores/authStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import { useToastStore } from '@/stores/toastStore';
 import Button from '@/components/ui/Button.vue';
+import Modal from '@/components/ui/Modal.vue';
 import {
   Building2,
   Calendar,
   CalendarDays,
   Users,
+  Sparkles,
+  AlertCircle,
 } from 'lucide-vue-next';
-import type { ShiftGroup } from '@/types';
+import type { ShiftGroup, EthiopianHoliday } from '@/types';
 
 const shiftStore = useShiftStore();
 const libraryStore = useLibraryStore();
@@ -321,7 +460,6 @@ const defaultMonths = [
   { number: 13, name_am: 'ጳጉሜን', name_en: 'Pagume', days_count: 5 },
 ];
 
-// Available Ethiopian years (e.g. 2017 to 2022 E.C.)
 const availableYears = [2017, 2018, 2019, 2020, 2021, 2022];
 
 // Selected State
@@ -333,9 +471,27 @@ const selectedGroupId = ref<number | ''>('');
 // Shift Selections: shift_id => Array of selected days [1, 2, ... 30]
 const shiftSelections = reactive<Record<number, number[]>>({});
 
-// Scoped Branch check
+// Auto Generate Modal State
+const showAutoModal = ref(false);
+const autoForm = reactive({
+  exclude_holidays: true,
+  overwrite_existing: true,
+});
+
+const overlapState = reactive<{
+  has_overlap: boolean;
+  overlaps: { user_id: number; user_name: string; username: string; groups: string[] }[];
+}>({
+  has_overlap: false,
+  overlaps: [],
+});
+
 const isBranchScoped = computed(() => {
   return !authStore.user?.can_manage_all_libraries && !!authStore.user?.library_id;
+});
+
+const canManageSchedule = computed(() => {
+  return authStore.isAdmin || authStore.canManageLibrary;
 });
 
 // Filter groups belonging strictly to current library branch
@@ -369,6 +525,16 @@ const maxMonthDays = computed(() => {
   return selectedMonth.value === 13 ? 5 : 30;
 });
 
+const monthHolidaysList = computed<EthiopianHoliday[]>(() => {
+  const holidays = shiftStore.matrixData?.holidays || {};
+  return Object.values(holidays);
+});
+
+const getHoliday = (day: number): EthiopianHoliday | undefined => {
+  const holidays = shiftStore.matrixData?.holidays;
+  return holidays ? holidays[day] : undefined;
+};
+
 /**
  * Load Matrix from Backend
  */
@@ -384,7 +550,7 @@ const loadMatrix = async () => {
       selectedYear.value = res.current_ethiopian_date.year;
       selectedMonth.value = res.current_ethiopian_date.month;
     }
-    // Also refresh groups for this branch
+    // Also refresh groups strictly for this branch
     await shiftStore.fetchGroups(selectedLibraryId.value);
 
     // If no group is currently selected or selected group is outside this branch, select first group
@@ -404,7 +570,6 @@ const handleLibraryChange = async () => {
  * Synchronize local reactive shiftSelections from matrixData for the selected group
  */
 const syncGroupDaysFromMatrix = () => {
-  // Clear selections
   for (const key of Object.keys(shiftSelections)) {
     delete shiftSelections[Number(key)];
   }
@@ -430,29 +595,16 @@ const syncGroupDaysFromMatrix = () => {
   }
 };
 
-/**
- * Check if a day is selected for a given shift
- */
 const isDaySelected = (shiftId: number, day: number): boolean => {
   return (shiftSelections[shiftId] || []).includes(day);
 };
 
-/**
- * Disabling Logic enforcing the user's two rules:
- *
- * Rule 1: Intra-group cross-shift conflict:
- * "if the date is selected in one shift it must be disabled for another shif in the shchedule of the same scheduule assigning"
- *
- * Rule 2: Inter-group same-shift conflict:
- * "and after that in that same library for other group shift date assigning fo rthe shif date selction ui the date that are belonges to another group in that same shif must be diabled also meaning the date that is selceted in night shift is 3 this means in group B the night shif date list the day 3 must be diabled not able to selctable like this"
- */
 const isDayDisabled = (
   shiftId: number,
   day: number
-): { disabled: boolean; isOtherShift: boolean; otherShiftName?: string; isOtherGroup: boolean; otherGroupName?: string } => {
-  // If already selected in this shift, it's not disabled (it's active and clickable to unselect)
+): { disabled: boolean; isOtherShift: boolean; otherShiftName?: string; isOtherGroup: boolean; otherGroupName?: string; isHoliday: boolean } => {
   if (isDaySelected(shiftId, day)) {
-    return { disabled: false, isOtherShift: false, isOtherGroup: false };
+    return { disabled: false, isOtherShift: false, isOtherGroup: false, isHoliday: false };
   }
 
   // 1. RULE 1 (Intra-group): Is this day selected in ANOTHER shift for this same group?
@@ -463,6 +615,7 @@ const isDayDisabled = (
         isOtherShift: true,
         otherShiftName: s.name,
         isOtherGroup: false,
+        isHoliday: false,
       };
     }
   }
@@ -471,26 +624,24 @@ const isDayDisabled = (
   const matrix = shiftStore.matrixData?.conflict_matrix?.by_shift;
   if (matrix && matrix[shiftId] && matrix[shiftId][day]) {
     const conflict = matrix[shiftId][day];
-    // If it belongs to a different group, disable it!
     if (conflict.group_id !== Number(selectedGroupId.value)) {
       return {
         disabled: true,
         isOtherShift: false,
         isOtherGroup: true,
         otherGroupName: conflict.group_name,
+        isHoliday: false,
       };
     }
   }
 
-  return { disabled: false, isOtherShift: false, isOtherGroup: false };
+  return { disabled: false, isOtherShift: false, isOtherGroup: false, isHoliday: false };
 };
 
-/**
- * Get CSS classes for day buttons
- */
 const getDayButtonClasses = (shiftId: number, day: number) => {
   const selected = isDaySelected(shiftId, day);
   const status = isDayDisabled(shiftId, day);
+  const holiday = getHoliday(day);
 
   if (selected) {
     return 'bg-emerald-600 text-white border-emerald-700 shadow-xs cursor-pointer hover:bg-emerald-700';
@@ -504,13 +655,19 @@ const getDayButtonClasses = (shiftId: number, day: number) => {
     return 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 cursor-not-allowed opacity-60';
   }
 
-  // Available
+  if (holiday) {
+    return 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30 hover:border-purple-500 cursor-pointer shadow-2xs';
+  }
+
   return 'bg-card-bg text-main-text border-card-border hover:border-nav-accent hover:bg-nav-accent/5 cursor-pointer shadow-2xs';
 };
 
 const getDayLabel = (shiftId: number, day: number): string => {
   const selected = isDaySelected(shiftId, day);
   if (selected) return 'Active';
+
+  const holiday = getHoliday(day);
+  if (holiday) return holiday.name_am;
 
   const status = isDayDisabled(shiftId, day);
   if (status.isOtherGroup) return status.otherGroupName || 'Occupied';
@@ -523,6 +680,11 @@ const getDayTooltip = (shiftId: number, day: number): string => {
   const selected = isDaySelected(shiftId, day);
   if (selected) return `Day ${day}: Selected for this shift. Click to remove.`;
 
+  const holiday = getHoliday(day);
+  if (holiday) {
+    return `Day ${day}: Ethiopian Holiday — ${holiday.name_am} (${holiday.name_en}). Excluded from automated schedules.`;
+  }
+
   const status = isDayDisabled(shiftId, day);
   if (status.isOtherGroup) {
     return `Day ${day}: Disabled — Already assigned to ${status.otherGroupName} in this library branch for this shift.`;
@@ -534,9 +696,6 @@ const getDayTooltip = (shiftId: number, day: number): string => {
   return `Day ${day}: Available. Click to assign to this shift.`;
 };
 
-/**
- * Toggle a day for a shift
- */
 const toggleDay = (shiftId: number, day: number) => {
   const status = isDayDisabled(shiftId, day);
   if (status.disabled) {
@@ -561,9 +720,6 @@ const toggleDay = (shiftId: number, day: number) => {
   }
 };
 
-/**
- * Quick helpers
- */
 const selectOddDays = (shiftId: number) => {
   const newDays: number[] = [];
   for (let d = 1; d <= maxMonthDays.value; d += 2) {
@@ -591,7 +747,35 @@ const clearShiftDays = (shiftId: number) => {
 };
 
 /**
- * Save Schedule to Backend
+ * Open Auto Generate Modal & Check Overlaps
+ */
+const openAutoGenerateModal = async () => {
+  const overlapRes = await shiftStore.checkStaffOverlap(selectedLibraryId.value);
+  overlapState.has_overlap = overlapRes.has_overlap;
+  overlapState.overlaps = overlapRes.overlaps;
+  showAutoModal.value = true;
+};
+
+/**
+ * Execute Auto Generate
+ */
+const handleRunAutoGenerate = async () => {
+  const res = await shiftStore.autoGenerateSchedule({
+    library_id: selectedLibraryId.value,
+    ethiopian_year: selectedYear.value,
+    ethiopian_month: selectedMonth.value,
+    exclude_holidays: autoForm.exclude_holidays,
+    overwrite_existing: autoForm.overwrite_existing,
+  });
+
+  if (res) {
+    showAutoModal.value = false;
+    syncGroupDaysFromMatrix();
+  }
+};
+
+/**
+ * Save Manual Schedule Changes
  */
 const handleSaveSchedule = async () => {
   if (!selectedGroupId.value) {

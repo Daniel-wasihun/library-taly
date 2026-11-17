@@ -207,6 +207,14 @@ export interface EthiopianMonth {
     days_count: number;
 }
 
+export interface EthiopianHoliday {
+    day: number;
+    name_en: string;
+    name_am: string;
+    description?: string;
+    type?: string;
+}
+
 export interface ShiftConflictInfo {
     group_id: number;
     group_name: string;
@@ -233,6 +241,7 @@ export interface ShiftMatrixResponse {
     shifts: Shift[];
     groups: ShiftGroup[];
     schedules: GroupShiftSchedule[];
+    holidays?: Record<number, EthiopianHoliday>;
     conflict_matrix: {
         by_shift: Record<number, Record<number, ShiftConflictInfo>>;
         by_group: Record<number, Record<number, number[]>>;

@@ -77,6 +77,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Ethiopian Calendar Monthly Shift Scheduling Matrix & Assignment
     Route::get('/shift-schedules/matrix', [GroupShiftScheduleController::class, 'matrix']);
     Route::post('/shift-schedules/assign', [GroupShiftScheduleController::class, 'assign']);
+    Route::post('/shift-schedules/auto-generate', [GroupShiftScheduleController::class, 'autoGenerate']);
+    Route::get('/shift-schedules/holidays', [GroupShiftScheduleController::class, 'holidays']);
+    Route::get('/shift-schedules/check-overlap', [GroupShiftScheduleController::class, 'checkOverlap']);
     Route::delete('/shift-schedules/{groupShiftSchedule}', [GroupShiftScheduleController::class, 'destroy']);
 
     // Physical Library Attendance / Usage Counter (LMS Pattern)

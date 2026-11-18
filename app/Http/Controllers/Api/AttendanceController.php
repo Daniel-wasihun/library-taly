@@ -95,6 +95,18 @@ class AttendanceController extends Controller
             }
         }
 
+        // Security check: Verify active shift date and time window
+        $dutyService = app(\App\Services\DutyScheduleService::class);
+        $dutyCheck = $dutyService->canPerformTask($user, 'attendance_desk', null, $libraryId, true);
+        if (!$dutyCheck['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $dutyCheck['reason'],
+                'code' => $dutyCheck['code'] ?? 'OUTSIDE_DUTY_TURN',
+                'duty_gate' => $dutyCheck,
+            ], 403);
+        }
+
         $count = (int) ($validated['count'] ?? 1);
 
         $attendance = LibraryAttendance::create([
@@ -278,6 +290,19 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'Unauthorized to update attendance for this branch.'], 403);
         }
 
+        // Security check: Verify active shift date and time window
+        if (!$user->hasAdminPrivilege()) {
+            $dutyService = app(\App\Services\DutyScheduleService::class);
+            $dutyCheck = $dutyService->canPerformTask($user, 'attendance_desk', null, $attendance->library_id, true);
+            if (!$dutyCheck['allowed']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $dutyCheck['reason'],
+                    'code' => $dutyCheck['code'] ?? 'OUTSIDE_DUTY_TURN',
+                ], 403);
+            }
+        }
+
         // 2-minute rule: attendant cannot change the numbers after 2 minutes; admin or superadmin can
         $diffMinutes = Carbon::parse($attendance->entry_at)->diffInMinutes(now());
         if ($diffMinutes > 2 && !$user->hasAdminPrivilege()) {
@@ -308,6 +333,19 @@ class AttendanceController extends Controller
 
         if (!$user->canManageAllLibraries() && (int) $attendance->library_id !== (int) $user->library_id) {
             return response()->json(['message' => 'Unauthorized to delete attendance for this branch.'], 403);
+        }
+
+        // Security check: Verify active shift date and time window
+        if (!$user->hasAdminPrivilege()) {
+            $dutyService = app(\App\Services\DutyScheduleService::class);
+            $dutyCheck = $dutyService->canPerformTask($user, 'attendance_desk', null, $attendance->library_id, true);
+            if (!$dutyCheck['allowed']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $dutyCheck['reason'],
+                    'code' => $dutyCheck['code'] ?? 'OUTSIDE_DUTY_TURN',
+                ], 403);
+            }
         }
 
         // 2-minute rule: deletion allowed only within 2 minutes of logging for attendants; admin/superadmin can delete at any time

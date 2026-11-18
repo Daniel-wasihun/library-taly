@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Users2, GraduationCap, School, Briefcase, Sparkles } from 'lucide-vue-next';
+import { Users2, GraduationCap, School, Briefcase, Sparkles, Lock, CheckCircle2 } from 'lucide-vue-next';
 import { useLanguageStore } from '@/stores/languageStore';
 import { useAuthStore } from '@/stores/authStore';
 
 const props = defineProps<{
   selectedLibrary: number | null;
   selectedUserType: 'student' | 'teacher' | 'staff' | string;
+  dutyStatus?: {
+    allowed: boolean;
+    reason: string;
+    code?: string;
+    shift?: any;
+    next_turn?: string | null;
+  } | null;
 }>();
 
 const emit = defineEmits<{
@@ -21,8 +28,14 @@ const canRecord = computed(() => {
   return authStore.isSuperAdmin || authStore.isAdmin || authStore.hasPermission('attendance.record');
 });
 
+const isDutyAllowed = computed(() => {
+  if (authStore.isSuperAdmin || authStore.isAdmin) return true;
+  if (!props.dutyStatus) return true;
+  return props.dutyStatus.allowed;
+});
+
 const canLog = computed(() => {
-  return Boolean(props.selectedLibrary) && canRecord.value;
+  return Boolean(props.selectedLibrary) && canRecord.value && isDutyAllowed.value;
 });
 
 const userTypes = computed(() => [
@@ -52,6 +65,25 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     <!-- Notice if user cannot record (e.g. Manager view-only) -->
     <div v-if="!canRecord" class="w-full mb-2.5 p-2 rounded-xs bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] sm:text-[11px] text-center font-medium leading-tight">
       {{ langStore.t('attendance.attendant_only_notice', 'Live visitor counting is assigned to desk attendants.') }}
+    </div>
+
+    <!-- Duty Shift Inactive Banner (Lock counter when outside scheduled shift date & time) -->
+    <div v-if="!isDutyAllowed" class="w-full mb-3 p-3 rounded-xs sm:rounded-sm bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-200 text-left">
+      <div class="flex items-center gap-1.5 font-bold text-xs text-rose-700 dark:text-rose-400 mb-1">
+        <Lock class="w-4 h-4 shrink-0" />
+        <span>{{ langStore.t('attendance.counter_locked_title', 'Usage Counter Inactive (የፈረቃ ሰዓት አይደለም)') }}</span>
+      </div>
+      <p class="text-[11px] leading-relaxed opacity-90">
+        {{ props.dutyStatus?.reason || langStore.t('attendance.counter_locked_desc', 'You can only record patron usage counter data during your active assigned shift date and time window.') }}
+      </p>
+      <div v-if="props.dutyStatus?.next_turn" class="mt-1.5 text-[10px] font-mono font-medium text-rose-700 dark:text-rose-300">
+        {{ langStore.t('attendance.next_turn', 'Next turn') }}: {{ props.dutyStatus.next_turn }}
+      </div>
+    </div>
+    <!-- Active Shift Status Badge -->
+    <div v-else-if="props.dutyStatus?.allowed && !authStore.isAdmin" class="w-full mb-3 p-2 rounded-xs sm:rounded-sm bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 flex items-center gap-2 text-xs font-semibold">
+      <Sparkles class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+      <span class="truncate">🟢 {{ langStore.t('attendance.shift_active', 'Active Shift Duty: Counter Ready') }}</span>
     </div>
 
     <!-- TOP: Patron Type Toggle (Mobile Standard Scaled) -->

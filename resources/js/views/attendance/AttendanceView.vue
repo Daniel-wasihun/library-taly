@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import Modal from '@/components/ui/Modal.vue';
 import Button from '@/components/ui/Button.vue';
+import api from '@/api/client';
 import type { Attendance } from '@/types';
 
 // Sub-components
@@ -29,6 +30,52 @@ const selectedUserType = ref<'student' | 'teacher' | 'staff'>('student');
 const showNoLibraryModal = ref(false);
 const showDeleteConfirm = ref(false);
 const logToDelete = ref<Attendance | null>(null);
+
+// Shift duty authorization state
+const dutyStatus = ref<{
+  allowed: boolean;
+  reason: string;
+  code?: string;
+  task?: string;
+  task_name?: string;
+  shift?: any;
+  next_turn?: string | null;
+} | null>(null);
+const checkingDuty = ref(false);
+
+const checkDutyStatus = async () => {
+  if (authStore.isAdmin || authStore.isSuperAdmin) {
+    dutyStatus.value = {
+      allowed: true,
+      reason: 'Administrative override granted.',
+    };
+    return;
+  }
+
+  if (!selectedLibrary.value) {
+    dutyStatus.value = null;
+    return;
+  }
+
+  try {
+    checkingDuty.value = true;
+    const res = await api.get('/schedules/check-duty', {
+      params: {
+        task_key: 'attendance_desk',
+        library_id: selectedLibrary.value,
+      },
+    });
+    dutyStatus.value = res.data?.duty_check || null;
+  } catch (err: any) {
+    dutyStatus.value = {
+      allowed: false,
+      reason: err?.response?.data?.message || 'Unable to verify duty schedule.',
+      code: err?.response?.data?.code || 'OUTSIDE_DUTY_TURN',
+    };
+  } finally {
+    checkingDuty.value = false;
+  }
+};
 
 // Real-time ticking clock for exact 2-minute expiration
 const currentTime = ref(Date.now());
@@ -148,6 +195,12 @@ const handleLog = async (gender: 'male' | 'female', count = 1) => {
     return;
   }
 
+  // Pre-flight check: ensure active shift duty
+  if (!authStore.isAdmin && !authStore.isSuperAdmin && dutyStatus.value && !dutyStatus.value.allowed) {
+    toast.error(dutyStatus.value.reason || 'You can only record attendance during your assigned shift date and time.');
+    return;
+  }
+
   try {
     const res = await attendanceStore.logEntry(
       selectedLibrary.value,
@@ -238,6 +291,10 @@ const resetDateRange = () => {
 onMounted(async () => {
   timerInterval = setInterval(() => {
     currentTime.value = Date.now();
+    // Periodic duty turn verification every 30s
+    if (Math.floor(currentTime.value / 1000) % 30 === 0) {
+      checkDutyStatus();
+    }
   }, 5000);
 
   // Use cached library list
@@ -250,6 +307,9 @@ onMounted(async () => {
   } else if (libraryStore.libraries.length > 0 && !selectedLibrary.value) {
     selectedLibrary.value = Number(libraryStore.libraries[0].id);
   }
+
+  // Verify shift duty for selected library branch
+  await checkDutyStatus();
 
   attendanceStore.filters.library_id = selectedLibrary.value || '';
   attendanceStore.filters.date_from = todayStr;
@@ -270,6 +330,7 @@ onUnmounted(() => {
 
 watch(selectedLibrary, (newVal) => {
   attendanceStore.filters.library_id = newVal ? String(newVal) : '';
+  checkDutyStatus();
   if (activeTab.value === 'counter') {
     attendanceStore.fetchLogs(1, undefined, true);
   }
@@ -292,6 +353,7 @@ watch(selectedLibrary, (newVal) => {
       <AttendanceCounter
         :selectedLibrary="selectedLibrary"
         v-model:selectedUserType="selectedUserType"
+        :dutyStatus="dutyStatus"
         @log="handleLog"
       />
 

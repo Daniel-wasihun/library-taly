@@ -133,11 +133,14 @@ class DutyScheduleController extends Controller
      */
     public function checkDuty(Request $request): JsonResponse
     {
-        $task = $request->query('task_key', 'book_circulation');
+        $task = $request->query('task_key', 'attendance_desk');
         $date = $request->query('date', Carbon::today()->toDateString());
         $user = $request->user();
+        $libraryId = $request->filled('library_id')
+            ? (int) $request->query('library_id')
+            : ($user->library_id ? (int) $user->library_id : null);
 
-        $result = $this->dutyService->canPerformTask($user, $task, $date);
+        $result = $this->dutyService->canPerformTask($user, $task, $date, $libraryId, true);
 
         return response()->json([
             'success' => true,

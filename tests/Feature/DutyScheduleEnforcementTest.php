@@ -16,7 +16,15 @@ class DutyScheduleEnforcementTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Freeze time to 10:00 AM East Africa Time on Nov 18, 2026 (Hidar 9, 2019 E.C.)
+        Carbon::setTestNow(Carbon::create(2026, 11, 18, 10, 0, 0, 'Africa/Addis_Ababa'));
         $this->seed();
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
     }
 
     public function test_user_can_login_with_username_or_email(): void
@@ -225,5 +233,129 @@ class DutyScheduleEnforcementTest extends TestCase
 
         $adminResponse->assertStatus(200)
             ->assertJsonPath('success', true);
+    }
+
+    public function test_four_groups_seeded_with_at_least_four_attendants_per_branch_and_sixteen_per_library(): void
+    {
+        $techno = Library::where('code', 'TECHNO')->first();
+        $social = Library::where('code', 'SOCIAL')->first();
+        $natural = Library::where('code', 'NATURAL')->first();
+
+        $this->assertNotNull($techno);
+        $this->assertNotNull($social);
+        $this->assertNotNull($natural);
+
+        // Minimum 16 attendants per branch
+        $technoCount = User::role('Attendant')->where('library_id', $techno->id)->count();
+        $socialCount = User::role('Attendant')->where('library_id', $social->id)->count();
+        $naturalCount = User::role('Attendant')->where('library_id', $natural->id)->count();
+
+        $this->assertGreaterThanOrEqual(16, $technoCount);
+        $this->assertGreaterThanOrEqual(16, $socialCount);
+        $this->assertGreaterThanOrEqual(16, $naturalCount);
+
+        // 4 Groups seeded, each containing at least 4 from each library
+        $groups = \App\Models\ShiftGroup::all();
+        $this->assertGreaterThanOrEqual(4, $groups->count());
+
+        foreach ($groups as $group) {
+            $groupUsers = $group->users;
+            $fromTechno = $groupUsers->where('library_id', $techno->id)->count();
+            $fromSocial = $groupUsers->where('library_id', $social->id)->count();
+            $fromNatural = $groupUsers->where('library_id', $natural->id)->count();
+
+            $this->assertGreaterThanOrEqual(4, $fromTechno, "Group {$group->name} must have at least 4 attendants from Techno Library");
+            $this->assertGreaterThanOrEqual(4, $fromSocial, "Group {$group->name} must have at least 4 attendants from Social Library");
+            $this->assertGreaterThanOrEqual(4, $fromNatural, "Group {$group->name} must have at least 4 attendants from Natural Library");
+        }
+    }
+
+    public function test_attendant_cannot_log_attendance_outside_shift_hours(): void
+    {
+        // On Nov 18, 2026 at 20:00 (8:00 PM), Group A's Day Shift (08:00 - 17:00) is closed
+        Carbon::setTestNow(Carbon::create(2026, 11, 18, 20, 0, 0, 'Africa/Addis_Ababa'));
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $onDutyUser = User::where('username', 'yohannes_attendant')->first();
+
+        $response = $this->actingAs($onDutyUser)
+            ->postJson('/api/physical/attendance/log', [
+                'library_id' => $onDutyUser->library_id,
+                'user_type' => 'student',
+                'gender' => 'male',
+                'count' => 1,
+            ]);
+
+        $response->assertStatus(403)
+            ->assertJsonPath('code', 'OUTSIDE_SHIFT_HOURS');
+    }
+
+    public function test_attendant_cannot_log_attendance_when_off_duty_day(): void
+    {
+        // techno_attendant_9 is in Group C, which has NO shift on Day 9 (Hidar 9)
+        \Illuminate\Support\Facades\Cache::flush();
+        $offDutyUser = User::where('username', 'techno_attendant_9')->first();
+
+        $response = $this->actingAs($offDutyUser)
+            ->postJson('/api/physical/attendance/log', [
+                'library_id' => $offDutyUser->library_id,
+                'user_type' => 'student',
+                'gender' => 'male',
+                'count' => 1,
+            ]);
+
+        $response->assertStatus(403)
+            ->assertJsonPath('code', 'OUTSIDE_DUTY_TURN');
+    }
+
+    public function test_attendants_from_techno_social_and_natural_libraries_can_log_for_their_own_branch(): void
+    {
+        // At 10:00 AM on Day 9, Group A attendants in Techno, Social, and Natural are active
+        Carbon::setTestNow(Carbon::create(2026, 11, 18, 10, 0, 0, 'Africa/Addis_Ababa'));
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $technoUser = User::where('username', 'yohannes_attendant')->first();
+        $socialUser = User::where('username', 'social_attendant_1')->first();
+        $naturalUser = User::where('username', 'natural_attendant_1')->first();
+
+        // 1. Techno attendant logs for Techno
+        $this->actingAs($technoUser)
+            ->postJson('/api/physical/attendance/log', [
+                'library_id' => $technoUser->library_id,
+                'user_type' => 'student',
+                'gender' => 'female',
+                'count' => 2,
+            ])
+            ->assertStatus(201);
+
+        // 2. Social attendant logs for Social
+        $this->actingAs($socialUser)
+            ->postJson('/api/physical/attendance/log', [
+                'library_id' => $socialUser->library_id,
+                'user_type' => 'teacher',
+                'gender' => 'male',
+                'count' => 1,
+            ])
+            ->assertStatus(201);
+
+        // 3. Natural attendant logs for Natural
+        $this->actingAs($naturalUser)
+            ->postJson('/api/physical/attendance/log', [
+                'library_id' => $naturalUser->library_id,
+                'user_type' => 'staff',
+                'gender' => 'female',
+                'count' => 3,
+            ])
+            ->assertStatus(201);
+
+        // 4. Social attendant CANNOT log for Natural Library
+        $this->actingAs($socialUser)
+            ->postJson('/api/physical/attendance/log', [
+                'library_id' => $naturalUser->library_id,
+                'user_type' => 'student',
+                'gender' => 'male',
+                'count' => 1,
+            ])
+            ->assertStatus(403);
     }
 }

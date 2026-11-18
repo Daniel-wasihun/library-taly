@@ -79,6 +79,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/shift-schedules/assign', [GroupShiftScheduleController::class, 'assign']);
     Route::post('/shift-schedules/auto-generate', [GroupShiftScheduleController::class, 'autoGenerate']);
     Route::get('/shift-schedules/holidays', [GroupShiftScheduleController::class, 'holidays']);
+    Route::post('/shift-schedules/holidays', [GroupShiftScheduleController::class, 'storeHoliday']);
+    Route::delete('/shift-schedules/holidays/{holiday}', [GroupShiftScheduleController::class, 'destroyHoliday']);
     Route::get('/shift-schedules/check-overlap', [GroupShiftScheduleController::class, 'checkOverlap']);
     Route::delete('/shift-schedules/{groupShiftSchedule}', [GroupShiftScheduleController::class, 'destroy']);
 

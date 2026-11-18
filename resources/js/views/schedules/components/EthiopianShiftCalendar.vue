@@ -124,6 +124,10 @@
           <span>{{ langStore.t('schedules.holiday_legend', 'Ethiopian Holiday (Canceled / No Duty)') }}</span>
         </div>
         <div class="flex items-center gap-1.5">
+          <span class="w-3.5 h-3.5 rounded-sm bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[9px] font-bold">⚠️</span>
+          <span>{{ langStore.t('schedules.consecutive_legend', 'Rest Day (No Consecutive Night/Day)') }}</span>
+        </div>
+        <div class="flex items-center gap-1.5">
           <span class="w-3.5 h-3.5 rounded-sm bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[9px] font-bold">⊘</span>
           <span>In Another Shift (Group)</span>
         </div>
@@ -178,8 +182,17 @@
           </div>
         </div>
 
-        <div v-if="monthHolidaysList.length > 0" class="shrink-0 self-start sm:self-auto">
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 font-bold text-[11px]">
+        <div class="flex items-center gap-2 shrink-0 self-start sm:self-auto flex-wrap">
+          <Button
+            v-if="canManageSchedule"
+            variant="outline"
+            size="sm"
+            :icon="Plus"
+            @click="openAddHolidayModal"
+          >
+            {{ langStore.t('schedules.add_holiday', 'Add Holiday') }}
+          </Button>
+          <span v-if="monthHolidaysList.length > 0" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 font-bold text-[11px]">
             🚫 {{ langStore.t('schedules.shifts_canceled_badge', 'All Duty Shifts Canceled on Holidays') }}
           </span>
         </div>
@@ -203,13 +216,24 @@
                 <span class="text-main-text/50 font-normal ml-1 text-[11px]">({{ h.name_en }})</span>
               </p>
               <p class="text-[10px] text-purple-700 dark:text-purple-300 truncate mt-0.5">
-                {{ h.description || 'Official National / Religious Holiday' }}
+                {{ h.description || 'User-defined Ethiopian holiday' }}
               </p>
             </div>
           </div>
-          <span class="px-2 py-1 rounded-xs bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/30 text-[10px] font-bold shrink-0 flex items-center gap-1">
-            🚫 <span>{{ langStore.t('schedules.canceled', 'Canceled') }}</span>
-          </span>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="px-2 py-1 rounded-xs bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/30 text-[10px] font-bold flex items-center gap-1">
+              🚫 <span>{{ langStore.t('schedules.canceled', 'Canceled') }}</span>
+            </span>
+            <button
+              v-if="canManageSchedule && h.id"
+              type="button"
+              class="p-1 rounded-sm text-main-text/40 hover:text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
+              title="Delete this holiday"
+              @click="handleDeleteHoliday(h.id, h.name)"
+            >
+              <Trash2 class="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -346,6 +370,13 @@
                 class="absolute top-1 right-1 text-[9px] leading-none"
               >
                 🔒
+              </span>
+              <span
+                v-else-if="isDayDisabled(shift.id, day).isConsecutive"
+                class="absolute top-1 right-1 text-[9px] leading-none"
+                title="Rest Day Required (No Consecutive Night/Day)"
+              >
+                ⚠️
               </span>
               <span
                 v-else-if="isDayDisabled(shift.id, day).isOtherShift"
@@ -502,6 +533,102 @@
         </Button>
       </template>
     </Modal>
+
+    <!-- Add Manual Ethiopian Holiday Modal -->
+    <Modal
+      :show="showHolidayModal"
+      :title="langStore.t('schedules.add_holiday_title', 'Add Manual Ethiopian Holiday')"
+      :subtitle="langStore.t('schedules.add_holiday_subtitle', 'Insert a public or religious holiday for this month. Duty shifts will be automatically canceled on this date.')"
+      size="md"
+      @close="showHolidayModal = false"
+    >
+      <form @submit.prevent="handleSaveHoliday" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1.5">
+              {{ langStore.t('schedules.holiday_day', 'Ethiopian Day of Month (ቀን) *') }}
+            </label>
+            <select
+              v-model.number="holidayForm.ethiopian_day"
+              class="w-full bg-input-bg border border-card-border rounded-sm px-3 py-2 text-xs text-main-text font-mono focus:border-nav-accent outline-none"
+              required
+            >
+              <option v-for="d in maxMonthDays" :key="d" :value="d">
+                ቀን {{ d }} (Day {{ d }})
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-main-text mb-1.5">
+              {{ langStore.t('schedules.holiday_month_year', 'Month & Year') }}
+            </label>
+            <input
+              type="text"
+              class="w-full bg-input-bg border border-card-border rounded-sm px-3 py-2 text-xs text-main-text opacity-70 cursor-not-allowed outline-none"
+              :value="`${currentMonthName} ${selectedYear} ዓ.ም`"
+              disabled
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-main-text mb-1.5">
+            {{ langStore.t('schedules.holiday_name_en', 'Holiday Name (English) *') }}
+          </label>
+          <input
+            v-model="holidayForm.name"
+            type="text"
+            class="w-full bg-input-bg border border-card-border rounded-sm px-3 py-2 text-xs text-main-text focus:border-nav-accent outline-none"
+            placeholder="e.g. Hidar Zion, Epiphany, Eid al-Fitr..."
+            required
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-main-text mb-1.5">
+            {{ langStore.t('schedules.holiday_name_am', 'Amharic Title (የበዓሉ ስም)') }}
+          </label>
+          <input
+            v-model="holidayForm.name_am"
+            type="text"
+            class="w-full bg-input-bg border border-card-border rounded-sm px-3 py-2 text-xs text-main-text focus:border-nav-accent outline-none"
+            placeholder="e.g. ኅዳር ጽዮን፣ ጥምቀት..."
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-main-text mb-1.5">
+            {{ langStore.t('schedules.description', 'Description (optional)') }}
+          </label>
+          <textarea
+            v-model="holidayForm.description"
+            rows="2"
+            class="w-full bg-input-bg border border-card-border rounded-sm px-3 py-2 text-xs text-main-text focus:border-nav-accent outline-none resize-none"
+            placeholder="Operational notes, celebration details..."
+          ></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-card-border">
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            @click="showHolidayModal = false"
+          >
+            {{ langStore.t('common.cancel', 'Cancel') }}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            type="submit"
+            :loading="shiftStore.saving"
+          >
+            {{ langStore.t('schedules.save_holiday', 'Save Holiday') }}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   </div>
 </template>
 
@@ -521,6 +648,8 @@ import {
   Users,
   Sparkles,
   AlertCircle,
+  Plus,
+  Trash2,
 } from 'lucide-vue-next';
 import type { ShiftGroup, EthiopianHoliday } from '@/types';
 
@@ -565,6 +694,69 @@ const currentMonthName = computed(() => {
 
 // Shift Selections: shift_id => Array of selected days [1, 2, ... 30]
 const shiftSelections = reactive<Record<number, number[]>>({});
+
+// Manual Holiday Modal State
+const showHolidayModal = ref(false);
+const holidayForm = reactive({
+  ethiopian_day: 1,
+  name: '',
+  name_am: '',
+  description: '',
+});
+
+const openAddHolidayModal = () => {
+  holidayForm.ethiopian_day = 1;
+  holidayForm.name = '';
+  holidayForm.name_am = '';
+  holidayForm.description = '';
+  showHolidayModal.value = true;
+};
+
+const handleSaveHoliday = async () => {
+  if (!holidayForm.name) {
+    toast.error('Holiday name is required');
+    return;
+  }
+
+  const res = await shiftStore.addHoliday({
+    ethiopian_year: selectedYear.value,
+    ethiopian_month: selectedMonth.value,
+    ethiopian_day: Number(holidayForm.ethiopian_day),
+    name: holidayForm.name,
+    name_am: holidayForm.name_am || holidayForm.name,
+    description: holidayForm.description,
+    library_id: null,
+  });
+
+  if (res) {
+    showHolidayModal.value = false;
+    await loadMatrix();
+  }
+};
+
+const handleDeleteHoliday = async (id: number, name: string) => {
+  if (!confirm(`Are you sure you want to remove the holiday "${name}"?`)) {
+    return;
+  }
+  const success = await shiftStore.deleteHoliday(id);
+  if (success) {
+    await loadMatrix();
+  }
+};
+
+// Helper methods to identify night shifts vs day shifts
+const isNightShift = (shiftId: number): boolean => {
+  const s = activeShifts.value.find((sh) => sh.id === shiftId);
+  if (!s) return false;
+  const c = (s.code || '').toLowerCase();
+  const n = (s.name || '').toLowerCase();
+  const na = s.name_am || '';
+  return c.includes('night') || n.includes('night') || na.includes('ማታ');
+};
+
+const isDayShift = (shiftId: number): boolean => {
+  return !isNightShift(shiftId);
+};
 
 // Auto Generate Modal State
 const showAutoModal = ref(false);
@@ -697,7 +889,16 @@ const isDaySelected = (shiftId: number, day: number): boolean => {
 const isDayDisabled = (
   shiftId: number,
   day: number
-): { disabled: boolean; isOtherShift: boolean; otherShiftName?: string; isOtherGroup: boolean; otherGroupName?: string; isHoliday: boolean } => {
+): {
+  disabled: boolean;
+  isOtherShift: boolean;
+  otherShiftName?: string;
+  isOtherGroup: boolean;
+  otherGroupName?: string;
+  isHoliday: boolean;
+  isConsecutive?: boolean;
+  consecutiveReason?: string;
+} => {
   // 0. RULE 0: Official Ethiopian Holiday (Duty Canceled)
   // "and that day will be canceled in the schedule ui cleanly"
   const holiday = getHoliday(day);
@@ -707,14 +908,15 @@ const isDayDisabled = (
       isOtherShift: false,
       isOtherGroup: false,
       isHoliday: true,
+      isConsecutive: false,
     };
   }
 
   if (isDaySelected(shiftId, day)) {
-    return { disabled: false, isOtherShift: false, isOtherGroup: false, isHoliday: false };
+    return { disabled: false, isOtherShift: false, isOtherGroup: false, isHoliday: false, isConsecutive: false };
   }
 
-  // 1. RULE 1 (Intra-group): Is this day selected in ANOTHER shift for this same group?
+  // 1. RULE 1 (Intra-group same day): Is this day selected in ANOTHER shift for this same group?
   for (const s of activeShifts.value) {
     if (s.id !== shiftId && isDaySelected(s.id, day)) {
       return {
@@ -723,7 +925,62 @@ const isDayDisabled = (
         otherShiftName: s.name,
         isOtherGroup: false,
         isHoliday: false,
+        isConsecutive: false,
       };
+    }
+  }
+
+  // 1.5. RULE 1.5 (Consecutive Night / Day): If group is in Night Shift, it cannot be in Day Shift next morning or previous day
+  // "and no consequetive night and day shoft must be assigned to the group mean that if the a group is in night shift that group must not be the next day morning shift or the prevous day shift"
+  if (isNightShift(shiftId)) {
+    for (const s of activeShifts.value) {
+      if (isDayShift(s.id)) {
+        if (isDaySelected(s.id, day + 1)) {
+          return {
+            disabled: true,
+            isOtherShift: false,
+            isOtherGroup: false,
+            isHoliday: false,
+            isConsecutive: true,
+            consecutiveReason: `Group is scheduled for Day Shift the next morning (Day ${day + 1}). Attendants cannot work consecutive night and morning shifts.`,
+          };
+        }
+        if (isDaySelected(s.id, day - 1)) {
+          return {
+            disabled: true,
+            isOtherShift: false,
+            isOtherGroup: false,
+            isHoliday: false,
+            isConsecutive: true,
+            consecutiveReason: `Group is scheduled for Day Shift the previous day (Day ${day - 1}). Attendants cannot work consecutive day and night shifts.`,
+          };
+        }
+      }
+    }
+  } else if (isDayShift(shiftId)) {
+    for (const s of activeShifts.value) {
+      if (isNightShift(s.id)) {
+        if (isDaySelected(s.id, day - 1)) {
+          return {
+            disabled: true,
+            isOtherShift: false,
+            isOtherGroup: false,
+            isHoliday: false,
+            isConsecutive: true,
+            consecutiveReason: `Group is scheduled for Night Shift the night before (Day ${day - 1}). Attendants cannot work consecutive night and morning shifts.`,
+          };
+        }
+        if (isDaySelected(s.id, day + 1)) {
+          return {
+            disabled: true,
+            isOtherShift: false,
+            isOtherGroup: false,
+            isHoliday: false,
+            isConsecutive: true,
+            consecutiveReason: `Group is scheduled for Night Shift the next night (Day ${day + 1}). Attendants cannot work consecutive day and night shifts.`,
+          };
+        }
+      }
     }
   }
 
@@ -738,11 +995,12 @@ const isDayDisabled = (
         isOtherGroup: true,
         otherGroupName: conflict.group_name,
         isHoliday: false,
+        isConsecutive: false,
       };
     }
   }
 
-  return { disabled: false, isOtherShift: false, isOtherGroup: false, isHoliday: false };
+  return { disabled: false, isOtherShift: false, isOtherGroup: false, isHoliday: false, isConsecutive: false };
 };
 
 const getDayButtonClasses = (shiftId: number, day: number) => {
@@ -757,6 +1015,10 @@ const getDayButtonClasses = (shiftId: number, day: number) => {
   }
 
   const status = isDayDisabled(shiftId, day);
+  if (status.isConsecutive) {
+    return 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/35 cursor-not-allowed opacity-70';
+  }
+
   if (status.isOtherGroup) {
     return 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20 cursor-not-allowed opacity-60';
   }
@@ -776,6 +1038,7 @@ const getDayLabel = (shiftId: number, day: number): string => {
   if (selected) return 'Active';
 
   const status = isDayDisabled(shiftId, day);
+  if (status.isConsecutive) return langStore.t('schedules.rest_day', 'Rest / ዕረፍት');
   if (status.isOtherGroup) return status.otherGroupName || 'Occupied';
   if (status.isOtherShift) return status.otherShiftName || 'Other Shift';
 
@@ -792,6 +1055,9 @@ const getDayTooltip = (shiftId: number, day: number): string => {
   if (selected) return `Day ${day}: Selected for this shift. Click to remove.`;
 
   const status = isDayDisabled(shiftId, day);
+  if (status.isConsecutive) {
+    return `Day ${day}: Disabled — ${status.consecutiveReason}`;
+  }
   if (status.isOtherGroup) {
     return `Day ${day}: Disabled — Already assigned to ${status.otherGroupName} in this library branch for this shift.`;
   }
@@ -808,6 +1074,8 @@ const toggleDay = (shiftId: number, day: number) => {
     if (status.isHoliday) {
       const h = getHoliday(day);
       toast.warning(`Day ${day} is an official Ethiopian Holiday (${h?.name_am || ''} / ${h?.name_en || ''}). Duty shifts are canceled on this date.`);
+    } else if (status.isConsecutive) {
+      toast.warning(`Day ${day} restriction: ${status.consecutiveReason}`);
     } else if (status.isOtherGroup) {
       toast.warning(`Day ${day} is already assigned to ${status.otherGroupName} for this shift.`);
     } else if (status.isOtherShift) {

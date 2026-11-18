@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\EthiopianHoliday;
 use App\Models\GroupShiftSchedule;
 use App\Models\Library;
 use App\Models\LibraryAttendance;
@@ -666,6 +667,22 @@ class DatabaseSeeder extends Seeder
                 'ethiopian_end_time' => '05:00 ከምሽቱ',
                 'description' => 'Evening and night library duty shift from 11:00 afternoon to 05:00 night Ethiopian time.',
                 'is_active' => true,
+            ]
+        );
+
+        // 8.5. Seed initial user-inserted Ethiopian Holiday (Day 12 Hidar Zion for 2019)
+        EthiopianHoliday::updateOrCreate(
+            [
+                'ethiopian_year' => 2019,
+                'ethiopian_month' => 3,
+                'ethiopian_day' => 12,
+                'library_id' => null, // applies across all branches
+            ],
+            [
+                'name' => 'Hidar Zion',
+                'name_am' => 'ኅዳር ጽዮን',
+                'description' => 'Major historical and cultural commemoration.',
+                'created_by' => $superAdminUser->id,
             ]
         );
 

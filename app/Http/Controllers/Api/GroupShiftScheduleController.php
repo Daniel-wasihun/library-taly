@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\EthiopianHoliday;
 use App\Models\GroupShiftSchedule;
 use App\Models\Library;
 use App\Models\Shift;
@@ -166,20 +167,85 @@ class GroupShiftScheduleController extends Controller
     }
 
     /**
-     * Get Ethiopian holidays for a specific month.
+     * Get Ethiopian holidays for a specific month (manual user-inserted holidays).
      */
     public function holidays(Request $request): JsonResponse
     {
         $year = (int)($request->query('ethiopian_year') ?: 2019);
         $month = (int)($request->query('ethiopian_month') ?: 1);
+        $libraryId = $request->query('library_id') ? (int)$request->query('library_id') : null;
 
-        $holidays = EthiopianHolidayService::getHolidaysForMonth($year, $month);
+        $holidays = EthiopianHolidayService::getHolidaysForMonth($year, $month, $libraryId);
 
         return response()->json([
             'success' => true,
             'ethiopian_year' => $year,
             'ethiopian_month' => $month,
+            'total' => count($holidays),
             'holidays' => $holidays,
+        ]);
+    }
+
+    /**
+     * Insert manual Ethiopian holiday for a month and year.
+     * "the holiday must be inserted manually by the user not auto detected"
+     */
+    public function storeHoliday(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->canManageLibrary()) {
+            return response()->json(['message' => 'Unauthorized to insert holidays.'], 403);
+        }
+
+        $validated = $request->validate([
+            'ethiopian_year' => ['required', 'integer', 'min:2000', 'max:2100'],
+            'ethiopian_month' => ['required', 'integer', 'min:1', 'max:13'],
+            'ethiopian_day' => ['required', 'integer', 'min:1', 'max:30'],
+            'name' => ['required', 'string', 'max:100'],
+            'name_am' => ['nullable', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'library_id' => ['nullable', 'exists:libraries,id'],
+        ]);
+
+        $holiday = EthiopianHoliday::updateOrCreate(
+            [
+                'ethiopian_year' => $validated['ethiopian_year'],
+                'ethiopian_month' => $validated['ethiopian_month'],
+                'ethiopian_day' => $validated['ethiopian_day'],
+                'library_id' => $validated['library_id'] ?? null,
+            ],
+            [
+                'name' => $validated['name'],
+                'name_am' => $validated['name_am'] ?? $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'created_by' => $user->id,
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => "Holiday '{$holiday->name}' successfully inserted for Day {$holiday->ethiopian_day}.",
+            'holiday' => $holiday,
+        ], 201);
+    }
+
+    /**
+     * Delete manual Ethiopian holiday.
+     */
+    public function destroyHoliday(Request $request, EthiopianHoliday $holiday): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->canManageLibrary()) {
+            return response()->json(['message' => 'Unauthorized to remove holidays.'], 403);
+        }
+
+        $day = $holiday->ethiopian_day;
+        $name = $holiday->name;
+        $holiday->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Holiday '{$name}' for Day {$day} has been deleted.",
         ]);
     }
 
@@ -278,6 +344,58 @@ class GroupShiftScheduleController extends Controller
                     'shift_id' => $shiftId,
                     'shift_name' => $shiftTitle,
                 ];
+            }
+        }
+
+        // =========================================================================
+        // RULE 1.5: No consecutive Night and Day shift for the same group
+        // "and no consequetive night and day shoft must be assigned to the group mean that if the a group is in night shift that group must not be the next day morning shift or the prevous day shift"
+        // =========================================================================
+        $dayShiftDays = [];
+        $nightShiftDays = [];
+
+        foreach ($validated['shifts'] as $shiftAssignment) {
+            $shiftId = (int)$shiftAssignment['shift_id'];
+            $days = array_values(array_unique(array_map('intval', $shiftAssignment['days'])));
+            $shiftObj = $allShifts->get($shiftId);
+            $code = strtolower($shiftObj ? $shiftObj->code : '');
+            $name = strtolower($shiftObj ? $shiftObj->name : '');
+            $nameAm = $shiftObj ? ($shiftObj->name_am ?? '') : '';
+
+            $isNight = str_contains($code, 'night') || str_contains($name, 'night') || str_contains($nameAm, 'ማታ');
+            $isDay = str_contains($code, 'day') || str_contains($name, 'day') || str_contains($code, 'morning') || str_contains($nameAm, 'ቀን') || !$isNight;
+
+            if ($isNight) {
+                $nightShiftDays = array_merge($nightShiftDays, $days);
+            } elseif ($isDay) {
+                $dayShiftDays = array_merge($dayShiftDays, $days);
+            }
+        }
+
+        $dayShiftDays = array_unique($dayShiftDays);
+        $nightShiftDays = array_unique($nightShiftDays);
+
+        foreach ($nightShiftDays as $nDay) {
+            // Check next day morning shift (n + 1)
+            if (in_array($nDay + 1, $dayShiftDays, true)) {
+                $nextDay = $nDay + 1;
+                return response()->json([
+                    'message' => "Consecutive Shift Restriction: Group '{$group->name}' is assigned Night Shift on Day {$nDay} and cannot work Day Shift the next morning (Day {$nextDay}). Attendants must not work consecutive night and morning shifts.",
+                    'conflict_type' => 'CONSECUTIVE_NIGHT_DAY_OVERLAP',
+                    'night_day' => $nDay,
+                    'day_shift_day' => $nextDay,
+                ], 422);
+            }
+
+            // Check previous day morning/day shift (n - 1)
+            if (in_array($nDay - 1, $dayShiftDays, true)) {
+                $prevDay = $nDay - 1;
+                return response()->json([
+                    'message' => "Consecutive Shift Restriction: Group '{$group->name}' cannot be assigned Night Shift on Day {$nDay} because they work Day Shift the previous day (Day {$prevDay}). Attendants must not work consecutive day and night shifts.",
+                    'conflict_type' => 'CONSECUTIVE_NIGHT_DAY_OVERLAP',
+                    'night_day' => $nDay,
+                    'day_shift_day' => $prevDay,
+                ], 422);
             }
         }
 

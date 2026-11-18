@@ -283,8 +283,9 @@ class EthiopianShiftScheduleTest extends TestCase
         $eyear = $currentEc['year'];
         $emonth = $currentEc['month'];
         $eday = $currentEc['day'];
+        $nightDay = ($eday + 2 <= 30) ? ($eday + 2) : (($eday - 2 >= 1) ? ($eday - 2) : 15);
 
-        // Group A gets today on Day Shift
+        // Group A gets today on Day Shift and a non-consecutive day on Night Shift
         $res = $this->actingAs($this->admin)->postJson('/api/shift-schedules/assign', [
             'library_id' => $this->mainLibrary->id,
             'shift_group_id' => $groupA->id,
@@ -297,7 +298,7 @@ class EthiopianShiftScheduleTest extends TestCase
                 ],
                 [
                     'shift_id' => $this->nightShift->id,
-                    'days' => [($eday % 30) + 1],
+                    'days' => [$nightDay],
                 ],
             ],
         ]);
@@ -429,6 +430,26 @@ class EthiopianShiftScheduleTest extends TestCase
         $grpA->users()->sync([$this->attendantMain->id]);
         $grpB->users()->sync([$this->attendantGeneral->id]);
 
+        // Insert manual holidays for Meskerem (Day 1 Enkutatash & Day 17 Meskel)
+        \App\Models\EthiopianHoliday::create([
+            'ethiopian_year' => 2019,
+            'ethiopian_month' => 1,
+            'ethiopian_day' => 1,
+            'name' => 'Enkutatash',
+            'name_am' => 'እንቁጣጣሽ',
+            'library_id' => null,
+            'created_by' => $this->admin->id,
+        ]);
+        \App\Models\EthiopianHoliday::create([
+            'ethiopian_year' => 2019,
+            'ethiopian_month' => 1,
+            'ethiopian_day' => 17,
+            'name' => 'Meskel',
+            'name_am' => 'መስቀል',
+            'library_id' => null,
+            'created_by' => $this->admin->id,
+        ]);
+
         // 3. Run auto-generate for Meskerem (Month 1) with holiday exclusion
         $resGen = $this->actingAs($this->admin)->postJson('/api/shift-schedules/auto-generate', [
             'library_id' => $this->mainLibrary->id,
@@ -466,5 +487,138 @@ class EthiopianShiftScheduleTest extends TestCase
         $this->assertCount(2, $workloadStats);
         $this->assertEquals(28, $workloadStats[0]['total_assigned_days']);
         $this->assertEquals(28, $workloadStats[1]['total_assigned_days']);
+    }
+
+    /**
+     * Test manual holiday creation, listing and deletion.
+     */
+    public function test_manual_holiday_management(): void
+    {
+        // 1. Create a holiday via API
+        $createRes = $this->actingAs($this->admin)->postJson('/api/shift-schedules/holidays', [
+            'ethiopian_year' => 2019,
+            'ethiopian_month' => 3,
+            'ethiopian_day' => 12,
+            'name' => 'Custom Lib Holiday',
+            'name_am' => 'የቤተ-መጽሐፍት በዓል',
+            'description' => 'Annual library inventory day',
+        ]);
+
+        $createRes->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('holiday.ethiopian_day', 12);
+
+        $holidayId = $createRes->json('holiday.id');
+
+        // 2. Fetch holidays for Month 3
+        $listRes = $this->actingAs($this->admin)->getJson('/api/shift-schedules/holidays?ethiopian_year=2019&ethiopian_month=3');
+        $listRes->assertStatus(200)
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('holidays.12.name', 'Custom Lib Holiday');
+
+        // 3. Delete holiday
+        $delRes = $this->actingAs($this->admin)->deleteJson("/api/shift-schedules/holidays/{$holidayId}");
+        $delRes->assertStatus(200)
+            ->assertJsonPath('success', true);
+
+        // 4. Verify no holidays left for Month 3
+        $listRes2 = $this->actingAs($this->admin)->getJson('/api/shift-schedules/holidays?ethiopian_year=2019&ethiopian_month=3');
+        $listRes2->assertStatus(200)->assertJsonPath('total', 0);
+    }
+
+    /**
+     * Test that shift assignment is strictly rejected on manual Ethiopian holidays.
+     */
+    public function test_assignment_rejected_on_manual_holiday(): void
+    {
+        $group = ShiftGroup::create([
+            'name' => 'Holiday Test Group',
+            'library_id' => $this->mainLibrary->id,
+            'is_active' => true,
+        ]);
+
+        \App\Models\EthiopianHoliday::create([
+            'ethiopian_year' => 2019,
+            'ethiopian_month' => 4,
+            'ethiopian_day' => 15,
+            'name' => 'Test Day Off',
+            'name_am' => 'የሙከራ በዓል',
+            'created_by' => $this->admin->id,
+        ]);
+
+        $res = $this->actingAs($this->admin)->postJson('/api/shift-schedules/assign', [
+            'library_id' => $this->mainLibrary->id,
+            'shift_group_id' => $group->id,
+            'ethiopian_year' => 2019,
+            'ethiopian_month' => 4,
+            'shifts' => [
+                [
+                    'shift_id' => $this->dayShift->id,
+                    'days' => [15], // Assigned on holiday
+                ],
+            ],
+        ]);
+
+        $res->assertStatus(422)
+            ->assertJsonPath('conflict_type', 'HOLIDAY_CONFLICT')
+            ->assertJsonPath('day', 15);
+    }
+
+    /**
+     * Test that consecutive night and day shifts are strictly rejected.
+     */
+    public function test_consecutive_night_and_day_shift_rejection(): void
+    {
+        $group = ShiftGroup::create([
+            'name' => 'Fatigue Guard Group',
+            'library_id' => $this->mainLibrary->id,
+            'is_active' => true,
+        ]);
+
+        // Attempt: Group works Night Shift on Day 10 and Day Shift next morning (Day 11)
+        $resNextDay = $this->actingAs($this->admin)->postJson('/api/shift-schedules/assign', [
+            'library_id' => $this->mainLibrary->id,
+            'shift_group_id' => $group->id,
+            'ethiopian_year' => 2019,
+            'ethiopian_month' => 5,
+            'shifts' => [
+                [
+                    'shift_id' => $this->nightShift->id,
+                    'days' => [10],
+                ],
+                [
+                    'shift_id' => $this->dayShift->id,
+                    'days' => [11],
+                ],
+            ],
+        ]);
+
+        $resNextDay->assertStatus(422)
+            ->assertJsonPath('conflict_type', 'CONSECUTIVE_NIGHT_DAY_OVERLAP')
+            ->assertJsonPath('night_day', 10)
+            ->assertJsonPath('day_shift_day', 11);
+
+        // Attempt: Group works Day Shift on Day 9 and Night Shift on Day 10 (consecutive previous day)
+        $resPrevDay = $this->actingAs($this->admin)->postJson('/api/shift-schedules/assign', [
+            'library_id' => $this->mainLibrary->id,
+            'shift_group_id' => $group->id,
+            'ethiopian_year' => 2019,
+            'ethiopian_month' => 5,
+            'shifts' => [
+                [
+                    'shift_id' => $this->dayShift->id,
+                    'days' => [9],
+                ],
+                [
+                    'shift_id' => $this->nightShift->id,
+                    'days' => [10],
+                ],
+            ],
+        ]);
+
+        $resPrevDay->assertStatus(422)
+            ->assertJsonPath('conflict_type', 'CONSECUTIVE_NIGHT_DAY_OVERLAP')
+            ->assertJsonPath('night_day', 10)
+            ->assertJsonPath('day_shift_day', 9);
     }
 }

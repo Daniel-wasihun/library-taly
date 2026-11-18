@@ -165,6 +165,16 @@ const DEFAULT_ENGLISH: Record<string, string> = {
     'schedules.holiday_legend': 'Ethiopian Holiday (Canceled / No Duty)',
     'schedules.canceled': 'Canceled',
     'schedules.canceled_holiday': 'Canceled / በዓል',
+    'schedules.add_holiday': 'Add Holiday',
+    'schedules.add_holiday_title': 'Add Manual Ethiopian Holiday',
+    'schedules.add_holiday_subtitle': 'Insert a public or religious holiday for this month. Duty shifts will be automatically canceled on this date.',
+    'schedules.holiday_day': 'Ethiopian Day of Month (ቀን) *',
+    'schedules.holiday_month_year': 'Month & Year',
+    'schedules.holiday_name_en': 'Holiday Name (English) *',
+    'schedules.holiday_name_am': 'Amharic Title (የበዓሉ ስም)',
+    'schedules.save_holiday': 'Save Holiday',
+    'schedules.consecutive_legend': 'Rest Day (No Consecutive Night/Day)',
+    'schedules.rest_day': 'Rest / ዕረፍት',
 };
 
 const DEFAULT_AMHARIC: Record<string, string> = {
@@ -321,6 +331,16 @@ const DEFAULT_AMHARIC: Record<string, string> = {
     'schedules.holiday_legend': 'የኢትዮጵያ በዓል (የተሰረዘ / ዕረፍት)',
     'schedules.canceled': 'ተሰርዟል',
     'schedules.canceled_holiday': 'ተሰርዟል / በዓል',
+    'schedules.add_holiday': 'በዓል ጨምር',
+    'schedules.add_holiday_title': 'የኢትዮጵያ በዓል በእጅ መዝግብ',
+    'schedules.add_holiday_subtitle': 'ለዚህ ወር ይፋዊ ወይም ሃይማኖታዊ በዓል ይመዝግቡ። በዚያ ቀን የፈረቃ ተረኝነት በራስ-ሰር ይሰረዛል።',
+    'schedules.holiday_day': 'የወሩ ቀን *',
+    'schedules.holiday_month_year': 'ወር እና ዓ.ም',
+    'schedules.holiday_name_en': 'የበዓሉ ስም (እንግሊዝኛ) *',
+    'schedules.holiday_name_am': 'የበዓሉ ስም (አማርኛ)',
+    'schedules.save_holiday': 'በዓሉን መዝግብ',
+    'schedules.consecutive_legend': 'የዕረፍት ቀን (ተከታታይ ማታ/ቀን አይቻልም)',
+    'schedules.rest_day': 'ዕረፍት',
 };
 
 export const useLanguageStore = defineStore('language', () => {

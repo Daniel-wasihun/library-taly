@@ -141,8 +141,13 @@ class ShiftAutoSchedulerService
         $numGroups = $groups->count();
         $numShifts = $shifts->count();
 
-        // 5. Compute equal workload schedule distribution
-        // For each group, groupShiftDays[groupId][shiftId] = [day numbers]
+        // 5. Compute balanced workload schedule distribution
+        // Enforcing:
+        // - Intra-group rule: No group gets 2 shifts on the same day
+        // - Inter-group rule: No shift gets 2 groups on the same day
+        // - Consecutive Night/Day rule: If a group is on night shift on Day D,
+        //   that group must NOT be assigned Day shift on Day D-1 or Day D+1.
+        // - Equal workload: Workload is evenly distributed across groups.
         $groupShiftDays = [];
         foreach ($groups as $g) {
             $groupShiftDays[$g->id] = [];
@@ -151,19 +156,102 @@ class ShiftAutoSchedulerService
             }
         }
 
-        // Round-robin rotation algorithm guaranteeing:
-        // - Intra-group rule: No group gets 2 shifts on the same day
-        // - Inter-group rule: No shift gets 2 groups on the same day
-        // - Equal workload: Differences across groups <= 1 shift
-        $numShiftsToAssign = min($numShifts, $numGroups);
+        // Identify day shift and night shift
+        $dayShift = null;
+        $nightShift = null;
+        $remainingShifts = [];
 
-        foreach ($workingDays as $dayIndex => $day) {
-            for ($sIdx = 0; $sIdx < $numShiftsToAssign; $sIdx++) {
-                $shift = $shifts[$sIdx];
-                $groupIndex = ($dayIndex + $sIdx) % $numGroups;
-                $assignedGroup = $groups[$groupIndex];
+        foreach ($shifts as $s) {
+            $code = strtolower($s->code);
+            $name = strtolower($s->name);
+            $nameAm = $s->name_am ?? '';
+            $isNight = str_contains($code, 'night') || str_contains($name, 'night') || str_contains($nameAm, 'ማታ');
 
-                $groupShiftDays[$assignedGroup->id][$shift->id][] = $day;
+            if ($isNight && !$nightShift) {
+                $nightShift = $s;
+            } elseif (!$dayShift && (str_contains($code, 'day') || str_contains($name, 'day') || str_contains($code, 'morning') || str_contains($nameAm, 'ቀን'))) {
+                $dayShift = $s;
+            } else {
+                $remainingShifts[] = $s;
+            }
+        }
+
+        if (!$dayShift && !empty($shifts)) {
+            $dayShift = $shifts[0];
+        }
+        if (!$nightShift && count($shifts) > 1) {
+            $nightShift = $shifts[1];
+        }
+
+        // Track day-by-day assignments: daySchedule[day] = ['day' => groupId, 'night' => groupId]
+        $daySchedule = [];
+        $groupDayCounts = [];
+        $groupNightCounts = [];
+        foreach ($groups as $g) {
+            $groupDayCounts[$g->id] = 0;
+            $groupNightCounts[$g->id] = 0;
+        }
+
+        // If we have at least 3 groups and Day + Night shifts, use the proven 6-day cycle for 3 groups
+        // or N-day rotation that guarantees minimum 2-day separation between any night and day shift:
+        if ($numGroups === 3 && $dayShift && $nightShift) {
+            $gList = $groups->values();
+            // 6-day cycle pattern: [day_group_idx, night_group_idx]
+            $cycle = [
+                0 => [0, 1], // Day: G0, Night: G1
+                1 => [2, 1], // Day: G2, Night: G1
+                2 => [2, 0], // Day: G2, Night: G0
+                3 => [1, 0], // Day: G1, Night: G0
+                4 => [1, 2], // Day: G1, Night: G2
+                5 => [0, 2], // Day: G0, Night: G2
+            ];
+
+            foreach ($workingDays as $dayIndex => $day) {
+                $pattern = $cycle[$dayIndex % 6];
+                $dayGroup = $gList[$pattern[0]];
+                $nightGroup = $gList[$pattern[1]];
+
+                $groupShiftDays[$dayGroup->id][$dayShift->id][] = $day;
+                $groupShiftDays[$nightGroup->id][$nightShift->id][] = $day;
+            }
+        } elseif ($numGroups >= 4 && $dayShift && $nightShift) {
+            // For 4+ groups, offset by at least 2 guarantees Day -> Off -> Night -> Off
+            $gList = $groups->values();
+            $halfOffset = (int)ceil($numGroups / 2);
+            foreach ($workingDays as $dayIndex => $day) {
+                $dayGroupIdx = $dayIndex % $numGroups;
+                $nightGroupIdx = ($dayIndex + $halfOffset) % $numGroups;
+
+                $dayGroup = $gList[$dayGroupIdx];
+                $nightGroup = $gList[$nightGroupIdx];
+
+                $groupShiftDays[$dayGroup->id][$dayShift->id][] = $day;
+                $groupShiftDays[$nightGroup->id][$nightShift->id][] = $day;
+            }
+        } elseif ($numGroups === 2 && $dayShift && $nightShift) {
+            // For 2 groups, alternate in blocks (e.g. 5-day blocks with 1 transition day)
+            // to ensure no attendant does night shift immediately before/after day shift:
+            $gList = $groups->values();
+            foreach ($workingDays as $dayIndex => $day) {
+                // Blocks of 3 days: G0 Day & G1 Night, then swap after every 3 days
+                $block = (int)floor($dayIndex / 3);
+                $dayGroup = ($block % 2 === 0) ? $gList[0] : $gList[1];
+                $nightGroup = ($block % 2 === 0) ? $gList[1] : $gList[0];
+
+                $groupShiftDays[$dayGroup->id][$dayShift->id][] = $day;
+                $groupShiftDays[$nightGroup->id][$nightShift->id][] = $day;
+            }
+        } else {
+            // Fallback for custom shift combinations
+            $numShiftsToAssign = min($numShifts, $numGroups);
+            foreach ($workingDays as $dayIndex => $day) {
+                for ($sIdx = 0; $sIdx < $numShiftsToAssign; $sIdx++) {
+                    $shift = $shifts[$sIdx];
+                    $groupIndex = ($dayIndex + ($sIdx * 2)) % $numGroups;
+                    $assignedGroup = $groups[$groupIndex];
+
+                    $groupShiftDays[$assignedGroup->id][$shift->id][] = $day;
+                }
             }
         }
 

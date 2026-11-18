@@ -317,6 +317,48 @@ export const useShiftStore = defineStore('shift', () => {
         }
     };
 
+    /**
+     * Add manual user-inserted Ethiopian Holiday
+     */
+    const addHoliday = async (payload: {
+        ethiopian_year: number;
+        ethiopian_month: number;
+        ethiopian_day: number;
+        name: string;
+        name_am?: string;
+        description?: string;
+        library_id?: number | null;
+    }) => {
+        try {
+            saving.value = true;
+            const res = await api.post('/shift-schedules/holidays', payload);
+            toast.success(res.data.message || 'Holiday successfully saved');
+            return res.data;
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to save holiday');
+            return null;
+        } finally {
+            saving.value = false;
+        }
+    };
+
+    /**
+     * Delete manual user-inserted Ethiopian Holiday
+     */
+    const deleteHoliday = async (id: number) => {
+        try {
+            saving.value = true;
+            const res = await api.delete(`/shift-schedules/holidays/${id}`);
+            toast.success(res.data.message || 'Holiday deleted');
+            return true;
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Failed to delete holiday');
+            return false;
+        } finally {
+            saving.value = false;
+        }
+    };
+
     return {
         loading,
         saving,
@@ -338,5 +380,7 @@ export const useShiftStore = defineStore('shift', () => {
         autoGenerateSchedule,
         checkStaffOverlap,
         deleteGroupSchedule,
+        addHoliday,
+        deleteHoliday,
     };
 });

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Activity, MapPin } from 'lucide-vue-next';
+import { Activity, MapPin, ChevronDown } from 'lucide-vue-next';
 import { useLanguageStore } from '@/stores/languageStore';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -62,19 +62,22 @@ const internalSelectedLibrary = computed({
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
       
       <!-- Library Branch Dropdown -->
-      <div class="relative w-full sm:min-w-[240px] flex-1 md:flex-initial">
-        <div class="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
-          <MapPin class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-blue" />
+      <div class="relative w-full sm:min-w-[260px] flex-1 md:flex-initial">
+        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-blue pointer-events-none">
+          <MapPin class="w-4 h-4" />
         </div>
         <select
           v-model="internalSelectedLibrary"
           :disabled="isLibraryDisabled"
-          class="w-full h-8 sm:h-10 pl-8 sm:pl-9 pr-7 sm:pr-8 text-[11px] sm:text-xs font-semibold rounded-sm bg-main-bg/50 border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs disabled:opacity-60 cursor-pointer"
+          class="w-full h-9 sm:h-10 pl-9 pr-9 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text shadow-2xs hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent transition appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <option v-for="lib in libraryOptions" :key="lib.value" :value="lib.value">
             {{ lib.label }}
           </option>
         </select>
+        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+          <ChevronDown class="w-4 h-4" />
+        </div>
       </div>
 
       <!-- Active Tab Switcher (Live Counter vs Analytics) -->

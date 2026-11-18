@@ -43,16 +43,16 @@ class EthiopianShiftScheduleTest extends TestCase
 
         // Libraries
         $this->mainLibrary = Library::create([
-            'name' => 'Main Central Library',
-            'code' => 'MAIN',
-            'slug' => 'main-central-library',
+            'name' => 'Techno Library',
+            'code' => 'TECHNO',
+            'slug' => 'techno-library',
             'is_active' => true,
         ]);
 
         $this->sciLibrary = Library::create([
-            'name' => 'Science & Tech Library',
-            'code' => 'SCITECH',
-            'slug' => 'science-tech-library',
+            'name' => 'Social Library',
+            'code' => 'SOCIAL',
+            'slug' => 'social-library',
             'is_active' => true,
         ]);
 

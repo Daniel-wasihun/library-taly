@@ -46,10 +46,7 @@
               </div>
               <div>
                 <h4 class="font-bold text-sm text-main-text flex items-center gap-1.5">
-                  <span>{{ shift.name }}</span>
-                  <span v-if="shift.name_am" class="text-xs text-main-text/50 font-normal">
-                    ({{ shift.name_am }})
-                  </span>
+                  <span>{{ langStore.isAmharic() ? (shift.name_am || shift.name) : (shift.name || shift.name_am) }}</span>
                 </h4>
                 <span class="text-[10px] font-mono text-main-text/50 uppercase tracking-wider">
                   {{ langStore.t('schedules.shift_code', 'Code') }}: {{ shift.code }}
@@ -82,7 +79,7 @@
             <div class="flex items-center justify-between">
               <span class="text-[11px] text-main-text/60 font-medium">{{ langStore.t('schedules.ethiopian_time', 'Ethiopian Local Time') }}:</span>
               <strong class="font-bold text-nav-accent">
-                {{ shift.ethiopian_start_time }} – {{ shift.ethiopian_end_time }}
+                {{ langStore.formatTimeWindow(shift.ethiopian_start_time) }} – {{ langStore.formatTimeWindow(shift.ethiopian_end_time) }}
               </strong>
             </div>
             <div class="flex items-center justify-between text-[11px] text-main-text/50">
@@ -139,7 +136,7 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-main-text mb-1">
-              {{ langStore.t('schedules.shift_name_am', 'Amharic Title (የፈረቃ ስም)') }}
+              {{ langStore.t('schedules.shift_name_am', 'Amharic Title') }}
             </label>
             <input
               v-model="form.name_am"
@@ -219,37 +216,52 @@
                 </label>
                 <div class="grid grid-cols-3 gap-1.5">
                   <!-- Hour -->
-                  <select
-                    v-model.number="ethStart.hour"
-                    class="px-2 py-1.5 text-xs rounded-sm bg-card-bg border border-card-border text-main-text font-bold"
-                    @change="onEthiopianTimeChanged"
-                  >
-                    <option v-for="h in [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]" :key="h" :value="h">
-                      {{ String(h).padStart(2, '0') }}
-                    </option>
-                  </select>
+                  <div class="relative">
+                    <select
+                      v-model.number="ethStart.hour"
+                      class="w-full appearance-none pl-2.5 pr-6 py-1.5 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-bold hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+                      @change="onEthiopianTimeChanged"
+                    >
+                      <option v-for="h in [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]" :key="h" :value="h">
+                        {{ String(h).padStart(2, '0') }}
+                      </option>
+                    </select>
+                    <div class="absolute right-1.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                      <ChevronDown class="w-3.5 h-3.5" />
+                    </div>
+                  </div>
                   <!-- Minute -->
-                  <select
-                    v-model="ethStart.minute"
-                    class="px-2 py-1.5 text-xs rounded-sm bg-card-bg border border-card-border text-main-text font-mono"
-                    @change="onEthiopianTimeChanged"
-                  >
-                    <option value="00">:00</option>
-                    <option value="15">:15</option>
-                    <option value="30">:30</option>
-                    <option value="45">:45</option>
-                  </select>
+                  <div class="relative">
+                    <select
+                      v-model="ethStart.minute"
+                      class="w-full appearance-none pl-2 pr-5 py-1.5 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-mono hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+                      @change="onEthiopianTimeChanged"
+                    >
+                      <option value="00">:00</option>
+                      <option value="15">:15</option>
+                      <option value="30">:30</option>
+                      <option value="45">:45</option>
+                    </select>
+                    <div class="absolute right-1.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                      <ChevronDown class="w-3.5 h-3.5" />
+                    </div>
+                  </div>
                   <!-- Period -->
-                  <select
-                    v-model="ethStart.period"
-                    class="px-1.5 py-1.5 text-xs rounded-sm bg-card-bg border border-card-border text-main-text font-semibold text-[11px]"
-                    @change="onEthiopianTimeChanged"
-                  >
-                    <option value="ጠዋት">ጠዋት</option>
-                    <option value="ከቀኑ">ከቀኑ</option>
-                    <option value="ከምሽቱ">ከምሽቱ</option>
-                    <option value="ከሌሊቱ">ከሌሊቱ</option>
-                  </select>
+                  <div class="relative">
+                    <select
+                      v-model="ethStart.period"
+                      class="w-full appearance-none pl-2 pr-5 py-1.5 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-semibold text-[11px] hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+                      @change="onEthiopianTimeChanged"
+                    >
+                      <option value="ጠዋት">{{ langStore.isAmharic() ? 'ጠዋት' : 'Morning' }}</option>
+                      <option value="ከቀኑ">{{ langStore.isAmharic() ? 'ከቀኑ' : 'Afternoon' }}</option>
+                      <option value="ከምሽቱ">{{ langStore.isAmharic() ? 'ከምሽቱ' : 'Evening' }}</option>
+                      <option value="ከሌሊቱ">{{ langStore.isAmharic() ? 'ከሌሊቱ' : 'Late Night' }}</option>
+                    </select>
+                    <div class="absolute right-1.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                      <ChevronDown class="w-3.5 h-3.5" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -260,37 +272,52 @@
                 </label>
                 <div class="grid grid-cols-3 gap-1.5">
                   <!-- Hour -->
-                  <select
-                    v-model.number="ethEnd.hour"
-                    class="px-2 py-1.5 text-xs rounded-sm bg-card-bg border border-card-border text-main-text font-bold"
-                    @change="onEthiopianTimeChanged"
-                  >
-                    <option v-for="h in [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]" :key="h" :value="h">
-                      {{ String(h).padStart(2, '0') }}
-                    </option>
-                  </select>
+                  <div class="relative">
+                    <select
+                      v-model.number="ethEnd.hour"
+                      class="w-full appearance-none pl-2.5 pr-6 py-1.5 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-bold hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+                      @change="onEthiopianTimeChanged"
+                    >
+                      <option v-for="h in [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]" :key="h" :value="h">
+                        {{ String(h).padStart(2, '0') }}
+                      </option>
+                    </select>
+                    <div class="absolute right-1.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                      <ChevronDown class="w-3.5 h-3.5" />
+                    </div>
+                  </div>
                   <!-- Minute -->
-                  <select
-                    v-model="ethEnd.minute"
-                    class="px-2 py-1.5 text-xs rounded-sm bg-card-bg border border-card-border text-main-text font-mono"
-                    @change="onEthiopianTimeChanged"
-                  >
-                    <option value="00">:00</option>
-                    <option value="15">:15</option>
-                    <option value="30">:30</option>
-                    <option value="45">:45</option>
-                  </select>
+                  <div class="relative">
+                    <select
+                      v-model="ethEnd.minute"
+                      class="w-full appearance-none pl-2 pr-5 py-1.5 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-mono hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+                      @change="onEthiopianTimeChanged"
+                    >
+                      <option value="00">:00</option>
+                      <option value="15">:15</option>
+                      <option value="30">:30</option>
+                      <option value="45">:45</option>
+                    </select>
+                    <div class="absolute right-1.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                      <ChevronDown class="w-3.5 h-3.5" />
+                    </div>
+                  </div>
                   <!-- Period with full night support up to 11:00 ከሌሊቱ -->
-                  <select
-                    v-model="ethEnd.period"
-                    class="px-1.5 py-1.5 text-xs rounded-sm bg-card-bg border border-card-border text-main-text font-semibold text-[11px]"
-                    @change="onEthiopianTimeChanged"
-                  >
-                    <option value="ጠዋት">ጠዋት</option>
-                    <option value="ከቀኑ">ከቀኑ</option>
-                    <option value="ከምሽቱ">ከምሽቱ</option>
-                    <option value="ከሌሊቱ">ከሌሊቱ (የሌሊት 11 ሰዓት ጨምሮ)</option>
-                  </select>
+                  <div class="relative">
+                    <select
+                      v-model="ethEnd.period"
+                      class="w-full appearance-none pl-2 pr-5 py-1.5 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-semibold text-[11px] hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+                      @change="onEthiopianTimeChanged"
+                    >
+                      <option value="ጠዋት">{{ langStore.isAmharic() ? 'ጠዋት' : 'Morning' }}</option>
+                      <option value="ከቀኑ">{{ langStore.isAmharic() ? 'ከቀኑ' : 'Afternoon' }}</option>
+                      <option value="ከምሽቱ">{{ langStore.isAmharic() ? 'ከምሽቱ' : 'Evening' }}</option>
+                      <option value="ከሌሊቱ">{{ langStore.isAmharic() ? 'ከሌሊቱ (የሌሊት 11 ሰዓት ጨምሮ)' : 'Late Night (up to Night 11)' }}</option>
+                    </select>
+                    <div class="absolute right-1.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                      <ChevronDown class="w-3.5 h-3.5" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -339,7 +366,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               <div class="p-2 rounded-sm bg-input-bg border border-card-border flex items-center justify-between">
                 <span class="text-main-text/60">🇪🇹 {{ langStore.t('schedules.ethiopian_time', 'Ethiopian Local Time') }}:</span>
-                <strong class="font-bold text-main-text">{{ form.ethiopian_start_time }} – {{ form.ethiopian_end_time }}</strong>
+                <strong class="font-bold text-main-text">{{ langStore.formatTimeWindow(form.ethiopian_start_time) }} – {{ langStore.formatTimeWindow(form.ethiopian_end_time) }}</strong>
               </div>
               <div class="p-2 rounded-sm bg-input-bg border border-card-border flex items-center justify-between">
                 <span class="text-main-text/60">🌐 {{ langStore.t('schedules.standard_time', 'Standard 24h Time') }}:</span>
@@ -418,7 +445,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import Button from '@/components/ui/Button.vue';
 import Modal from '@/components/ui/Modal.vue';
-import { Clock, Plus, Pencil, Trash2 } from 'lucide-vue-next';
+import { Clock, Plus, Pencil, Trash2, ChevronDown } from 'lucide-vue-next';
 import type { Shift } from '@/types';
 
 const shiftStore = useShiftStore();

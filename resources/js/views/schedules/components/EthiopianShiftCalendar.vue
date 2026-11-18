@@ -7,38 +7,48 @@
         <div>
           <label class="block text-xs font-bold text-main-text mb-1.5 flex items-center gap-1.5">
             <Calendar class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
-            <span>{{ langStore.t('schedules.ethiopian_year', 'Ethiopian Year (ዓ.ም)') }}</span>
+            <span>{{ langStore.t('schedules.ethiopian_year', 'Ethiopian Year') }}</span>
           </label>
-          <select
-            v-model.number="selectedYear"
-            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono cursor-pointer"
-            @change="loadMatrix"
-          >
-            <option v-for="y in availableYears" :key="y" :value="y">
-              {{ y }} ዓ.ም ({{ y + 7 }}/{{ y + 8 }} G.C.)
-            </option>
-          </select>
+          <div class="relative">
+            <select
+              v-model.number="selectedYear"
+              class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-mono rounded-md bg-card-bg border border-card-border/80 text-main-text shadow-2xs hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent transition cursor-pointer"
+              @change="loadMatrix"
+            >
+              <option v-for="y in availableYears" :key="y" :value="y">
+                {{ langStore.isAmharic() ? `${y} ዓ.ም` : `${y} E.C. (${y + 7}/${y + 8})` }}
+              </option>
+            </select>
+            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+              <ChevronDown class="w-3.5 h-3.5" />
+            </div>
+          </div>
         </div>
 
         <!-- 2. Ethiopian Month (Meskerem to Pagume, Days 1-30) -->
         <div>
           <label class="block text-xs font-bold text-main-text mb-1.5 flex items-center gap-1.5">
             <CalendarDays class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
-            <span>{{ langStore.t('schedules.ethiopian_month', 'Ethiopian Month (ወር)') }}</span>
+            <span>{{ langStore.t('schedules.ethiopian_month', 'Ethiopian Month') }}</span>
           </label>
-          <select
-            v-model.number="selectedMonth"
-            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-medium cursor-pointer"
-            @change="loadMatrix"
-          >
-            <option
-              v-for="m in shiftStore.matrixData?.ethiopian_months || defaultMonths"
-              :key="m.number"
-              :value="m.number"
+          <div class="relative">
+            <select
+              v-model.number="selectedMonth"
+              class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-medium rounded-md bg-card-bg border border-card-border/80 text-main-text shadow-2xs hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent transition cursor-pointer"
+              @change="loadMatrix"
             >
-              {{ m.number }}. {{ m.name_am }} — {{ m.name_en }} (1–{{ m.days_count }} ቀን)
-            </option>
-          </select>
+              <option
+                v-for="m in shiftStore.matrixData?.ethiopian_months || defaultMonths"
+                :key="m.number"
+                :value="m.number"
+              >
+                {{ m.number }}. {{ langStore.isAmharic() ? `${m.name_am} (1–${m.days_count} ቀን)` : `${m.name_en} (1–${m.days_count} Days)` }}
+              </option>
+            </select>
+            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+              <ChevronDown class="w-3.5 h-3.5" />
+            </div>
+          </div>
         </div>
 
         <!-- 3. Shift Group Selector (Group A, Group B, Group C...) -->
@@ -47,16 +57,23 @@
             <Users class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
             <span>{{ langStore.t('schedules.duty_group', 'Duty Group') }}</span>
           </label>
-          <select
-            v-model="selectedGroupId"
-            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-semibold cursor-pointer"
-            @change="syncGroupDaysFromMatrix"
-          >
-            <option v-if="filteredGroups.length === 0" value="">No groups defined</option>
-            <option v-for="g in filteredGroups" :key="g.id" :value="g.id">
-              {{ g.name }} ({{ g.users?.length || 0 }} attendants)
-            </option>
-          </select>
+          <div class="relative">
+            <select
+              v-model="selectedGroupId"
+              class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text shadow-2xs hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent transition cursor-pointer"
+              @change="syncGroupDaysFromMatrix"
+            >
+              <option v-if="filteredGroups.length === 0" value="">
+                {{ langStore.t('schedules.no_groups_defined', 'No groups defined') }}
+              </option>
+              <option v-for="g in filteredGroups" :key="g.id" :value="g.id">
+                {{ g.name }} ({{ g.users?.length || 0 }} {{ langStore.isAmharic() ? 'ረዳቶች' : 'attendants' }})
+              </option>
+            </select>
+            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+              <ChevronDown class="w-3.5 h-3.5" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -64,16 +81,16 @@
       <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-card-border text-xs text-main-text/75">
         <div class="flex flex-wrap items-center gap-3">
           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-brand-blue/10 text-brand-blue dark:text-brand-yellow font-bold text-[11px] border border-brand-blue/20">
-            🇪🇹 {{ currentMonthNameAm }} {{ selectedYear }} ዓ.ም
+            🇪🇹 {{ langStore.isAmharic() ? `${currentMonthNameAm} ${selectedYear} ዓ.ም` : `${currentMonthNameEn} ${selectedYear} E.C.` }}
           </span>
           <span class="text-xs">
-            Scope: <strong class="text-main-text">All University Library Branches (Default)</strong>
+            {{ langStore.t('schedules.scope_label', 'Scope') }}: <strong class="text-main-text">{{ langStore.t('schedules.all_branches_default', 'All University Library Branches (Default)') }}</strong>
           </span>
           <span v-if="selectedGroup" class="hidden sm:inline-block text-main-text/40">•</span>
           <span v-if="selectedGroup" class="text-xs">
-            Group: <strong class="text-nav-accent">{{ selectedGroup.name }}</strong>
+            {{ langStore.t('schedules.group_label', 'Group') }}: <strong class="text-nav-accent">{{ selectedGroup.name }}</strong>
             <span class="text-[11px] text-main-text/50 ml-1">
-              ({{ selectedGroup.users?.map(u => `${u.name}${u.library ? ' [' + u.library.code + ']' : ''}`).join(', ') || 'No members' }})
+              ({{ selectedGroup.users?.map(u => `${u.name}${u.library ? ' [' + u.library.code + ']' : ''}`).join(', ') || langStore.t('schedules.no_members', 'No members') }})
             </span>
           </span>
         </div>
@@ -86,7 +103,7 @@
             :icon="Sparkles"
             @click="openAutoGenerateModal"
           >
-            Auto-Generate Schedule
+            {{ langStore.t('schedules.auto_generate', 'Auto-Generate Schedule') }}
           </Button>
         </div>
       </div>
@@ -95,11 +112,11 @@
       <div class="flex flex-wrap items-center gap-3.5 pt-2 border-t border-card-border/60 text-[11px]">
         <div class="flex items-center gap-1.5">
           <span class="w-3.5 h-3.5 rounded-sm bg-emerald-600 border border-emerald-700 text-white flex items-center justify-center text-[9px] font-bold">✓</span>
-          <span>Selected</span>
+          <span>{{ langStore.t('schedules.selected', 'Selected') }}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="w-3.5 h-3.5 rounded-sm bg-card-bg border border-card-border"></span>
-          <span>Available (1–30)</span>
+          <span>{{ langStore.t('schedules.available_days', 'Available (1–30)') }}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="w-3.5 h-3.5 rounded-sm bg-purple-500/20 border border-purple-500/40 text-purple-700 dark:text-purple-300 flex items-center justify-center text-[9px] font-bold">🚫</span>
@@ -111,11 +128,11 @@
         </div>
         <div class="flex items-center gap-1.5">
           <span class="w-3.5 h-3.5 rounded-sm bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[9px] font-bold">⊘</span>
-          <span>In Another Shift (Group)</span>
+          <span>{{ langStore.t('schedules.in_another_shift', 'In Another Shift (Group)') }}</span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="w-3.5 h-3.5 rounded-sm bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 flex items-center justify-center text-[9px] font-bold">🔒</span>
-          <span>Assigned to Other Group</span>
+          <span>{{ langStore.t('schedules.assigned_other_group', 'Assigned to Other Group') }}</span>
         </div>
       </div>
     </div>
@@ -141,7 +158,7 @@
             <div class="flex items-center gap-2 flex-wrap">
               <h3 class="text-xs font-bold text-main-text tracking-tight">
                 {{ langStore.t('schedules.holidays_heading', 'Official Ethiopian Holidays for') }}
-                <span class="text-nav-accent ml-1 font-mono font-bold">{{ currentMonthName }} {{ selectedYear }} ዓ.ም</span>
+                <span class="text-nav-accent ml-1 font-mono font-bold">{{ langStore.isAmharic() ? `${currentMonthNameAm} ${selectedYear} ዓ.ም` : `${currentMonthNameEn} ${selectedYear} E.C.` }}</span>
               </h3>
               <span
                 v-if="monthHolidaysList.length > 0"
@@ -189,16 +206,15 @@
         >
           <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-8 h-8 rounded-sm bg-purple-600 text-white font-mono font-bold text-xs flex flex-col items-center justify-center shrink-0 shadow-xs">
-              <span class="text-[9px] uppercase leading-none opacity-80">ቀን</span>
+              <span class="text-[9px] uppercase leading-none opacity-80">{{ langStore.isAmharic() ? 'ቀን' : 'Day' }}</span>
               <span class="text-xs leading-none font-bold">{{ h.day }}</span>
             </div>
             <div class="min-w-0">
               <p class="font-bold text-main-text text-xs truncate">
-                {{ h.name_am }}
-                <span class="text-main-text/50 font-normal ml-1 text-[11px]">({{ h.name_en }})</span>
+                {{ langStore.isAmharic() ? (h.name_am || h.name) : (h.name || h.name_am) }}
               </p>
               <p class="text-[10px] text-purple-700 dark:text-purple-300 truncate mt-0.5">
-                {{ h.description || 'User-defined Ethiopian holiday' }}
+                {{ h.description || (langStore.isAmharic() ? 'የተመዘገበ የኢትዮጵያ በዓል' : 'User-defined Ethiopian holiday') }}
               </p>
             </div>
           </div>
@@ -252,8 +268,7 @@
             <div>
               <div class="flex items-center gap-2">
                 <h3 class="text-sm font-bold text-main-text">
-                  {{ shift.name }}
-                  <span v-if="shift.name_am" class="text-main-text/50 font-normal ml-1">({{ shift.name_am }})</span>
+                  {{ langStore.isAmharic() ? (shift.name_am || shift.name) : (shift.name || shift.name_am) }}
                 </h3>
                 <span
                   class="px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider border"
@@ -265,7 +280,7 @@
                 </span>
               </div>
               <p class="text-xs text-main-text/60 mt-0.5 flex items-center gap-2">
-                <span>Ethiopian Time: <strong class="text-main-text">{{ shift.ethiopian_start_time }} – {{ shift.ethiopian_end_time }}</strong></span>
+                <span>{{ langStore.t('schedules.ethiopian_time', 'Ethiopian Time') }}: <strong class="text-main-text">{{ langStore.formatTimeWindow(shift.ethiopian_start_time) }} – {{ langStore.formatTimeWindow(shift.ethiopian_end_time) }}</strong></span>
                 <span class="text-main-text/30">•</span>
                 <span class="font-mono text-[11px]">24h: {{ shift.start_time }} – {{ shift.end_time }}</span>
               </p>
@@ -279,21 +294,21 @@
               class="px-2.5 py-1 text-[11px] font-medium rounded-sm border border-card-border bg-input-bg hover:bg-nav-accent/10 hover:text-nav-accent transition cursor-pointer text-main-text"
               @click="selectOddDays(shift.id)"
             >
-              Odd Days (1, 3, 5...)
+              {{ langStore.t('schedules.odd_days', 'Odd Days (1, 3, 5...)') }}
             </button>
             <button
               type="button"
               class="px-2.5 py-1 text-[11px] font-medium rounded-sm border border-card-border bg-input-bg hover:bg-nav-accent/10 hover:text-nav-accent transition cursor-pointer text-main-text"
               @click="selectEvenDays(shift.id)"
             >
-              Even Days (2, 4, 6...)
+              {{ langStore.t('schedules.even_days', 'Even Days (2, 4, 6...)') }}
             </button>
             <button
               type="button"
               class="px-2.5 py-1 text-[11px] font-medium rounded-sm border border-card-border bg-input-bg hover:bg-rose-500/10 hover:text-rose-600 transition cursor-pointer text-main-text"
               @click="clearShiftDays(shift.id)"
             >
-              Clear
+              {{ langStore.t('schedules.clear_days', 'Clear') }}
             </button>
           </div>
         </div>
@@ -378,7 +393,7 @@
             Save Monthly Duty Shift Assignment
           </p>
           <p>
-            Applies duty turns for <span class="font-bold text-nav-accent">{{ selectedGroup?.name }}</span> across selected shifts for <span class="font-bold text-main-text">{{ currentMonthNameAm }} {{ selectedYear }} ዓ.ም</span>.
+            Applies duty turns for <span class="font-bold text-nav-accent">{{ selectedGroup?.name }}</span> across selected shifts for <span class="font-bold text-main-text">{{ langStore.isAmharic() ? `${currentMonthNameAm} ${selectedYear} ዓ.ም` : `${currentMonthNameEn} ${selectedYear} E.C.` }}</span>.
           </p>
         </div>
 
@@ -405,8 +420,8 @@
     <!-- Auto-Generate Schedule Modal -->
     <Modal
       :show="showAutoModal"
-      title="Auto-Generate Monthly Shift Schedule"
-      description="Automatically calculate and assign shifts with equal workload across groups in this branch only, excluding official Ethiopian holidays."
+      :title="langStore.t('schedules.auto_modal_title', 'Auto-Generate Monthly Shift Schedule')"
+      :description="langStore.t('schedules.auto_modal_desc', 'Automatically calculate and assign shifts with equal workload across groups in this branch only, excluding official Ethiopian holidays.')"
       :icon="Sparkles"
       size="md"
       @close="showAutoModal = false"
@@ -415,16 +430,16 @@
         <!-- Branch & Month Context Box -->
         <div class="p-3 rounded-sm bg-input-bg border border-input-border text-xs space-y-1.5">
           <div class="flex items-center justify-between">
-            <span class="text-main-text/60">Target Scope:</span>
-            <strong class="text-main-text font-bold">All University Library Branches (Default)</strong>
+            <span class="text-main-text/60">{{ langStore.t('schedules.scope_label', 'Scope') }}:</span>
+            <strong class="text-main-text font-bold">{{ langStore.t('schedules.all_branches_default', 'All University Library Branches (Default)') }}</strong>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-main-text/60">Ethiopian Month & Year:</span>
-            <strong class="text-nav-accent font-bold">{{ currentMonthNameAm }} {{ selectedYear }} ዓ.ም</strong>
+            <span class="text-main-text/60">{{ langStore.t('schedules.ethiopian_month', 'Ethiopian Month') }} & {{ langStore.t('schedules.ethiopian_year', 'Year') }}:</span>
+            <strong class="text-nav-accent font-bold">{{ langStore.isAmharic() ? `${currentMonthNameAm} ${selectedYear} ዓ.ም` : `${currentMonthNameEn} ${selectedYear} E.C.` }}</strong>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-main-text/60">Active Unified Groups:</span>
-            <span class="font-semibold text-main-text">{{ filteredGroups.length }} groups ({{ filteredGroups.map(g => g.name).join(', ') }})</span>
+            <span class="text-main-text/60">{{ langStore.t('schedules.tab_groups', 'Shift Groups') }}:</span>
+            <span class="font-semibold text-main-text">{{ filteredGroups.length }} {{ langStore.isAmharic() ? 'ቡድኖች' : 'groups' }} ({{ filteredGroups.map(g => g.name).join(', ') }})</span>
           </div>
         </div>
 
@@ -433,9 +448,9 @@
           <div class="flex items-center justify-between font-bold text-purple-800 dark:text-purple-300">
             <span class="flex items-center gap-1.5">
               <span>🇪🇹</span>
-              <span>Detected Ethiopian Holidays for this Month:</span>
+              <span>{{ langStore.t('schedules.detected_holidays', 'Detected Ethiopian Holidays for this Month') }}:</span>
             </span>
-            <span>{{ monthHolidaysList.length }} Holiday(s)</span>
+            <span>{{ monthHolidaysList.length }} {{ langStore.t('schedules.holidays_detected_count', 'Holiday(s) Detected') }}</span>
           </div>
 
           <div v-if="monthHolidaysList.length > 0" class="space-y-1 text-[11px]">
@@ -444,14 +459,14 @@
               :key="h.day"
               class="flex items-center justify-between py-1 border-t border-purple-500/20"
             >
-              <span><strong>Day {{ h.day }}:</strong> {{ h.name_am }} ({{ h.name_en }})</span>
+              <span><strong>{{ langStore.isAmharic() ? `ቀን ${h.day}` : `Day ${h.day}` }}:</strong> {{ langStore.isAmharic() ? (h.name_am || h.name) : (h.name || h.name_am) }}</span>
               <span class="text-purple-700 dark:text-purple-300 font-bold uppercase text-[9px] px-1.5 py-0.5 rounded-sm bg-purple-500/20">
                 1 Day Excluded (Off)
               </span>
             </div>
           </div>
           <p v-else class="text-[11px] text-main-text/60 italic">
-            No fixed national holidays in this Ethiopian month. All days will be scheduled.
+            {{ langStore.t('schedules.no_holidays_in_month', 'No Public Holidays this Month') }}
           </p>
         </div>
 
@@ -459,19 +474,16 @@
         <div v-if="overlapState.has_overlap" class="p-3 rounded-sm border border-rose-500/40 bg-rose-500/10 text-xs space-y-2">
           <div class="flex items-center gap-2 font-bold text-rose-700 dark:text-rose-400">
             <AlertCircle class="w-4 h-4 shrink-0" />
-            <span>Staff Multi-Group Overlap Detected</span>
+            <span>{{ langStore.t('schedules.overlap_warning', 'Staff Multi-Group Overlap Detected') }}</span>
           </div>
           <p class="text-[11px] text-main-text/80">
-            In this branch, the following attendant(s) currently belong to two or more groups at the same time:
+            {{ langStore.t('schedules.overlap_desc', 'One person cannot belong to multiple groups for auto-scheduled shifts in a given library branch. Please assign each attendant to a single group.') }}
           </p>
           <ul class="list-disc pl-5 text-[11px] space-y-1 text-rose-800 dark:text-rose-300 font-medium">
             <li v-for="o in overlapState.overlaps" :key="o.user_id">
-              <strong>{{ o.user_name }}</strong> (@{{ o.username }}) belongs to: <u>{{ o.groups.join(', ') }}</u>
+              <strong>{{ o.user_name }}</strong> (@{{ o.username }}) -> <u>{{ o.groups.join(', ') }}</u>
             </li>
           </ul>
-          <p class="text-[11px] text-rose-700 dark:text-rose-400 font-semibold pt-1">
-            ⚠️ One person cannot be in multiple groups for auto-scheduled shifts in a given library branch. Please assign each attendant to a single group in the Shift Groups tab before auto-generating.
-          </p>
         </div>
 
         <!-- Options -->
@@ -483,7 +495,7 @@
               class="rounded-xs border-input-border text-nav-accent focus:ring-0 cursor-pointer"
             />
             <span class="font-semibold text-main-text">
-              Exclude Ethiopian Holidays (remove 1 day from duty roster for each holiday)
+              {{ langStore.t('schedules.exclude_holidays', 'Exclude Ethiopian Holidays (1 day off per holiday)') }}
             </span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
@@ -493,7 +505,7 @@
               class="rounded-xs border-input-border text-nav-accent focus:ring-0 cursor-pointer"
             />
             <span class="font-semibold text-main-text">
-              Overwrite existing schedules for this month and branch
+              {{ langStore.t('schedules.overwrite_existing', 'Overwrite existing schedules for this month and branch') }}
             </span>
           </label>
         </div>
@@ -501,7 +513,7 @@
 
       <template #footer>
         <Button variant="secondary" size="sm" @click="showAutoModal = false">
-          Cancel
+          {{ langStore.t('common.cancel', 'Cancel') }}
         </Button>
         <Button
           variant="primary"
@@ -511,7 +523,7 @@
           :loading="shiftStore.saving"
           @click="handleRunAutoGenerate"
         >
-          {{ overlapState.has_overlap ? 'Resolve Overlaps First' : 'Generate & Assign Schedule' }}
+          {{ overlapState.has_overlap ? langStore.t('schedules.resolve_overlaps_first', 'Resolve Overlaps First') : langStore.t('schedules.generate_and_assign', 'Generate & Assign Schedule') }}
         </Button>
       </template>
     </Modal>
@@ -528,17 +540,22 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-semibold text-main-text mb-1.5">
-              {{ langStore.t('schedules.holiday_day', 'Ethiopian Day of Month (ቀን) *') }}
+              {{ langStore.t('schedules.holiday_day', 'Ethiopian Day of Month *') }}
             </label>
-            <select
-              v-model.number="holidayForm.ethiopian_day"
-              class="w-full bg-input-bg border border-card-border rounded-sm px-3 py-2 text-xs text-main-text font-mono focus:border-nav-accent outline-none"
-              required
-            >
-              <option v-for="d in maxMonthDays" :key="d" :value="d">
-                ቀን {{ d }} (Day {{ d }})
-              </option>
-            </select>
+            <div class="relative">
+              <select
+                v-model.number="holidayForm.ethiopian_day"
+                class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-mono rounded-md bg-card-bg border border-card-border/80 text-main-text shadow-2xs hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent transition cursor-pointer"
+                required
+              >
+                <option v-for="d in maxMonthDays" :key="d" :value="d">
+                  {{ langStore.isAmharic() ? `ቀን ${d}` : `Day ${d}` }}
+                </option>
+              </select>
+              <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                <ChevronDown class="w-3.5 h-3.5" />
+              </div>
+            </div>
           </div>
 
           <div>
@@ -548,7 +565,7 @@
             <input
               type="text"
               class="w-full bg-input-bg border border-card-border rounded-sm px-3 py-2 text-xs text-main-text opacity-70 cursor-not-allowed outline-none"
-              :value="`${currentMonthName} ${selectedYear} ዓ.ም`"
+              :value="langStore.isAmharic() ? `${currentMonthNameAm} ${selectedYear} ዓ.ም` : `${currentMonthNameEn} ${selectedYear} E.C.`"
               disabled
             />
           </div>
@@ -569,7 +586,7 @@
 
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1.5">
-            {{ langStore.t('schedules.holiday_name_am', 'Amharic Title (የበዓሉ ስም)') }}
+            {{ langStore.t('schedules.holiday_name_am', 'Amharic Title') }}
           </label>
           <input
             v-model="holidayForm.name_am"
@@ -632,6 +649,7 @@ import {
   AlertCircle,
   Plus,
   Trash2,
+  ChevronDown,
 } from 'lucide-vue-next';
 import type { ShiftGroup, EthiopianHoliday } from '@/types';
 
@@ -665,14 +683,6 @@ const selectedLibraryId = ref<number>(1);
 const selectedYear = ref<number>(2019);
 const selectedMonth = ref<number>(3); // Hidar default
 const selectedGroupId = ref<number | ''>('');
-
-const currentMonthName = computed(() => {
-  const m = (shiftStore.matrixData?.ethiopian_months || defaultMonths).find(
-    (month) => month.number === Number(selectedMonth.value)
-  );
-  if (!m) return `Month #${selectedMonth.value}`;
-  return `${m.name_am} (${m.name_en})`;
-});
 
 // Shift Selections: shift_id => Array of selected days [1, 2, ... 30]
 const shiftSelections = reactive<Record<number, number[]>>({});
@@ -778,12 +788,21 @@ const activeShifts = computed(() => {
 });
 
 const currentLibraryName = computed(() => {
-  return 'All University Library Branches (Default)';
+  return langStore.isAmharic() ? 'ሁሉም የዩኒቨርሲቲ ቤተ-መጻሕፍት ቅርንጫፎች' : 'All University Library Branches (Default)';
 });
 
 const currentMonthNameAm = computed(() => {
   const m = defaultMonths.find((item) => item.number === selectedMonth.value);
-  return m ? `${m.name_am} (${m.name_en})` : `Month ${selectedMonth.value}`;
+  return m ? m.name_am : `ወር ${selectedMonth.value}`;
+});
+
+const currentMonthNameEn = computed(() => {
+  const m = defaultMonths.find((item) => item.number === selectedMonth.value);
+  return m ? m.name_en : `Month ${selectedMonth.value}`;
+});
+
+const currentMonthName = computed(() => {
+  return langStore.isAmharic() ? currentMonthNameAm.value : currentMonthNameEn.value;
 });
 
 const maxMonthDays = computed(() => {
@@ -1005,40 +1024,57 @@ const getDayButtonClasses = (shiftId: number, day: number) => {
 
 const getDayLabel = (shiftId: number, day: number): string => {
   const holiday = getHoliday(day);
-  if (holiday) return langStore.t('schedules.canceled_holiday', 'Canceled / በዓል');
+  if (holiday) return langStore.t('schedules.canceled_holiday', langStore.isAmharic() ? 'ተሰርዟል (በዓል)' : 'Canceled');
 
   const selected = isDaySelected(shiftId, day);
-  if (selected) return 'Active';
+  if (selected) return langStore.isAmharic() ? 'ንቁ' : 'Active';
 
   const status = isDayDisabled(shiftId, day);
-  if (status.isConsecutive) return langStore.t('schedules.rest_day', 'Rest / ዕረፍት');
-  if (status.isOtherGroup) return status.otherGroupName || 'Occupied';
-  if (status.isOtherShift) return status.otherShiftName || 'Other Shift';
+  if (status.isConsecutive) return langStore.t('schedules.rest_day', langStore.isAmharic() ? 'ዕረፍት' : 'Rest Day');
+  if (status.isOtherGroup) return status.otherGroupName || (langStore.isAmharic() ? 'የተያዘ' : 'Occupied');
+  if (status.isOtherShift) return status.otherShiftName || (langStore.isAmharic() ? 'ሌላ ፈረቃ' : 'Other Shift');
 
-  return 'Free';
+  return langStore.isAmharic() ? 'ክፍት' : 'Free';
 };
 
 const getDayTooltip = (shiftId: number, day: number): string => {
   const holiday = getHoliday(day);
   if (holiday) {
-    return `Day ${day}: Official Ethiopian Holiday — ${holiday.name_am} (${holiday.name_en}). All duty shifts are canceled on this date.`;
+    const hName = langStore.isAmharic() ? (holiday.name_am || holiday.name) : (holiday.name || holiday.name_am);
+    return langStore.isAmharic()
+      ? `ቀን ${day}፡ ይፋዊ የኢትዮጵያ በዓል — ${hName}። በዚህ ቀን ሁሉም ፈረቃዎች ተሰርዘዋል።`
+      : `Day ${day}: Official Ethiopian Holiday — ${hName}. All duty shifts are canceled on this date.`;
   }
 
   const selected = isDaySelected(shiftId, day);
-  if (selected) return `Day ${day}: Selected for this shift. Click to remove.`;
+  if (selected) {
+    return langStore.isAmharic()
+      ? `ቀን ${day}፡ ለዚህ ፈረቃ ተመርጧል። ለማስወገድ ይጫኑ።`
+      : `Day ${day}: Selected for this shift. Click to remove.`;
+  }
 
   const status = isDayDisabled(shiftId, day);
   if (status.isConsecutive) {
-    return `Day ${day}: Disabled — ${status.consecutiveReason}`;
-  }
-  if (status.isOtherGroup) {
-    return `Day ${day}: Disabled — Already assigned to ${status.otherGroupName} in this library branch for this shift.`;
-  }
-  if (status.isOtherShift) {
-    return `Day ${day}: Disabled — Already assigned to ${status.otherShiftName} for this group.`;
+    return langStore.isAmharic()
+      ? `ቀን ${day}፡ የዕረፍት ቀን — ተከታታይ የማታና የቀን ፈረቃዎችን መሥራት አይቻልም።`
+      : `Day ${day}: Rest day required — Attendants cannot work consecutive night and morning shifts.`;
   }
 
-  return `Day ${day}: Available. Click to assign to this shift.`;
+  if (status.isOtherShift) {
+    return langStore.isAmharic()
+      ? `ቀን ${day}፡ ቡድኑ በሌላ ፈረቃ (${status.otherShiftName}) ተመድቧል።`
+      : `Day ${day}: Already assigned to ${status.otherShiftName} for this group.`;
+  }
+
+  if (status.isOtherGroup) {
+    return langStore.isAmharic()
+      ? `ቀን ${day}፡ ለሌላ ቡድን (${status.otherGroupName}) ተመድቧል።`
+      : `Day ${day}: Already assigned to ${status.otherGroupName} in this shift.`;
+  }
+
+  return langStore.isAmharic()
+    ? `ቀን ${day}፡ ክፍት ቀን። ለዚህ ፈረቃ ለመመደብ ይጫኑ።`
+    : `Day ${day}: Available. Click to assign to this shift.`;
 };
 
 const toggleDay = (shiftId: number, day: number) => {

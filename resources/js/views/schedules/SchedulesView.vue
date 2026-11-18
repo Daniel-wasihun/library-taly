@@ -60,7 +60,7 @@
         @click="activeTab = 'holidays'"
       >
         <CalendarOff class="w-4 h-4" />
-        <span>{{ langStore.t('schedules.tab_holidays', 'Ethiopian Holidays (የበዓላት መዝገብ)') }}</span>
+        <span>{{ langStore.t('schedules.tab_holidays', 'Ethiopian Holidays') }}</span>
       </button>
 
       <button
@@ -105,15 +105,20 @@
             type="date"
             class="px-3 py-2 text-xs rounded-sm bg-card-bg border border-card-border text-main-text shadow-2xs"
           />
-          <select
-            v-model="taskFilter"
-            class="px-3 py-2 text-xs rounded-sm bg-card-bg border border-card-border text-main-text shadow-2xs"
-          >
-            <option value="">All Tasks</option>
-            <option v-for="(name, key) in scheduleStore.availableTasks" :key="key" :value="key">
-              {{ name }}
-            </option>
-          </select>
+          <div class="relative">
+            <select
+              v-model="taskFilter"
+              class="h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+            >
+              <option value="">{{ langStore.isAmharic() ? 'ሁሉም የሥራ ተግባራት' : 'All Tasks' }}</option>
+              <option v-for="(name, key) in scheduleStore.availableTasks" :key="key" :value="key">
+                {{ name }}
+              </option>
+            </select>
+            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+              <ChevronDown class="w-3.5 h-3.5" />
+            </div>
+          </div>
         </div>
 
         <Button
@@ -209,16 +214,21 @@
           <label class="block text-xs font-semibold text-main-text mb-1">
             Library Duty Task <span class="text-rose-500">*</span>
           </label>
-          <select
-            v-model="individualForm.task_key"
-            required
-            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
-          >
-            <option value="">Select task...</option>
-            <option v-for="(name, key) in scheduleStore.availableTasks" :key="key" :value="key">
-              {{ name }}
-            </option>
-          </select>
+          <div class="relative">
+            <select
+              v-model="individualForm.task_key"
+              required
+              class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+            >
+              <option value="">{{ langStore.isAmharic() ? 'የሥራ ተግባር ይምረጡ...' : 'Select task...' }}</option>
+              <option v-for="(name, key) in scheduleStore.availableTasks" :key="key" :value="key">
+                {{ name }}
+              </option>
+            </select>
+            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+              <ChevronDown class="w-3.5 h-3.5" />
+            </div>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -315,6 +325,7 @@ import {
   ClipboardList,
   Plus,
   Trash2,
+  ChevronDown,
 } from 'lucide-vue-next';
 import type { DutySchedule } from '@/types';
 

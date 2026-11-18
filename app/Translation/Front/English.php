@@ -161,6 +161,11 @@ class English
             'attendance.quick_log' => 'Quick Log Patron',
             'attendance.batch_increment' => 'Batch Increments',
             'attendance.cancel_notice' => 'Entries can be cancelled within 2 minutes of logging.',
+            'attendance.shift_active' => 'Active Shift Duty: Counter Ready',
+            'attendance.select_patron_type' => 'Patron Type',
+            'attendance.quick_log_hint' => 'Tap the large button for single visitors or use quick batch numbers (+2 .. +15) for group visits.',
+            'attendance.attendant_only_notice' => 'Live visitor counting is assigned to desk attendants.',
+            'common.batch' => 'Batch',
         ];
     }
 }

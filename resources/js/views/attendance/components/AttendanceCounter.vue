@@ -71,7 +71,7 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     <div v-if="!isDutyAllowed" class="w-full mb-3 p-3 rounded-xs sm:rounded-sm bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-200 text-left">
       <div class="flex items-center gap-1.5 font-bold text-xs text-rose-700 dark:text-rose-400 mb-1">
         <Lock class="w-4 h-4 shrink-0" />
-        <span>{{ langStore.t('attendance.counter_locked_title', 'Usage Counter Inactive (የፈረቃ ሰዓት አይደለም)') }}</span>
+        <span>{{ langStore.t('attendance.counter_locked_title', 'Usage Counter Inactive (Outside Assigned Shift)') }}</span>
       </div>
       <p class="text-[11px] leading-relaxed opacity-90">
         {{ props.dutyStatus?.reason || langStore.t('attendance.counter_locked_desc', 'You can only record patron usage counter data during your active assigned shift date and time window.') }}

@@ -105,6 +105,11 @@ const DEFAULT_ENGLISH: Record<string, string> = {
     'attendance.quick_log': 'Quick Log Patron',
     'attendance.batch_increment': 'Batch Increments',
     'attendance.cancel_notice': 'Entries can be cancelled within 2 minutes of logging.',
+    'attendance.shift_active': 'Active Shift Duty: Counter Ready',
+    'attendance.select_patron_type': 'Patron Type',
+    'attendance.quick_log_hint': 'Tap the large button for single visitors or use quick batch numbers (+2 .. +15) for group visits.',
+    'attendance.attendant_only_notice': 'Live visitor counting is assigned to desk attendants.',
+    'common.batch': 'Batch',
     // Schedules, Shifts & Groups translations
     'schedules.title': 'Daily Shift Schedules & Ethiopian Roster',
     'schedules.subtitle': 'Schedule duty shifts for groups (Group A, B...) across day & night shifts in the Ethiopian calendar.',
@@ -134,10 +139,10 @@ const DEFAULT_ENGLISH: Record<string, string> = {
     'schedules.hour': 'Hour',
     'schedules.minute': 'Minute',
     'schedules.period': 'Period',
-    'schedules.period_morning': 'Morning (ጠዋት)',
-    'schedules.period_afternoon': 'Afternoon (ከቀኑ)',
-    'schedules.period_evening': 'Evening (ከምሽቱ)',
-    'schedules.period_night': 'Late Night / Dawn (ከሌሊቱ)',
+    'schedules.period_morning': 'Morning',
+    'schedules.period_afternoon': 'Afternoon',
+    'schedules.period_evening': 'Evening',
+    'schedules.period_night': 'Late Night',
     'schedules.detected_holidays': 'Detected Ethiopian Holidays for this Month',
     'schedules.exclude_holidays': 'Exclude Ethiopian Holidays (1 day off per holiday)',
     'schedules.overwrite_existing': 'Overwrite existing schedules for this month and branch',
@@ -164,17 +169,31 @@ const DEFAULT_ENGLISH: Record<string, string> = {
     'schedules.shifts_canceled_badge': 'All Duty Shifts Canceled on Holidays',
     'schedules.holiday_legend': 'Ethiopian Holiday (Canceled / No Duty)',
     'schedules.canceled': 'Canceled',
-    'schedules.canceled_holiday': 'Canceled / በዓል',
+    'schedules.canceled_holiday': 'Canceled (Holiday)',
     'schedules.add_holiday': 'Add Holiday',
     'schedules.add_holiday_title': 'Add Manual Ethiopian Holiday',
     'schedules.add_holiday_subtitle': 'Insert a public or religious holiday for this month. Duty shifts will be automatically canceled on this date.',
-    'schedules.holiday_day': 'Ethiopian Day of Month (ቀን) *',
+    'schedules.holiday_day': 'Ethiopian Day of Month *',
     'schedules.holiday_month_year': 'Month & Year',
     'schedules.holiday_name_en': 'Holiday Name (English) *',
-    'schedules.holiday_name_am': 'Amharic Title (የበዓሉ ስም)',
+    'schedules.holiday_name_am': 'Amharic Title',
     'schedules.save_holiday': 'Save Holiday',
     'schedules.consecutive_legend': 'Rest Day (No Consecutive Night/Day)',
-    'schedules.rest_day': 'Rest / ዕረፍት',
+    'schedules.rest_day': 'Rest Day',
+    'schedules.tab_holidays': 'Ethiopian Holidays',
+    'schedules.selected': 'Selected',
+    'schedules.available_days': 'Available (1–30)',
+    'schedules.in_another_shift': 'In Another Shift (Group)',
+    'schedules.assigned_other_group': 'Assigned to Other Group',
+    'schedules.scope_label': 'Scope',
+    'schedules.group_label': 'Group',
+    'schedules.all_branches_default': 'All University Library Branches (Default)',
+    'schedules.no_members': 'No members',
+    'schedules.no_groups_defined': 'No groups defined',
+    'schedules.resolve_overlaps_first': 'Resolve Overlaps First',
+    'schedules.generate_and_assign': 'Generate & Assign Schedule',
+    'attendance.counter_locked_title': 'Usage Counter Inactive (Outside Assigned Shift)',
+    'attendance.counter_locked_desc': 'You can only record patron usage counter data during your active assigned shift date and time window.',
 };
 
 const DEFAULT_AMHARIC: Record<string, string> = {
@@ -205,7 +224,7 @@ const DEFAULT_AMHARIC: Record<string, string> = {
     'nav.group_library': 'የቤተ-መጻሕፍት ሥራዎች',
     'nav.group_admin': 'አስተዳደርና ደህንነት',
     'nav.users': 'የተጠቃሚዎች አስተዳደር',
-    'nav.roles': 'ሚናዎችና ፈቃዶች (RBAC)',
+    'nav.roles': 'ሚናዎችና ፈቃዶች',
     'nav.schedules': 'የተረኛ ፈረቃዎች መርሃ-ግብር',
     'nav.my_turns': 'የእኔ ተረኛ ፈረቃ',
     'nav.attendance': 'የአካላዊ ተጠቃሚዎች ቆጣሪ / ምዝገባ',
@@ -219,10 +238,10 @@ const DEFAULT_AMHARIC: Record<string, string> = {
     'duty.admin_override': 'የአስተዳዳሪ ቀጥተኛ ፈቃድ ንቁ ነው',
     'duty.next_turn': 'ቀጣይ ተረኛ ፈረቃ',
     'users.title': 'የተጠቃሚዎች አስተዳደርና መዳረሻ',
-    'users.subtitle': 'የተጠቃሚ ምስክርነቶችን፣ የSpatie ሚናዎችንና ሁኔታን ያቀናብሩ',
+    'users.subtitle': 'የተጠቃሚ ምስክርነቶችን፣ ሚናዎችንና ሁኔታን ያቀናብሩ',
     'users.add': 'አዲስ ተጠቃሚ መዝግብ',
     'roles.title': 'ሚናዎችና የተጠቃሚ ፈቃዶች',
-    'roles.subtitle': 'በSpatie Laravel Permission የተዋቀረ የተዋረድ ቁጥጥር',
+    'roles.subtitle': 'በፈቃዶች ደረጃ የተዋቀረ የተዋረድ ቁጥጥር',
     'roles.create': 'አዲስ ሚና ፍጠር',
     'attendance.title': 'የአካላዊ ቤተ-መጻሕፍት ተጠቃሚዎች ቆጣሪና አጠቃቀም',
     'attendance.subtitle': 'የቀጥታ ተጠቃሚዎች ክትትል፣ የሥርዓተ-ፆታ ስርጭትና ራስ-ሰር ወቅታዊ ሪፖርቶች',
@@ -255,8 +274,8 @@ const DEFAULT_AMHARIC: Record<string, string> = {
     'attendance.today_female': 'ሴት ጎብኝዎች',
     'attendance.branches': 'የቤተ-መጽሐፍት ቅርንጫፎች',
     'attendance.active_staff': 'ንቁ ሠራተኞች',
-    'attendance.export_csv': 'ሪፖርት በCSV አውርድ',
-    'attendance.print_report': 'ይፋዊ ሪፖርት አትም (Print)',
+    'attendance.export_csv': 'ሪፖርት በፋይል አውርድ',
+    'attendance.print_report': 'ይፋዊ ሪፖርት አትም',
     'attendance.print': 'አትም',
     'attendance.user_type_demographic': 'የተጠቃሚዎች ስርጭት ትንተና',
     'attendance.gender_distribution': 'የሥርዓተ-ፆታ ስርጭትና ንጽጽር',
@@ -271,6 +290,11 @@ const DEFAULT_AMHARIC: Record<string, string> = {
     'attendance.quick_log': 'ፈጣን መዝግብ',
     'attendance.batch_increment': 'በቡድን ማከል',
     'attendance.cancel_notice': 'የተመዘገበው መረጃ በተመዘገበ በ2 ደቂቃ ውስጥ ብቻ መሰረዝ ይችላል።',
+    'attendance.shift_active': 'ንቁ የፈረቃ ተረኝነት፡ ቆጣሪው ክፍት ነው',
+    'attendance.select_patron_type': 'የተጠቃሚ አይነት',
+    'attendance.quick_log_hint': 'ለግለሰብ ጎብኝ ትልቁን ቁልፍ ይጫኑ ወይም ለቡድን ጎብኝዎች ፈጣን ቁጥሮችን (+2 .. +15) ይጠቀሙ።',
+    'attendance.attendant_only_notice': 'የቀጥታ ጎብኝዎች ምዝገባ ለተረኛ ረዳቶች ብቻ የተመደበ ነው።',
+    'common.batch': 'በቡድን',
     // Schedules, Shifts & Groups translations (Amharic)
     'schedules.title': 'የዕለት ፈረቃዎችና የኢትዮጵያ የቀን መቁጠሪያ መርሃ-ግብር',
     'schedules.subtitle': 'በኢትዮጵያ የቀን አቆጣጠር የፈረቃ ቡድኖችን የቀንና የማታ ፈረቃዎችን ይመድቡና ያስተዳድሩ።',
@@ -330,7 +354,7 @@ const DEFAULT_AMHARIC: Record<string, string> = {
     'schedules.shifts_canceled_badge': 'በበዓላት ቀናት ሁሉም ፈረቃዎች ተሰርዘዋል',
     'schedules.holiday_legend': 'የኢትዮጵያ በዓል (የተሰረዘ / ዕረፍት)',
     'schedules.canceled': 'ተሰርዟል',
-    'schedules.canceled_holiday': 'ተሰርዟል / በዓል',
+    'schedules.canceled_holiday': 'ተሰርዟል (በዓል)',
     'schedules.add_holiday': 'በዓል ጨምር',
     'schedules.add_holiday_title': 'የኢትዮጵያ በዓል በእጅ መዝግብ',
     'schedules.add_holiday_subtitle': 'ለዚህ ወር ይፋዊ ወይም ሃይማኖታዊ በዓል ይመዝግቡ። በዚያ ቀን የፈረቃ ተረኝነት በራስ-ሰር ይሰረዛል።',
@@ -341,6 +365,20 @@ const DEFAULT_AMHARIC: Record<string, string> = {
     'schedules.save_holiday': 'በዓሉን መዝግብ',
     'schedules.consecutive_legend': 'የዕረፍት ቀን (ተከታታይ ማታ/ቀን አይቻልም)',
     'schedules.rest_day': 'ዕረፍት',
+    'schedules.tab_holidays': 'የበዓላት መዝገብ',
+    'schedules.selected': 'የተመረጠ',
+    'schedules.available_days': 'ክፍት ቀናት (1–30)',
+    'schedules.in_another_shift': 'በሌላ ፈረቃ ውስጥ (ቡድን)',
+    'schedules.assigned_other_group': 'ለሌላ ቡድን ተመድቧል',
+    'schedules.scope_label': 'ወሰን',
+    'schedules.group_label': 'ቡድን',
+    'schedules.all_branches_default': 'ሁሉም የዩኒቨርሲቲ ቤተ-መጻሕፍት ቅርንጫፎች',
+    'schedules.no_members': 'ምንም አባላት የሉም',
+    'schedules.no_groups_defined': 'የተመዘገበ ቡድን የለም',
+    'schedules.resolve_overlaps_first': 'መጀመሪያ ድርብ ምደባዎችን ያስተካክሉ',
+    'schedules.generate_and_assign': 'መርሐ-ግብር አዘጋጅና መድብ',
+    'attendance.counter_locked_title': 'የጎብኝዎች ቆጣሪ ዝግ ነው (የፈረቃ ሰዓት አይደለም)',
+    'attendance.counter_locked_desc': 'የጎብኝዎች መመዝገቢያ ቆጣሪውን መጠቀም የሚችሉት በተመደበልዎት ንቁ የፈረቃ ቀንና ሰዓት ውስጥ ብቻ ነው።',
 };
 
 export const useLanguageStore = defineStore('language', () => {
@@ -426,6 +464,40 @@ export const useLanguageStore = defineStore('language', () => {
         return t(key, gender);
     };
 
+    const localizeMonth = (m: { name_am?: string; name_en?: string } | null | undefined): string => {
+        if (!m) return '—';
+        if (currentLanguage.value === 'am' && m.name_am) {
+            return m.name_am;
+        }
+        return m.name_en || '—';
+    };
+
+    const localizeShift = (s: { name?: string; name_am?: string | null } | null | undefined): string => {
+        if (!s) return '—';
+        if (currentLanguage.value === 'am' && s.name_am) {
+            return s.name_am;
+        }
+        return s.name || '—';
+    };
+
+    const localizeHoliday = (h: { name?: string; name_am?: string | null } | null | undefined): string => {
+        if (!h) return '—';
+        if (currentLanguage.value === 'am' && h.name_am) {
+            return h.name_am;
+        }
+        return h.name || '—';
+    };
+
+    const formatTimeWindow = (timeStr: string | null | undefined): string => {
+        if (!timeStr) return '';
+        if (currentLanguage.value === 'am') return timeStr;
+        return timeStr
+            .replace(/ጠዋት/g, 'Morning')
+            .replace(/ከቀኑ/g, 'Afternoon')
+            .replace(/ከምሽቱ/g, 'Evening')
+            .replace(/ከሌሊቱ/g, 'Night');
+    };
+
     return {
         currentLanguage,
         availableLanguages,
@@ -439,5 +511,9 @@ export const useLanguageStore = defineStore('language', () => {
         localizeBranch,
         localizeType,
         localizeGender,
+        localizeMonth,
+        localizeShift,
+        localizeHoliday,
+        formatTimeWindow,
     };
 });

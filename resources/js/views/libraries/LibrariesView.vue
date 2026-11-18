@@ -54,13 +54,10 @@
           </div>
           <div class="min-w-0">
             <div class="font-bold text-main-text flex items-center gap-1.5">
-              <span class="truncate">{{ item.name }}</span>
+              <span class="truncate">{{ langStore.localizeBranch(item) }}</span>
               <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border">
                 {{ item.code }}
               </span>
-            </div>
-            <div v-if="item.name_am" class="text-[11px] text-main-text/50 truncate">
-              {{ item.name_am }}
             </div>
           </div>
         </div>

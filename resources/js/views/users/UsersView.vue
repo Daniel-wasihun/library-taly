@@ -49,41 +49,56 @@
       <template #toolbar>
         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <!-- Library Branch Filter -->
-          <select
-            v-model="selectedLibraryFilter"
-            @change="handleFilterChange"
-            class="h-9 px-3 text-xs rounded-sm bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
-          >
-            <option value="all">All Branches</option>
-            <option value="general">General (All Branches)</option>
-            <option v-for="lib in libraryStore.libraries" :key="lib.id" :value="lib.id">
-              [{{ lib.code }}] {{ lib.name }}
-            </option>
-          </select>
+          <div class="relative">
+            <select
+              v-model="selectedLibraryFilter"
+              @change="handleFilterChange"
+              class="h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+            >
+              <option value="all">{{ langStore.t('attendance.all_branches', 'All Branches') }}</option>
+              <option value="general">{{ langStore.isAmharic() ? 'አጠቃላይ (ሁሉም ቅርንጫፎች)' : 'General (All Branches)' }}</option>
+              <option v-for="lib in libraryStore.libraries" :key="lib.id" :value="lib.id">
+                [{{ lib.code }}] {{ langStore.localizeBranch(lib) }}
+              </option>
+            </select>
+            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+              <ChevronDown class="w-3.5 h-3.5" />
+            </div>
+          </div>
 
           <!-- Role Filter -->
-          <select
-            v-model="selectedRoleFilter"
-            @change="handleFilterChange"
-            class="h-9 px-3 text-xs rounded-sm bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
-          >
-            <option value="all">All Roles</option>
-            <option v-for="r in roleStore.roles.filter(r => r.name !== 'Super Admin')" :key="r.id" :value="r.name">
-              {{ r.name }}
-            </option>
-          </select>
+          <div class="relative">
+            <select
+              v-model="selectedRoleFilter"
+              @change="handleFilterChange"
+              class="h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+            >
+              <option value="all">{{ langStore.t('common.all', 'All') }} {{ langStore.t('roles.title', 'Roles') }}</option>
+              <option v-for="r in roleStore.roles.filter(r => r.name !== 'Super Admin')" :key="r.id" :value="r.name">
+                {{ r.name }}
+              </option>
+            </select>
+            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+              <ChevronDown class="w-3.5 h-3.5" />
+            </div>
+          </div>
 
           <!-- Status Filter -->
-          <select
-            v-model="selectedStatusFilter"
-            @change="handleFilterChange"
-            class="h-9 px-3 text-xs rounded-sm bg-card-bg border border-card-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
-          >
-            <option value="all">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="suspended">Suspended</option>
-          </select>
+          <div class="relative">
+            <select
+              v-model="selectedStatusFilter"
+              @change="handleFilterChange"
+              class="h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer capitalize"
+            >
+              <option value="all">{{ langStore.t('common.all', 'All') }} {{ langStore.t('common.status', 'Statuses') }}</option>
+              <option value="active">{{ langStore.t('common.active', 'Active') }}</option>
+              <option value="inactive">{{ langStore.t('common.inactive', 'Inactive') }}</option>
+              <option value="suspended">{{ langStore.t('common.suspended', 'Suspended') }}</option>
+            </select>
+            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+              <ChevronDown class="w-3.5 h-3.5" />
+            </div>
+          </div>
         </div>
       </template>
 
@@ -290,19 +305,24 @@
         <!-- Library Branch Assignment (LMS-style) -->
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
-            Library Branch Assignment
+            {{ langStore.t('libraries.title', 'Library Branch Assignment') }}
           </label>
-          <select
-            v-model="form.library_id"
-            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
-          >
-            <option value="">General / All Libraries (System-wide Management)</option>
-            <option v-for="lib in libraryStore.libraries" :key="lib.id" :value="lib.id">
-              [{{ lib.code }}] {{ lib.name }}
-            </option>
-          </select>
+          <div class="relative">
+            <select
+              v-model="form.library_id"
+              class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+            >
+              <option value="">{{ langStore.isAmharic() ? 'አጠቃላይ / ሁሉም ቅርንጫፎች (የስርዓት አስተዳዳሪ)' : 'General / All Libraries (System-wide Management)' }}</option>
+              <option v-for="lib in libraryStore.libraries" :key="lib.id" :value="lib.id">
+                [{{ lib.code }}] {{ langStore.localizeBranch(lib) }}
+              </option>
+            </select>
+            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+              <ChevronDown class="w-3.5 h-3.5" />
+            </div>
+          </div>
           <p class="text-[10px] text-main-text/40 mt-1">
-            Staff assigned to a specific branch are scoped to that facility for book loans and duty shifts. General accounts manage all branches.
+            {{ langStore.isAmharic() ? 'ለተወሰነ ቅርንጫፍ የተመደቡ ሠራተኞች ለዚያ ቅርንጫፍ ብቻ የፈረቃና የቆጣሪ ሥራዎችን ያከናውናሉ።' : 'Staff assigned to a specific branch are scoped to that facility for attendance counter and duty shifts.' }}
           </p>
         </div>
 
@@ -312,16 +332,21 @@
             <label class="block text-xs font-semibold text-main-text mb-1">
               {{ langStore.t('users.role', 'Assigned Role') }} <span class="text-rose-500">*</span>
             </label>
-            <select
-              v-model="form.role"
-              required
-              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs"
-            >
-              <option value="">Select a role...</option>
-              <option v-for="r in roleStore.roles.filter(r => r.name !== 'Super Admin')" :key="r.id" :value="r.name">
-                {{ r.name }}
-              </option>
-            </select>
+            <div class="relative">
+              <select
+                v-model="form.role"
+                required
+                class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+              >
+                <option value="">{{ langStore.isAmharic() ? 'ሚና ይምረጡ...' : 'Select a role...' }}</option>
+                <option v-for="r in roleStore.roles.filter(r => r.name !== 'Super Admin')" :key="r.id" :value="r.name">
+                  {{ r.name }}
+                </option>
+              </select>
+              <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                <ChevronDown class="w-3.5 h-3.5" />
+              </div>
+            </div>
           </div>
 
           <!-- Account Status -->
@@ -329,14 +354,19 @@
             <label class="block text-xs font-semibold text-main-text mb-1">
               {{ langStore.t('common.status', 'Status') }}
             </label>
-            <select
-              v-model="form.status"
-              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs capitalize"
-            >
-              <option value="active">{{ langStore.t('common.active', 'Active') }}</option>
-              <option value="inactive">{{ langStore.t('common.inactive', 'Inactive') }}</option>
-              <option value="suspended">{{ langStore.t('common.suspended', 'Suspended') }}</option>
-            </select>
+            <div class="relative">
+              <select
+                v-model="form.status"
+                class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer capitalize"
+              >
+                <option value="active">{{ langStore.t('common.active', 'Active') }}</option>
+                <option value="inactive">{{ langStore.t('common.inactive', 'Inactive') }}</option>
+                <option value="suspended">{{ langStore.t('common.suspended', 'Suspended') }}</option>
+              </select>
+              <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                <ChevronDown class="w-3.5 h-3.5" />
+              </div>
+            </div>
           </div>
         </div>
       </form>
@@ -448,7 +478,7 @@ import DataTable, { ColumnDef } from '@/components/ui/DataTable.vue';
 import Modal from '@/components/ui/Modal.vue';
 import RoleBadge from '@/components/ui/RoleBadge.vue';
 import StatusBadge from '@/components/ui/StatusBadge.vue';
-import { Users, Plus, Pencil, Trash2, UserPlus, Shield, Zap, RefreshCw, Building2 } from 'lucide-vue-next';
+import { Users, Plus, Pencil, Trash2, UserPlus, Shield, Zap, RefreshCw, Building2, ChevronDown } from 'lucide-vue-next';
 import type { User } from '@/types';
 
 const userStore = useUserStore();

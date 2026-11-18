@@ -16,30 +16,40 @@
         <!-- Year Filter -->
         <div class="flex items-center gap-1.5">
           <label class="text-xs font-semibold text-main-text whitespace-nowrap">{{ langStore.t('schedules.ethiopian_year', 'Year') }}:</label>
-          <select
-            v-model.number="selectedYear"
-            class="px-2.5 py-1.5 text-xs rounded-sm bg-input-bg border border-input-border text-main-text font-mono focus:border-nav-accent shadow-2xs cursor-pointer"
-            @change="fetchHolidays"
-          >
-            <option v-for="y in [2017, 2018, 2019, 2020, 2021, 2022]" :key="y" :value="y">
-              {{ y }} ዓ.ም
-            </option>
-          </select>
+          <div class="relative">
+            <select
+              v-model.number="selectedYear"
+              class="h-8 appearance-none pl-2.5 pr-7 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-mono hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+              @change="fetchHolidays"
+            >
+              <option v-for="y in [2017, 2018, 2019, 2020, 2021, 2022]" :key="y" :value="y">
+                {{ langStore.isAmharic() ? `${y} ዓ.ም` : `${y} E.C.` }}
+              </option>
+            </select>
+            <div class="absolute right-2 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+              <ChevronDown class="w-3.5 h-3.5" />
+            </div>
+          </div>
         </div>
 
         <!-- Month Filter -->
         <div class="flex items-center gap-1.5">
           <label class="text-xs font-semibold text-main-text whitespace-nowrap">{{ langStore.t('schedules.ethiopian_month', 'Month') }}:</label>
-          <select
-            v-model="selectedMonth"
-            class="px-2.5 py-1.5 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:border-nav-accent shadow-2xs cursor-pointer font-medium"
-            @change="fetchHolidays"
-          >
-            <option value="">All Months (1–13)</option>
-            <option v-for="m in ethiopianMonths" :key="m.number" :value="m.number">
-              {{ m.number }}. {{ m.name_am }} ({{ m.name_en }})
-            </option>
-          </select>
+          <div class="relative">
+            <select
+              v-model="selectedMonth"
+              class="h-8 appearance-none pl-2.5 pr-7 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer font-medium"
+              @change="fetchHolidays"
+            >
+              <option value="">{{ langStore.isAmharic() ? 'ሁሉም ወራት (1–13)' : 'All Months (1–13)' }}</option>
+              <option v-for="m in ethiopianMonths" :key="m.number" :value="m.number">
+                {{ m.number }}. {{ langStore.isAmharic() ? m.name_am : m.name_en }}
+              </option>
+            </select>
+            <div class="absolute right-2 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+              <ChevronDown class="w-3.5 h-3.5" />
+            </div>
+          </div>
         </div>
 
         <Button
@@ -49,7 +59,7 @@
           :icon="Plus"
           @click="openAddModal"
         >
-          {{ langStore.t('schedules.add_holiday', 'Add Holiday / በዓል ጨምር') }}
+          {{ langStore.t('schedules.add_holiday', 'Add Holiday') }}
         </Button>
       </div>
     </div>
@@ -59,13 +69,13 @@
       <div class="flex items-center gap-2">
         <span class="text-base">🇪🇹</span>
         <span>
-          Showing manual holidays for
-          <strong class="font-bold text-nav-accent">{{ selectedMonth ? getMonthName(Number(selectedMonth)) : 'All Months' }} {{ selectedYear }} ዓ.ም</strong>:
-          <strong class="text-purple-600 dark:text-purple-300 ml-1">{{ holidaysList.length }} holidays recorded</strong>.
+          {{ langStore.isAmharic() ? 'የተመዘገቡ በዓላት ለ' : 'Showing manual holidays for' }}
+          <strong class="font-bold text-nav-accent">{{ selectedMonth ? getMonthName(Number(selectedMonth)) : (langStore.isAmharic() ? 'ሁሉም ወራት' : 'All Months') }} {{ langStore.isAmharic() ? `${selectedYear} ዓ.ም` : `${selectedYear} E.C.` }}</strong>:
+          <strong class="text-purple-600 dark:text-purple-300 ml-1">{{ holidaysList.length }} {{ langStore.t('schedules.holidays_detected_count', 'holidays recorded') }}</strong>.
         </span>
       </div>
       <span class="text-[11px] font-medium text-main-text/60 hidden sm:inline-block">
-        All duty shifts on recorded holiday days are canceled across all library branches.
+        {{ langStore.isAmharic() ? 'በእነዚህ በዓላት ቀናት በሁሉም ቅርንጫፎች የተረኝነት ፈረቃዎች ተሰርዘዋል።' : 'All duty shifts on recorded holiday days are canceled across all library branches.' }}
       </span>
     </div>
 
@@ -77,9 +87,9 @@
 
     <div v-else-if="holidaysList.length === 0" class="p-8 rounded-sm bg-card-bg border border-card-border text-center text-xs text-main-text/60">
       <CalendarOff class="w-10 h-10 stroke-[1.5] text-main-text/30 mx-auto mb-2" />
-      <p class="font-bold text-main-text">{{ langStore.t('schedules.no_holidays', 'No Holidays Recorded for this Period') }}</p>
+      <p class="font-bold text-main-text">{{ langStore.t('schedules.no_holidays_in_month', 'No Holidays Recorded for this Period') }}</p>
       <p class="mt-1">
-        Click "+ Add Holiday / በዓል ጨምር" above to manually enter holidays for this Ethiopian month and year.
+        {{ langStore.isAmharic() ? 'ለዚህ ወርና ዓ.ም ይፋዊ በዓላትን ለማስገባት ከላይ የሚገኘውን "+ በዓል ጨምር" ይጫኑ።' : 'Click "+ Add Holiday" above to manually enter holidays for this Ethiopian month and year.' }}
       </p>
     </div>
 
@@ -93,18 +103,18 @@
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-2.5">
               <div class="w-10 h-10 rounded-sm bg-purple-500/15 border border-purple-500/30 flex flex-col items-center justify-center shrink-0">
-                <span class="text-[10px] uppercase font-bold text-purple-700 dark:text-purple-300 leading-none">ቀን</span>
+                <span class="text-[10px] uppercase font-bold text-purple-700 dark:text-purple-300 leading-none">{{ langStore.isAmharic() ? 'ቀን' : 'Day' }}</span>
                 <span class="text-base font-black text-purple-800 dark:text-purple-200 font-mono leading-none mt-0.5">{{ h.day }}</span>
               </div>
               <div>
                 <h4 class="font-bold text-sm text-main-text">
-                  <span>{{ h.name_am || h.name }}</span>
+                  <span>{{ langStore.isAmharic() ? (h.name_am || h.name) : (h.name || h.name_am) }}</span>
                 </h4>
-                <p class="text-xs text-main-text/60 font-medium">
-                  {{ h.name_en || h.name }}
+                <p v-if="h.description" class="text-xs text-main-text/60 font-medium">
+                  {{ h.description }}
                 </p>
                 <span class="text-[10px] font-mono text-nav-accent font-semibold">
-                  {{ getMonthName(h.month || Number(selectedMonth) || 1) }} {{ selectedYear }} ዓ.ም
+                  {{ getMonthName(h.month || Number(selectedMonth) || 1) }} {{ langStore.isAmharic() ? `${selectedYear} ዓ.ም` : `${selectedYear} E.C.` }}
                 </span>
               </div>
             </div>
@@ -127,10 +137,10 @@
         </div>
 
         <div class="pt-2 border-t border-card-border flex items-center justify-between text-[11px]">
-          <span class="text-main-text/50">Duty Status:</span>
+          <span class="text-main-text/50">{{ langStore.t('schedules.shift_status', 'Duty Status') }}:</span>
           <span class="px-2 py-0.5 rounded-sm font-bold text-[10px] bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/25 flex items-center gap-1">
             <span>🚫</span>
-            <span>Canceled (ሁሉም ፈረቃዎች ተሰርዘዋል)</span>
+            <span>{{ langStore.t('schedules.canceled', 'Canceled') }}</span>
           </span>
         </div>
       </div>
@@ -139,8 +149,8 @@
     <!-- Add / Edit Holiday Modal -->
     <Modal
       :show="showModal"
-      title="Add Ethiopian Holiday / የኢትዮጵያ በዓል በእጅ መዝግብ"
-      description="Manually enter a public or university holiday in the Ethiopian calendar. The selected day will be cleanly canceled from shift schedules."
+      :title="langStore.t('schedules.add_holiday_title', 'Add Manual Ethiopian Holiday')"
+      :description="langStore.t('schedules.add_holiday_subtitle', 'Manually enter a public or university holiday in the Ethiopian calendar. The selected day will be cleanly canceled from shift schedules.')"
       :icon="CalendarOff"
       size="md"
       @close="showModal = false"
@@ -152,15 +162,20 @@
             <label class="block text-xs font-semibold text-main-text mb-1">
               {{ langStore.t('schedules.ethiopian_year', 'Year') }} *
             </label>
-            <select
-              v-model.number="form.ethiopian_year"
-              class="w-full px-2.5 py-1.5 text-xs rounded-sm bg-input-bg border border-input-border text-main-text font-mono focus:border-nav-accent shadow-2xs"
-              required
-            >
-              <option v-for="y in [2017, 2018, 2019, 2020, 2021, 2022]" :key="y" :value="y">
-                {{ y }} ዓ.ም
-              </option>
-            </select>
+            <div class="relative">
+              <select
+                v-model.number="form.ethiopian_year"
+                class="w-full h-9 appearance-none pl-2.5 pr-7 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-mono hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+                required
+              >
+                <option v-for="y in [2017, 2018, 2019, 2020, 2021, 2022]" :key="y" :value="y">
+                  {{ langStore.isAmharic() ? `${y} ዓ.ም` : `${y} E.C.` }}
+                </option>
+              </select>
+              <div class="absolute right-2 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                <ChevronDown class="w-3.5 h-3.5" />
+              </div>
+            </div>
           </div>
 
           <!-- Ethiopian Month -->
@@ -168,31 +183,41 @@
             <label class="block text-xs font-semibold text-main-text mb-1">
               {{ langStore.t('schedules.ethiopian_month', 'Month') }} *
             </label>
-            <select
-              v-model.number="form.ethiopian_month"
-              class="w-full px-2.5 py-1.5 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:border-nav-accent shadow-2xs font-medium"
-              required
-            >
-              <option v-for="m in ethiopianMonths" :key="m.number" :value="m.number">
-                {{ m.number }}. {{ m.name_am }}
-              </option>
-            </select>
+            <div class="relative">
+              <select
+                v-model.number="form.ethiopian_month"
+                class="w-full h-9 appearance-none pl-2.5 pr-7 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer font-medium"
+                required
+              >
+                <option v-for="m in ethiopianMonths" :key="m.number" :value="m.number">
+                  {{ m.number }}. {{ langStore.isAmharic() ? m.name_am : m.name_en }}
+                </option>
+              </select>
+              <div class="absolute right-2 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                <ChevronDown class="w-3.5 h-3.5" />
+              </div>
+            </div>
           </div>
 
           <!-- Ethiopian Day (1 to 30) -->
           <div>
             <label class="block text-xs font-semibold text-main-text mb-1">
-              {{ langStore.t('schedules.day_of_month', 'Day (ቀን)') }} *
+              {{ langStore.t('schedules.day_of_month', 'Day') }} *
             </label>
-            <select
-              v-model.number="form.ethiopian_day"
-              class="w-full px-2.5 py-1.5 text-xs rounded-sm bg-input-bg border border-input-border text-main-text font-mono focus:border-nav-accent shadow-2xs"
-              required
-            >
-              <option v-for="d in formDaysCount" :key="d" :value="d">
-                ቀን {{ d }} (Day {{ d }})
-              </option>
-            </select>
+            <div class="relative">
+              <select
+                v-model.number="form.ethiopian_day"
+                class="w-full h-9 appearance-none pl-2.5 pr-7 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-mono hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+                required
+              >
+                <option v-for="d in formDaysCount" :key="d" :value="d">
+                  {{ langStore.isAmharic() ? `ቀን ${d}` : `Day ${d}` }}
+                </option>
+              </select>
+              <div class="absolute right-2 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
+                <ChevronDown class="w-3.5 h-3.5" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -211,7 +236,7 @@
 
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
-            {{ langStore.t('schedules.holiday_name_am', 'Amharic Title (የበዓሉ ስም በአማርኛ)') }}
+            {{ langStore.t('schedules.holiday_name_am', 'Amharic Title') }}
           </label>
           <input
             v-model="form.name_am"
@@ -264,7 +289,7 @@ import { useLanguageStore } from '@/stores/languageStore';
 import { useToastStore } from '@/stores/toastStore';
 import Button from '@/components/ui/Button.vue';
 import Modal from '@/components/ui/Modal.vue';
-import { CalendarOff, Plus, Trash2 } from 'lucide-vue-next';
+import { CalendarOff, Plus, Trash2, ChevronDown } from 'lucide-vue-next';
 import api from '@/api/client';
 
 const shiftStore = useShiftStore();
@@ -315,7 +340,8 @@ const formDaysCount = computed(() => {
 
 const getMonthName = (monthNum: number): string => {
   const m = ethiopianMonths.find((item) => item.number === monthNum);
-  return m ? `${m.name_am} (${m.name_en})` : `Month ${monthNum}`;
+  if (!m) return `Month ${monthNum}`;
+  return langStore.isAmharic() ? m.name_am : m.name_en;
 };
 
 const fetchHolidays = async () => {

@@ -98,21 +98,7 @@ class DatabaseSeeder extends Seeder
             'attendance.delete',
         ]);
 
-        // 5. Seed Realistic University Library Branches
-        $mainLibrary = Library::updateOrCreate(
-            ['code' => 'MAIN'],
-            [
-                'name' => 'Main Central Library',
-                'name_am' => 'ዋና ማዕከላዊ ቤተ-መጻሕፍት',
-                'slug' => 'main-central-library',
-                'location' => 'Main Campus, Administration Block, 2nd Floor',
-                'phone' => '+251 111 234501',
-                'email' => 'main.library@unilib.edu',
-                'description' => 'University central academic repository, directorate office, and general multidisciplinary stacks.',
-                'is_active' => true,
-            ]
-        );
-
+        // 5. Seed Exactly Three University Library Branches
         $technoLibrary = Library::updateOrCreate(
             ['code' => 'TECHNO'],
             [
@@ -154,6 +140,14 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
+        // Delete any legacy/other libraries so ONLY TECHNO, SOCIAL, NATURAL exist
+        $otherLibraries = Library::whereNotIn('code', ['TECHNO', 'SOCIAL', 'NATURAL'])->get();
+        foreach ($otherLibraries as $oldLib) {
+            User::where('library_id', $oldLib->id)->update(['library_id' => $technoLibrary->id]);
+            LibraryAttendance::where('library_id', $oldLib->id)->update(['library_id' => $technoLibrary->id]);
+            $oldLib->delete();
+        }
 
         // 6. Seed Realistic Users with Roles & Branch Assignments
         $defaultPassword = Hash::make('password123');
@@ -200,7 +194,7 @@ class DatabaseSeeder extends Seeder
         );
         $generalManager->syncRoles(['Manager']);
 
-        // Branch Manager (Assigned to Main Library: manages reporting for Main Library ONLY)
+        // Branch Manager (Assigned to Techno Library: manages reporting for Techno Library)
         $branchManagerMain = User::updateOrCreate(
             ['email' => 'kassahun@unilib.edu'],
             [
@@ -209,7 +203,7 @@ class DatabaseSeeder extends Seeder
                 'password' => $defaultPassword,
                 'status' => 'active',
                 'phone' => '+251 914 567890',
-                'library_id' => $mainLibrary->id,
+                'library_id' => $technoLibrary->id,
             ]
         );
         $branchManagerMain->syncRoles(['Manager']);
@@ -342,7 +336,7 @@ class DatabaseSeeder extends Seeder
             array_slice($naturalAttendants, 0, 4),
             [$attendantGeneral, $superAdminUser]
         );
-        $libraries = [$technoLibrary, $socialLibrary, $naturalLibrary, $mainLibrary];
+        $libraries = [$technoLibrary, $socialLibrary, $naturalLibrary];
         $userTypes = ['student', 'teacher', 'staff'];
         $genders = ['male', 'female'];
 

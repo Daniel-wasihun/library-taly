@@ -53,7 +53,7 @@ class Amharic
             'nav.group_library' => 'የቤተ-መጻሕፍት ሥራዎች',
             'nav.group_admin' => 'አስተዳደርና ደህንነት',
             'nav.users' => 'የተጠቃሚዎች አስተዳደር',
-            'nav.roles' => 'ሚናዎችና ፈቃዶች (RBAC)',
+            'nav.roles' => 'ሚናዎችና ፈቃዶች',
             'nav.schedules' => 'የተረኛ ፈረቃዎች መርሃ-ግብር',
             'nav.my_turns' => 'የእኔ ተረኛ ፈረቃ',
             'nav.attendance' => 'የአካላዊ ተጠቃሚዎች ቆጣሪ / ምዝገባ',
@@ -74,9 +74,9 @@ class Amharic
             'attendance.staff' => 'ሠራተኛ',
             'attendance.total_today' => 'የዛሬ ድምር',
             'attendance.export_report' => 'ሪፖርት አውርድ',
-            'attendance.export_day' => 'የዕለት ሪፖርት (CSV)',
-            'attendance.export_week' => 'የሳምንት ሪፖርት (CSV)',
-            'attendance.export_month' => 'የወር ሪፖርት (CSV)',
+            'attendance.export_day' => 'የዕለት ሪፖርት',
+            'attendance.export_week' => 'የሳምንት ሪፖርት',
+            'attendance.export_month' => 'የወር ሪፖርት',
 
             // Library Branches (LMS CRUD)
             'libraries.title' => 'የቤተ-መጻሕፍት ቅርንጫፎች አስተዳደር',
@@ -109,7 +109,7 @@ class Amharic
 
             // Users
             'users.title' => 'የተጠቃሚዎች አስተዳደርና መዳረሻ',
-            'users.subtitle' => 'የተጠቃሚ ምስክርነቶችን፣ የSpatie ሚናዎችንና ሁኔታን ያቀናብሩ',
+            'users.subtitle' => 'የተጠቃሚ ምስክርነቶችን፣ ሚናዎችንና ሁኔታን ያቀናብሩ',
             'users.add' => 'አዲስ ተጠቃሚ መዝግብ',
             'users.edit' => 'ተጠቃሚ አስተካክል',
             'users.name' => 'ሙሉ ስም',
@@ -125,7 +125,7 @@ class Amharic
 
             // Roles
             'roles.title' => 'ሚናዎችና የተጠቃሚ ፈቃዶች',
-            'roles.subtitle' => 'በSpatie Laravel Permission የተዋቀረ የተዋረድ ቁጥጥር',
+            'roles.subtitle' => 'በፈቃዶች ደረጃ የተዋቀረ የተዋረድ ቁጥጥር',
             'roles.create' => 'አዲስ ሚና ፍጠር',
             'roles.edit' => 'ሚና አስተካክል',
             'roles.name' => 'የሚና ስም',
@@ -146,8 +146,8 @@ class Amharic
             'attendance.recent_entries' => 'የቅርብ ጊዜ ምዝገባዎች',
             'attendance.branches' => 'የቤተ-መጽሐፍት ቅርንጫፎች',
             'attendance.active_staff' => 'ንቁ ሠራተኞች',
-            'attendance.export_csv' => 'ሪፖርት በCSV አውርድ',
-            'attendance.print_report' => 'ይፋዊ ሪፖርት አትም (Print)',
+            'attendance.export_csv' => 'ሪፖርት በፋይል አውርድ',
+            'attendance.print_report' => 'ይፋዊ ሪፖርት አትም',
             'attendance.print' => 'አትም',
             'attendance.user_type_demographic' => 'የተጠቃሚዎች ስርጭት ትንተና',
             'attendance.gender_distribution' => 'የሥርዓተ-ፆታ ስርጭትና ንጽጽር',
@@ -162,6 +162,11 @@ class Amharic
             'attendance.quick_log' => 'ፈጣን መዝግብ',
             'attendance.batch_increment' => 'በቡድን ማከል',
             'attendance.cancel_notice' => 'የተመዘገበው መረጃ በተመዘገበ በ2 ደቂቃ ውስጥ ብቻ መሰረዝ ይችላል።',
+            'attendance.shift_active' => 'ንቁ የፈረቃ ተረኝነት፡ ቆጣሪው ክፍት ነው',
+            'attendance.select_patron_type' => 'የተጠቃሚ አይነት',
+            'attendance.quick_log_hint' => 'ለግለሰብ ጎብኝ ትልቁን ቁልፍ ይጫኑ ወይም ለቡድን ጎብኝዎች ፈጣን ቁጥሮችን (+2 .. +15) ይጠቀሙ።',
+            'attendance.attendant_only_notice' => 'የቀጥታ ጎብኝዎች ምዝገባ ለተረኛ ረዳቶች ብቻ የተመደበ ነው።',
+            'common.batch' => 'በቡድን',
         ];
     }
 }

@@ -115,10 +115,10 @@ export const useShiftStore = defineStore('shift', () => {
     /**
      * Fetch staff eligible for group assignment
      */
-    const fetchEligibleStaff = async (libraryId?: number) => {
+    const fetchEligibleStaff = async (currentGroupId?: number) => {
         try {
             const res = await api.get('/shift-groups/eligible-staff', {
-                params: { library_id: libraryId },
+                params: { current_group_id: currentGroupId },
             });
             eligibleStaff.value = res.data.data || [];
         } catch (err: any) {
@@ -215,10 +215,10 @@ export const useShiftStore = defineStore('shift', () => {
     };
 
     /**
-     * Assign monthly Ethiopian schedule for a group
+     * Assign monthly Ethiopian schedule for a group across all library branches
      */
     const assignSchedule = async (payload: {
-        library_id: number;
+        library_id?: number;
         shift_group_id: number;
         ethiopian_year: number;
         ethiopian_month: number;
@@ -228,7 +228,7 @@ export const useShiftStore = defineStore('shift', () => {
         try {
             saving.value = true;
             const res = await api.post('/shift-schedules/assign', payload);
-            toast.success(res.data.message || 'Schedule assigned successfully');
+            toast.success(res.data.message || 'Schedule assigned successfully across all branches');
             // Refresh matrix
             await fetchMatrix({
                 library_id: payload.library_id,
@@ -248,7 +248,7 @@ export const useShiftStore = defineStore('shift', () => {
      * Auto-generate balanced shift schedule with holiday exclusion & overlap check
      */
     const autoGenerateSchedule = async (payload: {
-        library_id: number;
+        library_id?: number;
         ethiopian_year: number;
         ethiopian_month: number;
         exclude_holidays?: boolean;
@@ -278,9 +278,9 @@ export const useShiftStore = defineStore('shift', () => {
     };
 
     /**
-     * Check if any staff member is in multiple groups in the specified library branch
+     * Check if any staff member is in multiple groups
      */
-    const checkStaffOverlap = async (libraryId: number) => {
+    const checkStaffOverlap = async (libraryId?: number) => {
         try {
             const res = await api.get('/shift-schedules/check-overlap', {
                 params: { library_id: libraryId },

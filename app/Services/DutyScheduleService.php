@@ -102,7 +102,9 @@ class DutyScheduleService
                     ->where('status', 'active');
 
                 if ($libraryId && !$user->canManageAllLibraries()) {
-                    $groupSchedQuery->where('library_id', $libraryId);
+                    $groupSchedQuery->where(function ($q) use ($libraryId) {
+                        $q->whereNull('library_id')->orWhere('library_id', $libraryId);
+                    });
                 }
 
                 $activeGroupSched = $groupSchedQuery->get()->first(function ($sched) use ($eday) {

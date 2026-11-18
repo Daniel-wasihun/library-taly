@@ -1,33 +1,18 @@
 <template>
   <div class="space-y-5 w-full">
-    <!-- Header with Branch Filter & Create Group Button -->
+    <!-- Header with Explanation & Create Group Button -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card-bg border border-card-border rounded-sm p-4 shadow-2xs">
       <div>
         <h3 class="text-base font-bold text-main-text flex items-center gap-2">
           <Users class="w-5 h-5 text-brand-blue dark:text-brand-yellow" />
-          <span>Duty Shift Groups (Group A, Group B, Group C...)</span>
+          <span>{{ langStore.t('schedules.groups_title', 'University Shift Groups (Group A, Group B, Group C...)') }}</span>
         </h3>
         <p class="text-xs text-main-text/60 mt-0.5">
-          Groups are configured separately for each library branch. Staff can belong to one or more groups at a time.
+          {{ langStore.t('schedules.groups_unified_desc', 'Shift groups belong to all library branches by default. Staff belong to their respective branch and cannot belong to more than one group at a time.') }}
         </p>
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
-        <!-- Branch Filter -->
-        <div class="flex items-center gap-2">
-          <label class="text-xs font-semibold text-main-text whitespace-nowrap">Filter Branch:</label>
-          <select
-            v-model="branchFilter"
-            class="px-2.5 py-1.5 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs cursor-pointer"
-            @change="handleFilterChange"
-          >
-            <option value="">All Branches</option>
-            <option v-for="lib in libraryStore.activeLibraries" :key="lib.id" :value="lib.id">
-              {{ lib.name }} ({{ lib.code }})
-            </option>
-          </select>
-        </div>
-
         <Button
           v-if="canManageGroups"
           variant="primary"
@@ -35,7 +20,7 @@
           :icon="Plus"
           @click="openCreateModal"
         >
-          Create Group
+          {{ langStore.t('schedules.create_group', 'Create Group (ምድብ ፍጠር)') }}
         </Button>
       </div>
     </div>
@@ -43,18 +28,18 @@
     <!-- Groups Grid / Cards -->
     <div v-if="shiftStore.loading" class="p-8 text-center text-xs text-main-text/50">
       <div class="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-      Loading shift groups...
+      {{ langStore.t('common.loading', 'Loading shift groups...') }}
     </div>
 
-    <div v-else-if="displayedGroups.length === 0" class="p-8 rounded-sm bg-card-bg border border-card-border text-center text-xs text-main-text/60">
+    <div v-else-if="shiftStore.groups.length === 0" class="p-8 rounded-sm bg-card-bg border border-card-border text-center text-xs text-main-text/60">
       <Users class="w-10 h-10 stroke-[1.5] text-main-text/30 mx-auto mb-2" />
-      <p class="font-bold text-main-text">No Shift Groups for this Branch</p>
-      <p class="mt-1">Each library branch has its own independent duty groups (Group A, Group B, Group C...).</p>
+      <p class="font-bold text-main-text">No Shift Groups Defined</p>
+      <p class="mt-1">Create unified shift groups (Group A, Group B, Group C...) to schedule shifts across all branches.</p>
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <div
-        v-for="group in displayedGroups"
+        v-for="group in shiftStore.groups"
         :key="group.id"
         class="bg-card-bg border border-card-border rounded-sm p-4 shadow-2xs space-y-3 flex flex-col justify-between"
       >
@@ -65,15 +50,17 @@
               <div class="flex items-center gap-2">
                 <h4 class="font-bold text-sm text-main-text">{{ group.name }}</h4>
                 <span
-                  v-if="group.library"
-                  class="px-2 py-0.5 rounded-sm text-[10px] font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20"
+                  class="px-2 py-0.5 rounded-sm text-[10px] font-bold border"
+                  :class="group.library
+                    ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20'
+                    : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'"
                 >
-                  {{ group.library.code }}
+                  {{ group.library ? group.library.code : 'All Branches (ሁሉንም ያካትታል)' }}
                 </span>
               </div>
               <p class="text-[11px] text-main-text/60 mt-0.5 flex items-center gap-1.5 font-medium">
                 <Building2 class="w-3 h-3 text-nav-accent" />
-                <span>{{ group.library ? group.library.name : 'Branch' }}</span>
+                <span>{{ group.library ? group.library.name : 'All University Library Branches' }}</span>
               </p>
             </div>
 
@@ -101,26 +88,39 @@
             {{ group.description }}
           </p>
 
-          <!-- Assigned Members -->
+          <!-- Assigned Members with their Library Branch -->
           <div class="pt-2 border-t border-card-border">
             <div class="text-[11px] font-bold text-main-text/60 mb-1.5 flex items-center justify-between">
-              <span>Assigned Staff ({{ group.users?.length || 0 }})</span>
-              <span class="text-[10px] text-main-text/40 font-normal">Can belong to multiple groups</span>
+              <span>Assigned Attendants ({{ group.users?.length || 0 }})</span>
+              <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">1 Group Per Librarian</span>
             </div>
             <div v-if="group.users && group.users.length > 0" class="flex flex-wrap gap-1.5">
               <span
                 v-for="u in group.users"
                 :key="u.id"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] bg-nav-accent/10 text-nav-accent border border-nav-accent/20"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] bg-card-bg text-main-text border border-card-border shadow-3xs"
               >
                 <span class="w-1.5 h-1.5 rounded-full bg-nav-accent"></span>
-                <span>{{ u.name }}</span>
+                <span class="font-semibold">{{ u.name }}</span>
+                <span v-if="u.library" class="text-[9px] px-1 rounded-xs bg-nav-accent/10 text-nav-accent font-bold">
+                  {{ u.library.code }}
+                </span>
               </span>
             </div>
             <p v-else class="text-[11px] text-main-text/40 italic">
-              No staff assigned to this group yet.
+              No staff members assigned yet.
             </p>
           </div>
+        </div>
+
+        <div class="pt-2 border-t border-card-border flex items-center justify-between text-[11px]">
+          <span class="text-main-text/50">Status:</span>
+          <span
+            class="px-2 py-0.5 rounded-sm font-bold text-[10px]"
+            :class="group.is_active ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/10 text-rose-600'"
+          >
+            {{ group.is_active ? 'Active' : 'Inactive' }}
+          </span>
         </div>
       </div>
     </div>
@@ -128,49 +128,44 @@
     <!-- Create / Edit Modal -->
     <Modal
       :show="showModal"
-      :title="editingGroup ? 'Edit Shift Group' : 'Create Library Shift Group'"
-      description="Each library branch manages its own groups. Attendants in this branch can be assigned to one or more groups."
+      :title="editingGroup ? 'Edit Shift Group' : 'Create Unified Shift Group'"
+      description="Define group name and assign librarians. Each librarian belongs to their own library branch and can only belong to one group at a time."
       :icon="Users"
       size="md"
       @close="showModal = false"
     >
       <form @submit.prevent="handleSaveGroup" class="space-y-4">
-        <!-- Target Library Branch (Strictly Required) -->
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
-            Library Branch <span class="text-rose-500">*</span>
-          </label>
-          <select
-            v-model="form.library_id"
-            required
-            :disabled="isBranchScoped"
-            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs disabled:opacity-60 cursor-pointer font-medium"
-            @change="handleBranchChange"
-          >
-            <option v-for="lib in libraryStore.activeLibraries" :key="lib.id" :value="lib.id">
-              {{ lib.name }} ({{ lib.code }})
-            </option>
-          </select>
-          <p class="text-[11px] text-main-text/50 mt-1">
-            Groups are strictly scoped to this library branch.
-          </p>
-        </div>
-
-        <!-- Group Name -->
-        <div>
-          <label class="block text-xs font-semibold text-main-text mb-1">
-            Group Name <span class="text-rose-500">*</span>
+            Group Name *
           </label>
           <input
             v-model="form.name"
             type="text"
             required
-            placeholder="e.g. Group A, Group B, Group C"
+            placeholder="e.g. Group A, Group B, Group C..."
             class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-semibold"
           />
         </div>
 
-        <!-- Description -->
+        <div>
+          <label class="block text-xs font-semibold text-main-text mb-1">
+            Target Scope / Branch
+          </label>
+          <select
+            v-model="form.library_id"
+            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs cursor-pointer font-medium"
+          >
+            <option :value="null">🌐 All University Branches by Default (የጋራ ምድብ)</option>
+            <option v-for="lib in libraryStore.activeLibraries" :key="lib.id" :value="lib.id">
+              {{ lib.name }} ({{ lib.code }})
+            </option>
+          </select>
+          <p class="text-[11px] text-main-text/50 mt-1">
+            Leave as "All University Branches" so the group applies to all branches.
+          </p>
+        </div>
+
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
             Description (optional)
@@ -178,71 +173,83 @@
           <textarea
             v-model="form.description"
             rows="2"
-            placeholder="Shift coverage, desk duties..."
+            placeholder="Shift group purpose, responsibilities..."
             class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs resize-none"
           ></textarea>
         </div>
 
-        <!-- Staff Assignment Checklist -->
+        <!-- Attendant Multi-Select with 1 Group Constraint -->
         <div>
-          <label class="block text-xs font-semibold text-main-text mb-1 flex items-center justify-between">
-            <span>Branch Attendants & Staff (Can be in multiple groups)</span>
-            <span class="text-[11px] text-nav-accent font-normal">
-              {{ form.user_ids.length }} selected
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-semibold text-main-text">
+              Assign Librarians & Attendants ({{ form.user_ids.length }} selected)
+            </label>
+            <span class="text-[10px] text-nav-accent font-semibold">
+              Strictly 1 group per librarian
             </span>
-          </label>
+          </div>
 
-          <div class="max-h-48 overflow-y-auto custom-scrollbar border border-input-border rounded-sm p-2 bg-input-bg space-y-1">
+          <div class="max-h-56 overflow-y-auto border border-card-border rounded-sm p-2 bg-input-bg space-y-1 custom-scrollbar">
             <div
-              v-for="staff in branchCompatibleStaff"
+              v-for="staff in availableStaffList"
               :key="staff.id"
-              class="flex items-center justify-between p-1.5 rounded-sm hover:bg-card-bg cursor-pointer transition"
-              @click="toggleStaff(staff)"
+              class="flex items-center justify-between p-2 rounded-xs border text-xs transition select-none"
+              :class="[
+                form.user_ids.includes(staff.id)
+                  ? 'bg-nav-accent/10 border-nav-accent/30 text-nav-accent font-bold'
+                  : (!staff.is_available
+                      ? 'bg-card-bg/40 border-card-border/40 text-main-text/40 cursor-not-allowed opacity-60'
+                      : 'bg-card-bg border-card-border text-main-text hover:bg-card-bg/80 cursor-pointer')
+              ]"
+              @click="staff.is_available && toggleStaff(staff)"
             >
-              <div class="flex items-center gap-2 min-w-0">
+              <div class="flex items-center gap-2">
                 <input
                   type="checkbox"
                   :checked="form.user_ids.includes(staff.id)"
-                  class="rounded-xs border-input-border text-nav-accent focus:ring-0 cursor-pointer"
+                  :disabled="!staff.is_available"
+                  class="rounded-xs border-input-border text-nav-accent pointer-events-none"
                 />
-                <div class="min-w-0">
-                  <p class="text-xs font-semibold text-main-text truncate">{{ staff.name }}</p>
-                  <p class="text-[10px] text-main-text/50 truncate">
-                    @{{ staff.username }} • Branch: {{ staff.library ? staff.library.name : 'General Attendant' }}
-                  </p>
+                <div>
+                  <span class="font-semibold">{{ staff.name }}</span>
+                  <span v-if="staff.library" class="text-[10px] ml-1.5 px-1.5 py-0.2 rounded-xs bg-card-bg border border-card-border font-medium text-main-text/70">
+                    {{ staff.library.name }} ({{ staff.library.code }})
+                  </span>
                 </div>
               </div>
 
               <div>
                 <span
-                  v-if="form.user_ids.includes(staff.id)"
-                  class="px-1.5 py-0.5 rounded-sm text-[9px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
+                  v-if="!staff.is_available"
+                  class="text-[10px] px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-600 font-semibold"
                 >
-                  Assigned
+                  Already in {{ staff.current_group_name }}
+                </span>
+                <span
+                  v-else-if="form.user_ids.includes(staff.id)"
+                  class="text-[10px] text-emerald-600 font-bold"
+                >
+                  ✓ Selected
                 </span>
               </div>
             </div>
-
-            <p v-if="branchCompatibleStaff.length === 0" class="text-center py-4 text-xs text-main-text/50">
-              No staff members found for this branch.
-            </p>
           </div>
         </div>
-      </form>
 
-      <template #footer>
-        <Button variant="secondary" size="sm" @click="showModal = false">
-          {{ langStore.t('common.cancel', 'Cancel') }}
-        </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          :loading="shiftStore.saving"
-          @click="handleSaveGroup"
-        >
-          {{ editingGroup ? 'Update Group' : 'Create Group' }}
-        </Button>
-      </template>
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-card-border">
+          <Button variant="secondary" size="sm" type="button" @click="showModal = false">
+            {{ langStore.t('common.cancel', 'Cancel') }}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            type="submit"
+            :loading="shiftStore.saving"
+          >
+            {{ editingGroup ? 'Update Group' : 'Create Group' }}
+          </Button>
+        </div>
+      </form>
     </Modal>
 
     <!-- Delete Confirmation Modal -->
@@ -260,7 +267,7 @@
           Are you sure you want to delete <strong class="text-rose-600">{{ deletingGroup?.name }}</strong>?
         </p>
         <p class="text-[11px] text-main-text/50">
-          This will detach assigned attendants.
+          This will detach assigned attendants and clean group schedules.
         </p>
       </div>
 
@@ -297,7 +304,6 @@ const libraryStore = useLibraryStore();
 const authStore = useAuthStore();
 const langStore = useLanguageStore();
 
-const branchFilter = ref<number | ''>('');
 const showModal = ref(false);
 const showDelete = ref(false);
 const editingGroup = ref<ShiftGroup | null>(null);
@@ -305,44 +311,25 @@ const deletingGroup = ref<ShiftGroup | null>(null);
 
 const form = reactive<{
   name: string;
-  library_id: number;
+  library_id: number | null;
   description: string;
   user_ids: number[];
 }>({
   name: '',
-  library_id: 1,
+  library_id: null,
   description: '',
   user_ids: [],
-});
-
-const isBranchScoped = computed(() => {
-  return !authStore.user?.can_manage_all_libraries && !!authStore.user?.library_id;
 });
 
 const canManageGroups = computed(() => {
   return authStore.isAdmin || authStore.canManageLibrary;
 });
 
-const displayedGroups = computed(() => {
-  const groups = shiftStore.groups || [];
-  if (!branchFilter.value) {
-    return groups;
-  }
-  return groups.filter((g) => g.library_id === Number(branchFilter.value));
+const availableStaffList = computed(() => {
+  return shiftStore.eligibleStaff || [];
 });
 
-const branchCompatibleStaff = computed(() => {
-  const targetLibId = form.library_id;
-  return (shiftStore.eligibleStaff || []).filter((s) => {
-    return !s.library_id || s.library_id === targetLibId;
-  });
-});
-
-const handleFilterChange = async () => {
-  await shiftStore.fetchGroups(branchFilter.value ? Number(branchFilter.value) : undefined);
-};
-
-const toggleStaff = (staff: User) => {
+const toggleStaff = (staff: any) => {
   const idx = form.user_ids.indexOf(staff.id);
   if (idx >= 0) {
     form.user_ids.splice(idx, 1);
@@ -351,33 +338,23 @@ const toggleStaff = (staff: User) => {
   }
 };
 
-const handleBranchChange = () => {
-  // Prune any attendants not compatible with newly selected branch
-  const validIds = branchCompatibleStaff.value.map((s) => s.id);
-  form.user_ids = form.user_ids.filter((uid) => validIds.includes(uid));
-};
-
-const openCreateModal = () => {
+const openCreateModal = async () => {
   editingGroup.value = null;
   form.name = '';
-  // Default library to branchFilter, or user's branch, or first active library
-  const defaultLib = branchFilter.value
-    ? Number(branchFilter.value)
-    : (authStore.user?.library_id || (libraryStore.activeLibraries[0]?.id ?? 1));
-  form.library_id = defaultLib;
+  form.library_id = null; // null = all branches
   form.description = '';
   form.user_ids = [];
-  shiftStore.fetchEligibleStaff(form.library_id);
+  await shiftStore.fetchEligibleStaff();
   showModal.value = true;
 };
 
-const openEditModal = (group: ShiftGroup) => {
+const openEditModal = async (group: ShiftGroup) => {
   editingGroup.value = group;
   form.name = group.name;
-  form.library_id = group.library_id || 1;
+  form.library_id = group.library_id || null;
   form.description = group.description || '';
   form.user_ids = (group.users || []).map((u) => u.id as number);
-  shiftStore.fetchEligibleStaff(form.library_id);
+  await shiftStore.fetchEligibleStaff(group.id);
   showModal.value = true;
 };
 
@@ -387,7 +364,7 @@ const confirmDelete = (group: ShiftGroup) => {
 };
 
 const handleSaveGroup = async () => {
-  if (!form.name.trim() || !form.library_id) return;
+  if (!form.name.trim()) return;
 
   let success = false;
   if (editingGroup.value) {
@@ -398,24 +375,23 @@ const handleSaveGroup = async () => {
 
   if (success) {
     showModal.value = false;
+    await shiftStore.fetchGroups();
   }
 };
 
 const handleDeleteGroup = async () => {
   if (!deletingGroup.value) return;
-  const success = await shiftStore.deleteGroup(deletingGroup.value.id, branchFilter.value ? Number(branchFilter.value) : undefined);
+  const success = await shiftStore.deleteGroup(deletingGroup.value.id);
   if (success) {
     showDelete.value = false;
+    await shiftStore.fetchGroups();
   }
 };
 
 onMounted(async () => {
-  if (authStore.user?.library_id) {
-    branchFilter.value = authStore.user.library_id;
-  }
   await Promise.all([
     libraryStore.fetchLibraries(),
-    shiftStore.fetchGroups(branchFilter.value ? Number(branchFilter.value) : undefined),
+    shiftStore.fetchGroups(),
     shiftStore.fetchEligibleStaff(),
   ]);
 });

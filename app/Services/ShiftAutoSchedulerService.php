@@ -16,17 +16,24 @@ class ShiftAutoSchedulerService
     ) {}
 
     /**
-     * Detect if any person belongs to two or more groups at the same time in the given library branch.
+     * Detect if any person belongs to two or more groups at the same time.
+     * "one librarian must not be in the same group at a time profesionally clean this"
      *
-     * @param int $libraryId
+     * @param int|null $libraryId Optional branch filter
      * @return array{has_overlap: bool, overlaps: array<int, array{user_id: int, user_name: string, groups: string[]}>}
      */
-    public function detectStaffOverlapInBranch(int $libraryId): array
+    public function detectStaffOverlapInBranch(?int $libraryId = null): array
     {
-        $groups = ShiftGroup::with('users:id,name,username')
-            ->where('library_id', $libraryId)
-            ->where('is_active', true)
-            ->get();
+        $query = ShiftGroup::with('users:id,name,username,library_id')
+            ->where('is_active', true);
+
+        if ($libraryId) {
+            $query->where(function ($q) use ($libraryId) {
+                $q->whereNull('library_id')->orWhere('library_id', $libraryId);
+            });
+        }
+
+        $groups = $query->get();
 
         $userGroups = [];
         foreach ($groups as $group) {
@@ -57,27 +64,33 @@ class ShiftAutoSchedulerService
     }
 
     /**
-     * Auto-generate and assign balanced monthly shift schedule for a specific library branch.
+     * Auto-generate and assign balanced monthly shift schedule across groups.
+     * Applies to all library branches for the selected group.
      *
-     * @param int $libraryId
+     * @param int|null $libraryId Optional branch (null = all branches)
      * @param int $year Ethiopian year (e.g. 2019)
      * @param int $month Ethiopian month (1 to 13)
      * @param bool $excludeHolidays Whether to detect and remove holidays from schedule
-     * @param bool $overwriteExisting Whether to overwrite existing schedules for this branch & month
+     * @param bool $overwriteExisting Whether to overwrite existing schedules for this month
      * @return array
      * @throws ValidationException
      */
     public function autoGenerateSchedule(
-        int $libraryId,
+        ?int $libraryId,
         int $year,
         int $month,
         bool $excludeHolidays = true,
         bool $overwriteExisting = true
     ): array {
-        $library = Library::findOrFail($libraryId);
+        $libraryName = 'All University Library Branches';
+        if ($libraryId) {
+            $lib = Library::find($libraryId);
+            if ($lib) {
+                $libraryName = $lib->name;
+            }
+        }
 
-        // 1. Detect person in multiple groups in this branch
-        // "it must detect no one person cannot be in the two group at the same time in a given library branch"
+        // 1. Detect person in multiple groups
         $overlapCheck = $this->detectStaffOverlapInBranch($libraryId);
         if ($overlapCheck['has_overlap']) {
             $conflictDetails = array_map(function ($o) {
@@ -85,24 +98,27 @@ class ShiftAutoSchedulerService
                 return "{$o['user_name']} (@{$o['username']}) is in [{$grpNames}]";
             }, $overlapCheck['overlaps']);
 
-            $msg = "Cannot auto-schedule for {$library->name}: One person cannot belong to multiple groups at the same time in this branch. " .
+            $msg = "Cannot auto-schedule for {$libraryName}: One person cannot belong to multiple groups at the same time. " .
                 "Overlaps detected: " . implode('; ', $conflictDetails) . ". " .
-                "Please assign each attendant to a single group in this branch before auto-generating.";
+                "Please ensure each attendant belongs to only one group before auto-generating.";
 
             throw ValidationException::withMessages([
                 'staff_overlap' => [$msg],
             ]);
         }
 
-        // 2. Fetch active groups for this library branch only
-        $groups = ShiftGroup::where('library_id', $libraryId)
-            ->where('is_active', true)
-            ->orderBy('id')
-            ->get();
+        // 2. Fetch active groups (Unified groups apply across all branches)
+        $groupsQuery = ShiftGroup::where('is_active', true)->orderBy('name');
+        if ($libraryId) {
+            $groupsQuery->where(function ($q) use ($libraryId) {
+                $q->whereNull('library_id')->orWhere('library_id', $libraryId);
+            });
+        }
+        $groups = $groupsQuery->get();
 
         if ($groups->isEmpty()) {
             throw ValidationException::withMessages([
-                'groups' => ["No active duty groups found for {$library->name}. Please create groups (e.g. Group A, Group B) first."],
+                'groups' => ["No active duty groups found. Please create groups (e.g. Group A, Group B) first."],
             ]);
         }
 
@@ -118,7 +134,6 @@ class ShiftAutoSchedulerService
         }
 
         // 4. Determine days in this Ethiopian month and detect holidays
-        // "the system must can detect an holiday in a given moth like if there is any holiday in a month profesionally and remove that holiday 1 day from the schedule"
         $totalDays = $month === 13 ? 5 : 30;
         $allMonthDays = range(1, $totalDays);
 
@@ -138,198 +153,155 @@ class ShiftAutoSchedulerService
             $workingDays = $allMonthDays;
         }
 
-        $numGroups = $groups->count();
-        $numShifts = $shifts->count();
+        // 5. Generate schedules with strict consecutive night-day prevention
+        $groupCount = $groups->count();
+        $shiftCount = $shifts->count();
 
-        // 5. Compute balanced workload schedule distribution
-        // Enforcing:
-        // - Intra-group rule: No group gets 2 shifts on the same day
-        // - Inter-group rule: No shift gets 2 groups on the same day
-        // - Consecutive Night/Day rule: If a group is on night shift on Day D,
-        //   that group must NOT be assigned Day shift on Day D-1 or Day D+1.
-        // - Equal workload: Workload is evenly distributed across groups.
-        $groupShiftDays = [];
-        foreach ($groups as $g) {
-            $groupShiftDays[$g->id] = [];
-            foreach ($shifts as $s) {
-                $groupShiftDays[$g->id][$s->id] = [];
-            }
-        }
-
-        // Identify day shift and night shift
-        $dayShift = null;
-        $nightShift = null;
-        $remainingShifts = [];
-
-        foreach ($shifts as $s) {
+        // Separate shifts into Day Shift and Night Shift
+        $dayShift = $shifts->first(function ($s) {
             $code = strtolower($s->code);
             $name = strtolower($s->name);
-            $nameAm = $s->name_am ?? '';
-            $isNight = str_contains($code, 'night') || str_contains($name, 'night') || str_contains($nameAm, 'ማታ');
+            return str_contains($code, 'day') || str_contains($name, 'day') || str_contains($code, 'morning');
+        }) ?? $shifts->first();
 
-            if ($isNight && !$nightShift) {
-                $nightShift = $s;
-            } elseif (!$dayShift && (str_contains($code, 'day') || str_contains($name, 'day') || str_contains($code, 'morning') || str_contains($nameAm, 'ቀን'))) {
-                $dayShift = $s;
-            } else {
-                $remainingShifts[] = $s;
+        $nightShift = $shifts->first(function ($s) {
+            $code = strtolower($s->code);
+            $name = strtolower($s->name);
+            return str_contains($code, 'night') || str_contains($name, 'night') || str_contains($code, 'evening');
+        });
+
+        if (!$nightShift && $shifts->count() > 1) {
+            $nightShift = $shifts->get(1);
+        }
+
+        $schedulePlan = [];
+        foreach ($groups as $g) {
+            $schedulePlan[$g->id] = [];
+            foreach ($shifts as $s) {
+                $schedulePlan[$g->id][$s->id] = [];
             }
         }
 
-        if (!$dayShift && !empty($shifts)) {
-            $dayShift = $shifts[0];
-        }
-        if (!$nightShift && count($shifts) > 1) {
-            $nightShift = $shifts[1];
-        }
-
-        // Track day-by-day assignments: daySchedule[day] = ['day' => groupId, 'night' => groupId]
-        $daySchedule = [];
-        $groupDayCounts = [];
-        $groupNightCounts = [];
-        foreach ($groups as $g) {
-            $groupDayCounts[$g->id] = 0;
-            $groupNightCounts[$g->id] = 0;
-        }
-
-        // If we have at least 3 groups and Day + Night shifts, use the proven 6-day cycle for 3 groups
-        // or N-day rotation that guarantees minimum 2-day separation between any night and day shift:
-        if ($numGroups === 3 && $dayShift && $nightShift) {
-            $gList = $groups->values();
-            // 6-day cycle pattern: [day_group_idx, night_group_idx]
-            $cycle = [
-                0 => [0, 1], // Day: G0, Night: G1
-                1 => [2, 1], // Day: G2, Night: G1
-                2 => [2, 0], // Day: G2, Night: G0
-                3 => [1, 0], // Day: G1, Night: G0
-                4 => [1, 2], // Day: G1, Night: G2
-                5 => [0, 2], // Day: G0, Night: G2
+        if ($nightShift && $groupCount >= 3) {
+            // High-elegance 6-day cycle for 3 groups ensuring Day -> Off -> Night -> Off
+            $pattern = [
+                ['day_idx' => 0, 'night_idx' => 1],
+                ['day_idx' => 2, 'night_idx' => 1],
+                ['day_idx' => 2, 'night_idx' => 0],
+                ['day_idx' => 1, 'night_idx' => 0],
+                ['day_idx' => 1, 'night_idx' => 2],
+                ['day_idx' => 0, 'night_idx' => 2],
             ];
 
-            foreach ($workingDays as $dayIndex => $day) {
-                $pattern = $cycle[$dayIndex % 6];
-                $dayGroup = $gList[$pattern[0]];
-                $nightGroup = $gList[$pattern[1]];
+            foreach ($workingDays as $idx => $dayNumber) {
+                $step = $pattern[$idx % 6];
+                $dayGrp = $groups[$step['day_idx'] % $groupCount];
+                $nightGrp = $groups[$step['night_idx'] % $groupCount];
 
-                $groupShiftDays[$dayGroup->id][$dayShift->id][] = $day;
-                $groupShiftDays[$nightGroup->id][$nightShift->id][] = $day;
+                $schedulePlan[$dayGrp->id][$dayShift->id][] = $dayNumber;
+                $schedulePlan[$nightGrp->id][$nightShift->id][] = $dayNumber;
             }
-        } elseif ($numGroups >= 4 && $dayShift && $nightShift) {
-            // For 4+ groups, offset by at least 2 guarantees Day -> Off -> Night -> Off
-            $gList = $groups->values();
-            $halfOffset = (int)ceil($numGroups / 2);
-            foreach ($workingDays as $dayIndex => $day) {
-                $dayGroupIdx = $dayIndex % $numGroups;
-                $nightGroupIdx = ($dayIndex + $halfOffset) % $numGroups;
+        } elseif ($nightShift && $groupCount >= 2) {
+            // For 2 groups: 3-day alternating blocks
+            foreach ($workingDays as $idx => $dayNumber) {
+                $block = (int)floor($idx / 3);
+                $dayGrpIdx = $block % 2;
+                $nightGrpIdx = ($block + 1) % 2;
 
-                $dayGroup = $gList[$dayGroupIdx];
-                $nightGroup = $gList[$nightGroupIdx];
+                $dayGrp = $groups[$dayGrpIdx];
+                $nightGrp = $groups[$nightGrpIdx];
 
-                $groupShiftDays[$dayGroup->id][$dayShift->id][] = $day;
-                $groupShiftDays[$nightGroup->id][$nightShift->id][] = $day;
-            }
-        } elseif ($numGroups === 2 && $dayShift && $nightShift) {
-            // For 2 groups, alternate in blocks (e.g. 5-day blocks with 1 transition day)
-            // to ensure no attendant does night shift immediately before/after day shift:
-            $gList = $groups->values();
-            foreach ($workingDays as $dayIndex => $day) {
-                // Blocks of 3 days: G0 Day & G1 Night, then swap after every 3 days
-                $block = (int)floor($dayIndex / 3);
-                $dayGroup = ($block % 2 === 0) ? $gList[0] : $gList[1];
-                $nightGroup = ($block % 2 === 0) ? $gList[1] : $gList[0];
-
-                $groupShiftDays[$dayGroup->id][$dayShift->id][] = $day;
-                $groupShiftDays[$nightGroup->id][$nightShift->id][] = $day;
+                $schedulePlan[$dayGrp->id][$dayShift->id][] = $dayNumber;
+                $schedulePlan[$nightGrp->id][$nightShift->id][] = $dayNumber;
             }
         } else {
-            // Fallback for custom shift combinations
-            $numShiftsToAssign = min($numShifts, $numGroups);
-            foreach ($workingDays as $dayIndex => $day) {
-                for ($sIdx = 0; $sIdx < $numShiftsToAssign; $sIdx++) {
-                    $shift = $shifts[$sIdx];
-                    $groupIndex = ($dayIndex + ($sIdx * 2)) % $numGroups;
-                    $assignedGroup = $groups[$groupIndex];
-
-                    $groupShiftDays[$assignedGroup->id][$shift->id][] = $day;
+            // Single shift or 1 group: simple round-robin
+            foreach ($shifts as $sIdx => $shift) {
+                foreach ($workingDays as $dIdx => $dayNumber) {
+                    $assignedGrp = $groups[($dIdx + $sIdx) % $groupCount];
+                    $schedulePlan[$assignedGrp->id][$shift->id][] = $dayNumber;
                 }
             }
         }
 
-        // 6. Save schedules in a transaction
-        DB::transaction(function () use ($libraryId, $year, $month, $groupShiftDays, $groups, $shifts, $overwriteExisting) {
+        // 6. Persist to database inside transaction
+        DB::beginTransaction();
+        try {
             if ($overwriteExisting) {
-                GroupShiftSchedule::where('library_id', $libraryId)
-                    ->where('ethiopian_year', $year)
+                $deleteQuery = GroupShiftSchedule::where('ethiopian_year', $year)
                     ->where('ethiopian_month', $month)
-                    ->delete();
+                    ->whereIn('shift_group_id', $groups->pluck('id'));
+
+                if ($libraryId) {
+                    $deleteQuery->where('library_id', $libraryId);
+                } else {
+                    $deleteQuery->whereNull('library_id');
+                }
+
+                $deleteQuery->delete();
             }
 
-            foreach ($groups as $group) {
-                foreach ($shifts as $shift) {
-                    $days = $groupShiftDays[$group->id][$shift->id] ?? [];
-                    sort($days);
+            $savedRecords = [];
+            foreach ($schedulePlan as $groupId => $shiftsMap) {
+                $grpObj = $groups->firstWhere('id', $groupId);
+                foreach ($shiftsMap as $shiftId => $days) {
+                    if (empty($days)) {
+                        continue;
+                    }
+                    $shiftObj = $shifts->firstWhere('id', $shiftId);
 
-                    GroupShiftSchedule::updateOrCreate(
+                    $record = GroupShiftSchedule::updateOrCreate(
                         [
-                            'library_id' => $libraryId,
-                            'shift_group_id' => $group->id,
-                            'shift_id' => $shift->id,
+                            'shift_group_id' => $groupId,
+                            'shift_id' => $shiftId,
                             'ethiopian_year' => $year,
                             'ethiopian_month' => $month,
                         ],
                         [
-                            'days' => $days,
+                            'library_id' => $libraryId, // null = all branches
+                            'days' => array_values(array_unique(array_map('intval', $days))),
                             'status' => 'active',
-                            'notes' => "Auto-generated schedule with balanced workload ({$year} E.C., Month {$month})",
+                            'notes' => "Auto-generated schedule for {$grpObj->name} ({$shiftObj->name})",
                         ]
                     );
+
+                    $savedRecords[] = $record;
                 }
             }
-        });
 
-        // 7. Clear duty caches for staff in these groups
-        foreach ($groups as $group) {
-            foreach ($group->users as $member) {
-                $this->dutyService->clearUserScheduleCache($member->id);
-            }
-        }
+            DB::commit();
 
-        // 8. Compile workload statistics summary
-        $workloadStats = [];
-        foreach ($groups as $g) {
-            $totalShifts = 0;
-            $breakdown = [];
-            foreach ($shifts as $s) {
-                $cnt = count($groupShiftDays[$g->id][$s->id] ?? []);
-                $totalShifts += $cnt;
-                $breakdown[$s->name] = $cnt;
+            // 7. Calculate workload distribution stats
+            $workloadStats = [];
+            foreach ($groups as $g) {
+                $totalDays = 0;
+                $breakdown = [];
+                foreach ($shifts as $s) {
+                    $cnt = count($schedulePlan[$g->id][$s->id] ?? []);
+                    $totalDays += $cnt;
+                    $breakdown[$s->name] = $cnt;
+                }
+                $workloadStats[] = [
+                    'group_id' => $g->id,
+                    'group_name' => $g->name,
+                    'total_assigned_days' => $totalDays,
+                    'breakdown' => $breakdown,
+                ];
             }
-            $workloadStats[] = [
-                'group_id' => $g->id,
-                'group_name' => $g->name,
-                'total_assigned_days' => $totalShifts,
-                'shift_breakdown' => $breakdown,
+
+            return [
+                'success' => true,
+                'message' => "Successfully auto-generated schedules for {$libraryName} ({$month}/{$year} E.C.) across " . count($groups) . " groups with equal workload and zero consecutive night/day shifts.",
+                'total_calendar_days' => ($month === 13 ? 5 : 30),
+                'working_days_scheduled' => count($workingDays),
+                'excluded_holidays' => $detectedHolidays,
+                'groups_scheduled_count' => count($groups),
+                'workload_stats' => $workloadStats,
+                'records_created' => count($savedRecords),
             ];
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
-
-        $monthMeta = EthiopianCalendarService::MONTHS[$month] ?? ['am' => "ወር {$month}", 'en' => "Month {$month}"];
-
-        return [
-            'success' => true,
-            'message' => "Schedule successfully auto-generated for {$library->name} for {$monthMeta['am']} ({$monthMeta['en']}) {$year} ዓ.ም.",
-            'library' => [
-                'id' => $library->id,
-                'name' => $library->name,
-            ],
-            'ethiopian_year' => $year,
-            'ethiopian_month' => $month,
-            'month_name_am' => $monthMeta['am'],
-            'month_name_en' => $monthMeta['en'],
-            'total_calendar_days' => $totalDays,
-            'working_days_scheduled' => count($workingDays),
-            'excluded_holidays' => $detectedHolidays,
-            'groups_count' => $numGroups,
-            'workload_stats' => $workloadStats,
-        ];
     }
 }

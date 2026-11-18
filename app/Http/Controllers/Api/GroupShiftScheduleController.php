@@ -8,7 +8,6 @@ use App\Models\GroupShiftSchedule;
 use App\Models\Library;
 use App\Models\Shift;
 use App\Models\ShiftGroup;
-use App\Services\DutyScheduleService;
 use App\Services\EthiopianCalendarService;
 use App\Services\EthiopianHolidayService;
 use App\Services\ShiftAutoSchedulerService;
@@ -21,50 +20,55 @@ class GroupShiftScheduleController extends Controller
     public function __construct(
         protected ShiftAutoSchedulerService $autoScheduler
     ) {}
+
     /**
      * Get the Ethiopian calendar monthly shift schedule matrix and conflict data.
+     * Schedule matrix applies across all library branches by default.
      */
     public function matrix(Request $request): JsonResponse
     {
-        $user = $request->user();
         $currentEc = EthiopianCalendarService::getCurrentEthiopianDate();
 
         $selectedYear = (int)($request->query('ethiopian_year') ?: $currentEc['year']);
         $selectedMonth = (int)($request->query('ethiopian_month') ?: $currentEc['month']);
-        $libraryId = $request->query('library_id');
+        $libraryId = $request->query('library_id') ? (int)$request->query('library_id') : null;
 
-        // Scoping for branch managers
-        if (!$user->canManageAllLibraries() && $user->library_id) {
-            $libraryId = $user->library_id;
-        }
-
-        // Default to first library if none provided
-        if (!$libraryId) {
-            $firstLib = Library::where('is_active', true)->orderBy('id')->first();
-            $libraryId = $firstLib ? $firstLib->id : 1;
-        }
-
-        $library = Library::find($libraryId);
+        $library = $libraryId ? Library::find($libraryId) : null;
         $shifts = Shift::where('is_active', true)->orderBy('start_time')->get();
 
-        $groups = ShiftGroup::with(['users:id,name,username'])
-            ->where('library_id', $libraryId)
+        // Shift groups belong to all branches by default
+        $groupsQuery = ShiftGroup::with([
+            'library',
+            'users:id,name,username,email,library_id',
+            'users.library:id,name,code',
+        ])
             ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
 
-        // Query existing schedules for this library, year, and month
-        $schedules = GroupShiftSchedule::with(['group:id,name', 'shift:id,name,name_am,code'])
-            ->where('library_id', $libraryId)
+        if ($libraryId) {
+            $groupsQuery->where(function ($q) use ($libraryId) {
+                $q->whereNull('library_id')->orWhere('library_id', $libraryId);
+            });
+        }
+        $groups = $groupsQuery->get();
+
+        // Query existing schedules for year & month (global or branch)
+        $schedQuery = GroupShiftSchedule::with(['group:id,name', 'shift:id,name,name_am,code'])
             ->where('ethiopian_year', $selectedYear)
-            ->where('ethiopian_month', $selectedMonth)
-            ->get();
+            ->where('ethiopian_month', $selectedMonth);
+
+        if ($libraryId) {
+            $schedQuery->where(function ($q) use ($libraryId) {
+                $q->whereNull('library_id')->orWhere('library_id', $libraryId);
+            });
+        }
+        $schedules = $schedQuery->get();
 
         // 1. by_shift map: shift_id => [ day => { group_id, group_name } ]
-        // Used to enforce Rule 2: Inter-group conflict in the same shift
+        // Enforces Rule 2: Inter-group conflict in the same shift across all branches
         $byShift = [];
         // 2. by_group map: group_id => [ shift_id => [ days... ] ]
-        // Used to enforce Rule 1: Intra-group cross-shift conflict
+        // Enforces Rule 1: Intra-group cross-shift conflict
         $byGroup = [];
 
         foreach ($schedules as $sched) {
@@ -105,7 +109,7 @@ class GroupShiftScheduleController extends Controller
             'shifts' => $shifts,
             'groups' => $groups,
             'schedules' => $schedules,
-            'holidays' => EthiopianHolidayService::getHolidaysForMonth($selectedYear, $selectedMonth),
+            'holidays' => EthiopianHolidayService::getHolidaysForMonth($selectedYear, $selectedMonth, $libraryId),
             'conflict_matrix' => [
                 'by_shift' => $byShift,
                 'by_group' => $byGroup,
@@ -114,7 +118,7 @@ class GroupShiftScheduleController extends Controller
     }
 
     /**
-     * Auto-generate balanced shift schedule for a library branch with holiday detection & exclusion.
+     * Auto-generate balanced shift schedule across groups with holiday exclusion.
      */
     public function autoGenerate(Request $request): JsonResponse
     {
@@ -124,22 +128,18 @@ class GroupShiftScheduleController extends Controller
         }
 
         $validated = $request->validate([
-            'library_id' => ['required', 'exists:libraries,id'],
+            'library_id' => ['nullable', 'exists:libraries,id'],
             'ethiopian_year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'ethiopian_month' => ['required', 'integer', 'min:1', 'max:13'],
             'exclude_holidays' => ['nullable', 'boolean'],
             'overwrite_existing' => ['nullable', 'boolean'],
         ]);
 
-        $libraryId = (int)$validated['library_id'];
+        $libraryId = !empty($validated['library_id']) ? (int)$validated['library_id'] : null;
         $year = (int)$validated['ethiopian_year'];
         $month = (int)$validated['ethiopian_month'];
         $excludeHolidays = $validated['exclude_holidays'] ?? true;
         $overwriteExisting = $validated['overwrite_existing'] ?? true;
-
-        if (!$user->canManageAllLibraries() && $user->library_id && (int)$user->library_id !== $libraryId) {
-            return response()->json(['message' => 'Unauthorized: You may only schedule shifts for your assigned branch.'], 403);
-        }
 
         $result = $this->autoScheduler->autoGenerateSchedule(
             $libraryId,
@@ -153,15 +153,11 @@ class GroupShiftScheduleController extends Controller
     }
 
     /**
-     * Check for staff overlapping multiple groups in a library branch before scheduling.
+     * Check for staff overlapping multiple groups before scheduling.
      */
     public function checkOverlap(Request $request): JsonResponse
     {
-        $libraryId = (int)$request->query('library_id');
-        if (!$libraryId) {
-            return response()->json(['has_overlap' => false, 'overlaps' => []]);
-        }
-
+        $libraryId = $request->query('library_id') ? (int)$request->query('library_id') : null;
         $result = $this->autoScheduler->detectStaffOverlapInBranch($libraryId);
         return response()->json($result);
     }
@@ -194,24 +190,24 @@ class GroupShiftScheduleController extends Controller
     {
         $user = $request->user();
         if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to insert holidays.'], 403);
+            return response()->json(['message' => 'Unauthorized to add holidays.'], 403);
         }
 
         $validated = $request->validate([
             'ethiopian_year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'ethiopian_month' => ['required', 'integer', 'min:1', 'max:13'],
             'ethiopian_day' => ['required', 'integer', 'min:1', 'max:30'],
-            'name' => ['required', 'string', 'max:100'],
-            'name_am' => ['nullable', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:255'],
+            'name_am' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:500'],
             'library_id' => ['nullable', 'exists:libraries,id'],
         ]);
 
         $holiday = EthiopianHoliday::updateOrCreate(
             [
-                'ethiopian_year' => $validated['ethiopian_year'],
-                'ethiopian_month' => $validated['ethiopian_month'],
-                'ethiopian_day' => $validated['ethiopian_day'],
+                'ethiopian_year' => (int)$validated['ethiopian_year'],
+                'ethiopian_month' => (int)$validated['ethiopian_month'],
+                'ethiopian_day' => (int)$validated['ethiopian_day'],
                 'library_id' => $validated['library_id'] ?? null,
             ],
             [
@@ -251,6 +247,7 @@ class GroupShiftScheduleController extends Controller
 
     /**
      * Assign monthly Ethiopian calendar shift schedule for a group with strict conflict prevention.
+     * "the day is same for all the library branch in a given group mean that the user is just select the month and the group to schedule the days for the group not the library branch"
      */
     public function assign(Request $request): JsonResponse
     {
@@ -260,7 +257,7 @@ class GroupShiftScheduleController extends Controller
         }
 
         $validated = $request->validate([
-            'library_id' => ['required', 'exists:libraries,id'],
+            'library_id' => ['nullable', 'exists:libraries,id'],
             'shift_group_id' => ['required', 'exists:shift_groups,id'],
             'ethiopian_year' => ['required', 'integer', 'min:2000', 'max:2100'],
             'ethiopian_month' => ['required', 'integer', 'min:1', 'max:13'],
@@ -271,33 +268,19 @@ class GroupShiftScheduleController extends Controller
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $libraryId = (int)$validated['library_id'];
+        $libraryId = !empty($validated['library_id']) ? (int)$validated['library_id'] : null;
         $groupId = (int)$validated['shift_group_id'];
         $year = (int)$validated['ethiopian_year'];
         $month = (int)$validated['ethiopian_month'];
 
-        // Scoping check for branch managers
-        if (!$user->canManageAllLibraries() && $user->library_id && (int)$user->library_id !== $libraryId) {
-            return response()->json(['message' => 'Unauthorized: You may only schedule shifts for your assigned branch.'], 403);
-        }
-
         $group = ShiftGroup::findOrFail($groupId);
-        $library = Library::findOrFail($libraryId);
-
-        if ((int)$group->library_id !== $libraryId) {
-            return response()->json([
-                'message' => "Group '{$group->name}' does not belong to {$library->name}. Groups are set separately for each library branch.",
-            ], 422);
-        }
-
-        // Fetch shift names for clear error reporting
         $allShifts = Shift::all()->keyBy('id');
 
         // =========================================================================
         // RULE 0: Ethiopian Holiday cancellation check
         // "and that day will be canceled in the schedule ui cleanly"
         // =========================================================================
-        $monthHolidays = EthiopianHolidayService::getHolidaysForMonth($year, $month);
+        $monthHolidays = EthiopianHolidayService::getHolidaysForMonth($year, $month, $libraryId);
         foreach ($validated['shifts'] as $shiftAssignment) {
             $shiftId = (int)$shiftAssignment['shift_id'];
             $days = array_values(array_unique(array_map('intval', $shiftAssignment['days'])));
@@ -320,7 +303,7 @@ class GroupShiftScheduleController extends Controller
 
         // =========================================================================
         // RULE 1: Intra-group cross-shift conflict check
-        // "if the date is selected in one shift it must be disabled for another shif in the shchedule of the same scheduule assigning"
+        // "if the date is selected in one shift it must be disabled for another shift in the schedule of the same schedule assigning"
         // =========================================================================
         $seenDaysInGroup = [];
         foreach ($validated['shifts'] as $shiftAssignment) {
@@ -349,7 +332,7 @@ class GroupShiftScheduleController extends Controller
 
         // =========================================================================
         // RULE 1.5: No consecutive Night and Day shift for the same group
-        // "and no consequetive night and day shoft must be assigned to the group mean that if the a group is in night shift that group must not be the next day morning shift or the prevous day shift"
+        // "if a group is in night shift that group must not be the next day morning shift or the previous day shift"
         // =========================================================================
         $dayShiftDays = [];
         $nightShiftDays = [];
@@ -400,18 +383,21 @@ class GroupShiftScheduleController extends Controller
         }
 
         // =========================================================================
-        // RULE 2: Inter-group same-shift same-library conflict check
-        // "and after that in that same library for other group shift date assigning fo rthe shif date selction ui the date that are belonges to another group in that same shif must be diabled also meaning the date that is selceted in night shift is 3 this means in group B the night shif date list the day 3 must be diabled not able to selctable like this"
+        // RULE 2: Inter-group same-shift conflict check across the system
+        // "the day is same for all the library branch in a given group"
         // =========================================================================
-        // Query existing schedules for OTHER groups in the same library, year, and month
-        $otherGroupSchedules = GroupShiftSchedule::with('group')
-            ->where('library_id', $libraryId)
+        $otherGroupSchedulesQuery = GroupShiftSchedule::with('group')
             ->where('ethiopian_year', $year)
             ->where('ethiopian_month', $month)
-            ->where('shift_group_id', '!=', $groupId)
-            ->get();
+            ->where('shift_group_id', '!=', $groupId);
 
-        // Build index of other group days per shift: otherDays[shift_id][day] = group_name
+        if ($libraryId) {
+            $otherGroupSchedulesQuery->where(function ($q) use ($libraryId) {
+                $q->whereNull('library_id')->orWhere('library_id', $libraryId);
+            });
+        }
+        $otherGroupSchedules = $otherGroupSchedulesQuery->get();
+
         $otherDaysByShift = [];
         foreach ($otherGroupSchedules as $otherSched) {
             $sId = (int)$otherSched->shift_id;
@@ -439,7 +425,7 @@ class GroupShiftScheduleController extends Controller
                     if (isset($otherDaysByShift[$shiftId][$day])) {
                         $competingGroup = $otherDaysByShift[$shiftId][$day];
                         return response()->json([
-                            'message' => "Inter-group Conflict: Day {$day} for '{$shiftTitle}' is already assigned to {$competingGroup} in {$library->name}. It cannot be double-booked.",
+                            'message' => "Inter-group Conflict: Day {$day} for '{$shiftTitle}' is already assigned to {$competingGroup}. It cannot be double-booked across groups.",
                             'conflict_type' => 'INTER_GROUP_OVERLAP',
                             'day' => $day,
                             'shift' => $shiftTitle,
@@ -451,64 +437,80 @@ class GroupShiftScheduleController extends Controller
         }
 
         // =========================================================================
-        // Save Schedules in a Transaction
+        // Persist Schedules: applies globally to all library branches
         // =========================================================================
-        DB::transaction(function () use ($validated, $libraryId, $groupId, $year, $month) {
+        DB::beginTransaction();
+        try {
+            $savedSchedules = [];
+
             foreach ($validated['shifts'] as $shiftAssignment) {
                 $shiftId = (int)$shiftAssignment['shift_id'];
-                $cleanDays = array_values(array_unique(array_map('intval', $shiftAssignment['days'])));
-                sort($cleanDays);
+                $days = array_values(array_unique(array_map('intval', $shiftAssignment['days'])));
+                sort($days);
 
-                GroupShiftSchedule::updateOrCreate(
+                $record = GroupShiftSchedule::updateOrCreate(
                     [
-                        'library_id' => $libraryId,
                         'shift_group_id' => $groupId,
                         'shift_id' => $shiftId,
                         'ethiopian_year' => $year,
                         'ethiopian_month' => $month,
                     ],
                     [
-                        'days' => $cleanDays,
+                        'library_id' => $libraryId, // null = all branches
+                        'days' => $days,
                         'status' => 'active',
                         'notes' => $validated['notes'] ?? null,
                     ]
                 );
+
+                $savedSchedules[] = $record->load(['group:id,name', 'shift:id,name,name_am,code']);
             }
-        });
 
-        // Clear duty schedule cache for all members of this group
-        $dutyService = app(DutyScheduleService::class);
-        foreach ($group->users as $member) {
-            $dutyService->clearUserScheduleCache($member->id);
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Shift schedule for {$group->name} ({$month}/{$year} E.C.) successfully saved across all library branches.",
+                'data' => $savedSchedules,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
-
-        $monthName = EthiopianCalendarService::MONTHS[$month]['am'] ?? "ወር {$month}";
-
-        return response()->json([
-            'success' => true,
-            'message' => "Monthly duty schedule for {$group->name} ({$monthName} {$year} E.C.) successfully saved.",
-        ]);
     }
 
     /**
-     * Delete or clear a group's schedule for a specific month and shift.
+     * List group schedules filterable by year, month, or group.
      */
-    public function destroy(Request $request, GroupShiftSchedule $groupShiftSchedule): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
-        if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to delete shift schedules.'], 403);
+        $year = $request->query('ethiopian_year');
+        $month = $request->query('ethiopian_month');
+        $groupId = $request->query('shift_group_id');
+        $libraryId = $request->query('library_id');
+
+        $query = GroupShiftSchedule::with(['group:id,name', 'shift:id,name,name_am,code', 'library:id,name,code']);
+
+        if ($year) {
+            $query->where('ethiopian_year', (int)$year);
+        }
+        if ($month) {
+            $query->where('ethiopian_month', (int)$month);
+        }
+        if ($groupId) {
+            $query->where('shift_group_id', (int)$groupId);
+        }
+        if ($libraryId) {
+            $query->where(function ($q) use ($libraryId) {
+                $q->whereNull('library_id')->orWhere('library_id', (int)$libraryId);
+            });
         }
 
-        if (!$user->canManageAllLibraries() && $user->library_id && (int)$user->library_id !== (int)$groupShiftSchedule->library_id) {
-            return response()->json(['message' => 'Unauthorized: Cannot delete schedules belonging to another branch.'], 403);
-        }
-
-        $groupShiftSchedule->delete();
+        $schedules = $query->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'Group shift schedule successfully removed.',
+            'data' => $schedules,
         ]);
     }
 }

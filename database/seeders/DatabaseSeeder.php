@@ -662,10 +662,10 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Night Shift',
                 'name_am' => 'የማታ ፈረቃ',
                 'start_time' => '17:00',
-                'end_time' => '23:00',
+                'end_time' => '05:00',
                 'ethiopian_start_time' => '11:00 ከቀኑ',
-                'ethiopian_end_time' => '05:00 ከምሽቱ',
-                'description' => 'Evening and night library duty shift from 11:00 afternoon to 05:00 night Ethiopian time.',
+                'ethiopian_end_time' => '11:00 ከሌሊቱ',
+                'description' => 'Overnight library duty shift from 11:00 afternoon to 11:00 night/dawn Ethiopian time (05:00 AM standard).',
                 'is_active' => true,
             ]
         );
@@ -686,168 +686,165 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 9. Seed Separate Shift Groups strictly per library branch (Zero staff overlap!)
-        // Main Central Library Groups (Group A, Group B, Group C)
-        $groupMainA = ShiftGroup::updateOrCreate(
-            ['library_id' => $mainLibrary->id, 'name' => 'Group A'],
+        // 9. Seed Unified Shift Groups (Belongs to ALL library branches by default)
+        // Staff belong to their respective library branch, and one staff member cannot be in multiple groups.
+        $groupA = ShiftGroup::updateOrCreate(
+            ['name' => 'Group A'],
             [
-                'description' => 'Main Central Library primary day duty group.',
+                'library_id' => null, // Global: belongs to all library branches
+                'description' => 'Primary university library duty group across all branches.',
                 'is_active' => true,
             ]
         );
-        $groupMainA->users()->sync([$attendantMain->id, $attendantAlmaz->id, $attendantDawitM->id]);
+        $groupA->users()->sync([
+            $attendantMain->id,     // Main Central Library
+            $attendantAbel->id,     // Science & Technology Library
+            $attendantHealth->id,   // Health Sciences Library
+            $attendantLaw->id,      // Law & Humanities Library
+            $attendantAlmaz->id,    // Main Central Library
+        ]);
 
-        $groupMainB = ShiftGroup::updateOrCreate(
-            ['library_id' => $mainLibrary->id, 'name' => 'Group B'],
+        $groupB = ShiftGroup::updateOrCreate(
+            ['name' => 'Group B'],
             [
-                'description' => 'Main Central Library evening & night duty group.',
+                'library_id' => null, // Global
+                'description' => 'Evening and secondary duty group across all branches.',
                 'is_active' => true,
             ]
         );
-        $groupMainB->users()->sync([$attendantBethlehemT->id, $attendantHenok->id, $attendantSenait->id]);
+        $groupB->users()->sync([
+            $attendantBethlehemT->id, // Main Central Library
+            $attendantSamuel->id,     // Science & Technology Library
+            $attendantYonas->id,      // Health Sciences Library
+            $attendantKalkidan->id,   // Law & Humanities Library
+            $attendantDawitM->id,     // Main Central Library
+        ]);
 
-        $groupMainC = ShiftGroup::updateOrCreate(
-            ['library_id' => $mainLibrary->id, 'name' => 'Group C'],
+        $groupC = ShiftGroup::updateOrCreate(
+            ['name' => 'Group C'],
             [
-                'description' => 'Main Central Library weekend rotation group.',
+                'library_id' => null, // Global
+                'description' => 'Weekend and rotation duty group across all branches.',
                 'is_active' => true,
             ]
         );
-        $groupMainC->users()->sync([$attendantErmias->id, $attendantMahlet->id, $attendantYared->id]);
+        $groupC->users()->sync([
+            $attendantErmias->id,  // Main Central Library
+            $attendantHiwot->id,   // Science & Technology Library
+            $attendantDaniel->id,  // Health Sciences Library
+            $attendantBiniyam->id, // Law & Humanities Library
+            $attendantHenok->id,   // Main Central Library
+        ]);
 
-        // Science & Technology Library Groups (Group A, Group B)
-        $groupSciA = ShiftGroup::updateOrCreate(
-            ['library_id' => $sciTechLibrary->id, 'name' => 'Group A'],
+        $groupD = ShiftGroup::updateOrCreate(
+            ['name' => 'Group D'],
             [
-                'description' => 'Science & Tech primary circulation group.',
+                'library_id' => null, // Global
+                'description' => 'Archive, support & reserve duty group across all branches.',
                 'is_active' => true,
             ]
         );
-        $groupSciA->users()->sync([$attendantAbel->id, $attendantHiwot->id]);
+        $groupD->users()->sync([
+            $attendantSenait->id,  // Main Central Library
+            $attendantRahel->id,   // Science & Technology Library
+            $attendantSelamG->id,  // Health Sciences Library
+            $attendantMeron->id,   // Law & Humanities Library
+            $attendantMahlet->id,  // Main Central Library
+            $attendantYared->id,   // Main Central Library
+        ]);
 
-        $groupSciB = ShiftGroup::updateOrCreate(
-            ['library_id' => $sciTechLibrary->id, 'name' => 'Group B'],
-            [
-                'description' => 'Science & Tech archive & evening duty group.',
-                'is_active' => true,
-            ]
-        );
-        $groupSciB->users()->sync([$attendantSamuel->id, $attendantRahel->id]);
-
-        // Health Sciences Library Groups (Group A, Group B)
-        $groupHealthA = ShiftGroup::updateOrCreate(
-            ['library_id' => $healthLibrary->id, 'name' => 'Group A'],
-            [
-                'description' => 'Health Library clinical desk group.',
-                'is_active' => true,
-            ]
-        );
-        $groupHealthA->users()->sync([$attendantHealth->id, $attendantDaniel->id]);
-
-        $groupHealthB = ShiftGroup::updateOrCreate(
-            ['library_id' => $healthLibrary->id, 'name' => 'Group B'],
-            [
-                'description' => 'Health Library evening & emergency ward group.',
-                'is_active' => true,
-            ]
-        );
-        $groupHealthB->users()->sync([$attendantYonas->id, $attendantSelamG->id]);
-
-        // Law & Humanities Library Groups (Group A, Group B)
-        $groupLawA = ShiftGroup::updateOrCreate(
-            ['library_id' => $lawLibrary->id, 'name' => 'Group A'],
-            [
-                'description' => 'Law Library weekday duty group.',
-                'is_active' => true,
-            ]
-        );
-        $groupLawA->users()->sync([$attendantLaw->id, $attendantKalkidan->id]);
-
-        $groupLawB = ShiftGroup::updateOrCreate(
-            ['library_id' => $lawLibrary->id, 'name' => 'Group B'],
-            [
-                'description' => 'Law Library weekend & night rotation group.',
-                'is_active' => true,
-            ]
-        );
-        $groupLawB->users()->sync([$attendantBiniyam->id, $attendantMeron->id]);
-
-        // 10. Seed Sample Ethiopian Calendar Schedules (Official Holiday Day 12 Hidar Zion Excluded)
-        // Main Library Group A
+        // 10. Seed Sample Ethiopian Calendar Schedules across Groups (same across all library branches)
+        // Group A: Day duty on 1, 6, 7, 13, 19, 24, 25, 30; Night duty on 3, 4, 9, 10, 15, 16, 21, 22, 27, 28
+        // Non-consecutive: Day -> Off -> Night -> Off
         GroupShiftSchedule::updateOrCreate(
             [
-                'library_id' => $mainLibrary->id,
-                'shift_group_id' => $groupMainA->id,
+                'shift_group_id' => $groupA->id,
                 'shift_id' => $dayShift->id,
                 'ethiopian_year' => 2019,
                 'ethiopian_month' => 3,
             ],
             [
-                'days' => [2, 6, 8, 14, 16, 20, 24, 28], // Day 12 excluded (Hidar Zion Holiday)
+                'library_id' => null, // Applies to all branches
+                'days' => [1, 6, 7, 13, 18, 19, 24, 25, 30], // Day 12 excluded (Hidar Zion Holiday)
                 'status' => 'active',
-                'notes' => 'Main Library Group A daytime duty for Hidar 2019 (Holiday Day 12 excluded)',
+                'notes' => 'Group A daytime duty for Hidar 2019 across all branches',
             ]
         );
 
         GroupShiftSchedule::updateOrCreate(
             [
-                'library_id' => $mainLibrary->id,
-                'shift_group_id' => $groupMainA->id,
+                'shift_group_id' => $groupA->id,
                 'shift_id' => $nightShift->id,
                 'ethiopian_year' => 2019,
                 'ethiopian_month' => 3,
             ],
             [
-                'days' => [1, 5, 9, 13, 17, 21, 25, 29],
+                'library_id' => null,
+                'days' => [3, 4, 9, 10, 15, 16, 21, 22, 27, 28],
                 'status' => 'active',
-                'notes' => 'Main Library Group A night duty for Hidar 2019',
+                'notes' => 'Group A overnight duty (up to 11:00 Ethiopian time) for Hidar 2019 across all branches',
             ]
         );
 
-        // Main Library Group B
+        // Group B: Day on 4, 5, 10, 11, 16, 17, 22, 23, 28, 29; Night on 1, 2, 7, 8, 13, 14, 19, 20, 25, 26
         GroupShiftSchedule::updateOrCreate(
             [
-                'library_id' => $mainLibrary->id,
-                'shift_group_id' => $groupMainB->id,
+                'shift_group_id' => $groupB->id,
                 'shift_id' => $dayShift->id,
                 'ethiopian_year' => 2019,
                 'ethiopian_month' => 3,
             ],
             [
-                'days' => [3, 7, 11, 15, 19, 23, 27],
+                'library_id' => null,
+                'days' => [4, 5, 10, 11, 16, 17, 22, 23, 28, 29],
                 'status' => 'active',
-                'notes' => 'Main Library Group B daytime duty for Hidar 2019',
+                'notes' => 'Group B daytime duty for Hidar 2019 across all branches',
             ]
         );
 
         GroupShiftSchedule::updateOrCreate(
             [
-                'library_id' => $mainLibrary->id,
-                'shift_group_id' => $groupMainB->id,
+                'shift_group_id' => $groupB->id,
                 'shift_id' => $nightShift->id,
                 'ethiopian_year' => 2019,
                 'ethiopian_month' => 3,
             ],
             [
-                'days' => [4, 10, 18, 22, 26, 30],
+                'library_id' => null,
+                'days' => [1, 2, 7, 8, 13, 14, 19, 20, 25, 26],
                 'status' => 'active',
-                'notes' => 'Main Library Group B night duty for Hidar 2019',
+                'notes' => 'Group B overnight duty for Hidar 2019 across all branches',
             ]
         );
 
-        // Law Library Group A (Completely independent schedule in Law branch)
+        // Group C: Day on 2, 3, 8, 9, 14, 15, 20, 21, 26, 27; Night on 5, 6, 11, 17, 23, 24, 29
         GroupShiftSchedule::updateOrCreate(
             [
-                'library_id' => $lawLibrary->id,
-                'shift_group_id' => $groupLawA->id,
+                'shift_group_id' => $groupC->id,
                 'shift_id' => $dayShift->id,
                 'ethiopian_year' => 2019,
                 'ethiopian_month' => 3,
             ],
             [
-                'days' => [1, 2, 3, 4, 5, 10, 15, 20],
+                'library_id' => null,
+                'days' => [2, 3, 8, 9, 14, 15, 20, 21, 26, 27],
                 'status' => 'active',
-                'notes' => 'Law Library Group A daytime duty for Hidar 2019',
+                'notes' => 'Group C daytime duty for Hidar 2019 across all branches',
+            ]
+        );
+
+        GroupShiftSchedule::updateOrCreate(
+            [
+                'shift_group_id' => $groupC->id,
+                'shift_id' => $nightShift->id,
+                'ethiopian_year' => 2019,
+                'ethiopian_month' => 3,
+            ],
+            [
+                'library_id' => null,
+                'days' => [5, 6, 11, 17, 23, 24, 29],
+                'status' => 'active',
+                'notes' => 'Group C overnight duty for Hidar 2019 across all branches',
             ]
         );
     }

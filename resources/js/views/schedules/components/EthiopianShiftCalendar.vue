@@ -2,26 +2,8 @@
   <div class="space-y-5 w-full">
     <!-- Top Selector Bar: Branch, Ethiopian Year, Month, Group, Auto-Generate -->
     <div class="bg-card-bg border border-card-border rounded-sm p-4 shadow-2xs space-y-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-        <!-- 1. Library Branch Selector -->
-        <div>
-          <label class="block text-xs font-bold text-main-text mb-1.5 flex items-center gap-1.5">
-            <Building2 class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
-            <span>{{ langStore.t('schedules.library_branch', 'Library Branch') }}</span>
-          </label>
-          <select
-            v-model="selectedLibraryId"
-            :disabled="isBranchScoped"
-            class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs disabled:opacity-60 cursor-pointer"
-            @change="handleLibraryChange"
-          >
-            <option v-for="lib in libraryStore.activeLibraries" :key="lib.id" :value="lib.id">
-              {{ lib.name }} ({{ lib.code }})
-            </option>
-          </select>
-        </div>
-
-        <!-- 2. Ethiopian Year -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+        <!-- 1. Ethiopian Year -->
         <div>
           <label class="block text-xs font-bold text-main-text mb-1.5 flex items-center gap-1.5">
             <Calendar class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
@@ -38,7 +20,7 @@
           </select>
         </div>
 
-        <!-- 3. Ethiopian Month (Meskerem to Pagume, Days 1-30) -->
+        <!-- 2. Ethiopian Month (Meskerem to Pagume, Days 1-30) -->
         <div>
           <label class="block text-xs font-bold text-main-text mb-1.5 flex items-center gap-1.5">
             <CalendarDays class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
@@ -59,7 +41,7 @@
           </select>
         </div>
 
-        <!-- 4. Shift Group Selector (Group A, Group B, Group C...) -->
+        <!-- 3. Shift Group Selector (Group A, Group B, Group C...) -->
         <div>
           <label class="block text-xs font-bold text-main-text mb-1.5 flex items-center gap-1.5">
             <Users class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
@@ -70,9 +52,9 @@
             class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-semibold cursor-pointer"
             @change="syncGroupDaysFromMatrix"
           >
-            <option v-if="filteredGroups.length === 0" value="">No groups for this branch</option>
+            <option v-if="filteredGroups.length === 0" value="">No groups defined</option>
             <option v-for="g in filteredGroups" :key="g.id" :value="g.id">
-              {{ g.name }} ({{ g.users?.length || 0 }} members)
+              {{ g.name }} ({{ g.users?.length || 0 }} attendants)
             </option>
           </select>
         </div>
@@ -85,13 +67,13 @@
             🇪🇹 {{ currentMonthNameAm }} {{ selectedYear }} ዓ.ም
           </span>
           <span class="text-xs">
-            Assigned Library: <strong class="text-main-text">{{ currentLibraryName }}</strong>
+            Scope: <strong class="text-main-text">All University Library Branches (Default)</strong>
           </span>
           <span v-if="selectedGroup" class="hidden sm:inline-block text-main-text/40">•</span>
           <span v-if="selectedGroup" class="text-xs">
             Group: <strong class="text-nav-accent">{{ selectedGroup.name }}</strong>
             <span class="text-[11px] text-main-text/50 ml-1">
-              ({{ selectedGroup.users?.map(u => u.name).join(', ') || 'No members' }})
+              ({{ selectedGroup.users?.map(u => `${u.name}${u.library ? ' [' + u.library.code + ']' : ''}`).join(', ') || 'No members' }})
             </span>
           </span>
         </div>
@@ -433,15 +415,15 @@
         <!-- Branch & Month Context Box -->
         <div class="p-3 rounded-sm bg-input-bg border border-input-border text-xs space-y-1.5">
           <div class="flex items-center justify-between">
-            <span class="text-main-text/60">Target Library Branch:</span>
-            <strong class="text-main-text font-bold">{{ currentLibraryName }}</strong>
+            <span class="text-main-text/60">Target Scope:</span>
+            <strong class="text-main-text font-bold">All University Library Branches (Default)</strong>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-main-text/60">Ethiopian Month & Year:</span>
             <strong class="text-nav-accent font-bold">{{ currentMonthNameAm }} {{ selectedYear }} ዓ.ም</strong>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-main-text/60">Active Groups in Branch:</span>
+            <span class="text-main-text/60">Active Unified Groups:</span>
             <span class="font-semibold text-main-text">{{ filteredGroups.length }} groups ({{ filteredGroups.map(g => g.name).join(', ') }})</span>
           </div>
         </div>
@@ -538,7 +520,7 @@
     <Modal
       :show="showHolidayModal"
       :title="langStore.t('schedules.add_holiday_title', 'Add Manual Ethiopian Holiday')"
-      :subtitle="langStore.t('schedules.add_holiday_subtitle', 'Insert a public or religious holiday for this month. Duty shifts will be automatically canceled on this date.')"
+      :description="langStore.t('schedules.add_holiday_subtitle', 'Insert a public or religious holiday for this month. Duty shifts will be automatically canceled on this date.')"
       size="md"
       @close="showHolidayModal = false"
     >
@@ -781,12 +763,9 @@ const canManageSchedule = computed(() => {
   return authStore.isAdmin || authStore.canManageLibrary;
 });
 
-// Filter groups belonging strictly to current library branch
+// Unified shift groups belong to all branches by default
 const filteredGroups = computed(() => {
-  const libId = selectedLibraryId.value;
-  return (shiftStore.groups || []).filter((g) => {
-    return g.library_id === libId;
-  });
+  return shiftStore.groups || [];
 });
 
 const selectedGroup = computed<ShiftGroup | undefined>(() => {
@@ -799,8 +778,7 @@ const activeShifts = computed(() => {
 });
 
 const currentLibraryName = computed(() => {
-  const lib = (libraryStore.libraries || []).find((l) => l.id === selectedLibraryId.value);
-  return lib ? lib.name : 'Selected Library';
+  return 'All University Library Branches (Default)';
 });
 
 const currentMonthNameAm = computed(() => {
@@ -827,7 +805,6 @@ const getHoliday = (day: number): EthiopianHoliday | undefined => {
  */
 const loadMatrix = async () => {
   const res = await shiftStore.fetchMatrix({
-    library_id: selectedLibraryId.value,
     ethiopian_year: selectedYear.value,
     ethiopian_month: selectedMonth.value,
   });
@@ -837,20 +814,16 @@ const loadMatrix = async () => {
       selectedYear.value = res.current_ethiopian_date.year;
       selectedMonth.value = res.current_ethiopian_date.month;
     }
-    // Also refresh groups strictly for this branch
-    await shiftStore.fetchGroups(selectedLibraryId.value);
+    // Refresh unified groups
+    await shiftStore.fetchGroups();
 
-    // If no group is currently selected or selected group is outside this branch, select first group
+    // If no group is currently selected or selected group is outside available groups, select first group
     if (!selectedGroupId.value || !filteredGroups.value.some((g) => g.id === Number(selectedGroupId.value))) {
       selectedGroupId.value = filteredGroups.value.length > 0 ? filteredGroups.value[0].id : '';
     }
 
     syncGroupDaysFromMatrix();
   }
-};
-
-const handleLibraryChange = async () => {
-  await loadMatrix();
 };
 
 /**
@@ -1129,7 +1102,7 @@ const clearShiftDays = (shiftId: number) => {
 const openAutoGenerateModal = async () => {
   try {
     const overlapRes = typeof shiftStore.checkStaffOverlap === 'function'
-      ? await shiftStore.checkStaffOverlap(selectedLibraryId.value)
+      ? await shiftStore.checkStaffOverlap()
       : { has_overlap: false, overlaps: [] };
     overlapState.has_overlap = Boolean(overlapRes?.has_overlap);
     overlapState.overlaps = overlapRes?.overlaps || [];
@@ -1145,7 +1118,6 @@ const openAutoGenerateModal = async () => {
  */
 const handleRunAutoGenerate = async () => {
   const res = await shiftStore.autoGenerateSchedule({
-    library_id: selectedLibraryId.value,
     ethiopian_year: selectedYear.value,
     ethiopian_month: selectedMonth.value,
     exclude_holidays: autoForm.exclude_holidays,
@@ -1154,12 +1126,13 @@ const handleRunAutoGenerate = async () => {
 
   if (res) {
     showAutoModal.value = false;
-    syncGroupDaysFromMatrix();
+    await loadMatrix();
   }
 };
 
 /**
  * Save Manual Schedule Changes
+ * Applies schedule for the selected group across all library branches.
  */
 const handleSaveSchedule = async () => {
   if (!selectedGroupId.value) {
@@ -1173,7 +1146,6 @@ const handleSaveSchedule = async () => {
   }));
 
   const success = await shiftStore.assignSchedule({
-    library_id: selectedLibraryId.value,
     shift_group_id: Number(selectedGroupId.value),
     ethiopian_year: selectedYear.value,
     ethiopian_month: selectedMonth.value,
@@ -1181,31 +1153,14 @@ const handleSaveSchedule = async () => {
   });
 
   if (success) {
-    syncGroupDaysFromMatrix();
+    await loadMatrix();
   }
 };
 
-watch(
-  () => libraryStore.activeLibraries,
-  (libs) => {
-    if (libs && libs.length > 0 && !selectedLibraryId.value) {
-      if (authStore.user?.library_id) {
-        selectedLibraryId.value = authStore.user.library_id;
-      } else {
-        selectedLibraryId.value = libs[0].id;
-      }
-    }
-  },
-  { immediate: true }
-);
-
 onMounted(async () => {
-  if (authStore.user?.library_id) {
-    selectedLibraryId.value = authStore.user.library_id;
-  }
   await Promise.all([
-    libraryStore.fetchLibraries(),
     shiftStore.fetchShifts(),
+    shiftStore.fetchGroups(),
   ]);
   await loadMatrix();
 });

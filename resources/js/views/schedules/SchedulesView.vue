@@ -54,6 +54,18 @@
       <button
         type="button"
         class="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-t-sm transition-all cursor-pointer whitespace-nowrap border-b-2"
+        :class="activeTab === 'holidays'
+          ? 'border-nav-accent text-nav-accent bg-nav-accent/5'
+          : 'border-transparent text-main-text/60 hover:text-main-text hover:bg-card-bg'"
+        @click="activeTab = 'holidays'"
+      >
+        <CalendarOff class="w-4 h-4" />
+        <span>{{ langStore.t('schedules.tab_holidays', 'Ethiopian Holidays (የበዓላት መዝገብ)') }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-t-sm transition-all cursor-pointer whitespace-nowrap border-b-2"
         :class="activeTab === 'duty_logs'
           ? 'border-nav-accent text-nav-accent bg-nav-accent/5'
           : 'border-transparent text-main-text/60 hover:text-main-text hover:bg-card-bg'"
@@ -79,7 +91,12 @@
       <ShiftDefinitionsTab />
     </div>
 
-    <!-- Tab 4: Individual Duty Turns & Logs -->
+    <!-- Tab 4: Ethiopian Holidays Manual Management -->
+    <div v-else-if="activeTab === 'holidays'">
+      <EthiopianHolidaysTab />
+    </div>
+
+    <!-- Tab 5: Individual Duty Turns & Logs -->
     <div v-else-if="activeTab === 'duty_logs'" class="space-y-4">
       <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -285,12 +302,14 @@ import { useLanguageStore } from '@/stores/languageStore';
 import EthiopianShiftCalendar from './components/EthiopianShiftCalendar.vue';
 import ShiftGroupsTab from './components/ShiftGroupsTab.vue';
 import ShiftDefinitionsTab from './components/ShiftDefinitionsTab.vue';
+import EthiopianHolidaysTab from './components/EthiopianHolidaysTab.vue';
 import Button from '@/components/ui/Button.vue';
 import DataTable, { ColumnDef } from '@/components/ui/DataTable.vue';
 import Modal from '@/components/ui/Modal.vue';
 import StatusBadge from '@/components/ui/StatusBadge.vue';
 import {
   CalendarDays,
+  CalendarOff,
   Users,
   Clock,
   ClipboardList,

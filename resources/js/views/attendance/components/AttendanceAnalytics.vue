@@ -909,7 +909,7 @@ const formattedActiveRange = computed(() => {
         <!-- Left: Month-over-Month Interactive Bar Flow (8 Cols) -->
         <div class="lg:col-span-8 space-y-3">
           <div class="flex items-center justify-between text-xs font-bold text-main-text uppercase tracking-wider">
-            <span>{{ langStore.isAmharic() ? 'የወራት የጎብኝዎች ፍሰትና የዕድገት ሂደት' : 'Month-by-Month Foot-Traffic Trajectory' }}</span>
+            <span>{{ langStore.isAmharic() ? 'የወራት የተጠቃሚዎች ፍሰትና የዕድገት ሂደት' : 'Month-by-Month Foot-Traffic Trajectory' }}</span>
             <span class="text-[10px] font-mono text-main-text/50">{{ monthlyList.length }} {{ langStore.isAmharic() ? 'የሪፖርት ወራት' : 'Reporting Months' }}</span>
           </div>
 
@@ -1023,7 +1023,7 @@ const formattedActiveRange = computed(() => {
           </h4>
           <p class="text-xs text-main-text/60 mt-0.5">
             {{ langStore.isAmharic()
-              ? 'የቀንና የምሽት የጎብኝዎች ጥግግት በጠዋት (02:00–06:00)፣ ከቀኑ (06:00–11:00) እና ምሽት (11:00–05:00) የፈረቃ ክፍለ-ጊዜያት ውስጥ።'
+              ? 'የቀንና የምሽት የተጠቃሚዎች ጥግግት በጠዋት (02:00–06:00)፣ ከቀኑ (06:00–11:00) እና ምሽት (11:00–05:00) የፈረቃ ክፍለ-ጊዜያት ውስጥ።'
               : 'Continuous diurnal density tracking across Morning (08:00 AM – 12:00 PM), Afternoon (12:00 PM – 05:00 PM), and Night (05:00 PM – 11:00 PM) shift duty intervals.' }}
           </p>
         </div>
@@ -1165,7 +1165,7 @@ const formattedActiveRange = computed(() => {
             v-for="h in hourlyCurveList"
             :key="h.hour"
             class="flex flex-col items-center gap-1.5 group cursor-pointer"
-            :title="langStore.isAmharic() ? `${h.tooltip_label || h.ethiopian_time || h.label_am}: ${h.count} ጎብኝዎች (${h.percent}%)` : `${h.tooltip_label || h.gregorian_12h || h.label}: ${h.count} patrons (${h.percent}%)`"
+            :title="langStore.isAmharic() ? `${h.tooltip_label || h.ethiopian_time || h.label_am}: ${h.count} ተጠቃሚዎች (${h.percent}%)` : `${h.tooltip_label || h.gregorian_12h || h.label}: ${h.count} patrons (${h.percent}%)`"
           >
             <!-- Vertical Column -->
             <div class="w-full bg-slate-200 dark:bg-slate-700/60 rounded-t h-20 flex items-end overflow-hidden">

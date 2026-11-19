@@ -11,7 +11,7 @@
         ],
         'day_of_week' => [
             'en' => 'Day-of-the-Week Operational Foot-Traffic Influx Report',
-            'am' => 'የሳምንት ቀናት የቤተ-መጻሕፍት የጎብኝዎች ፍሰትና የጥግግት ትንተና ሪፖርት',
+            'am' => 'የሳምንት ቀናት የቤተ-መጻሕፍት የተጠቃሚዎች ፍሰትና የጥግግት ትንተና ሪፖርት',
         ],
         'intra_month' => [
             'en' => 'Intra-Month Weekly Cycles & Recurring Day Occurrences Report',
@@ -465,17 +465,17 @@
         <table class="kpi-table">
             <tr>
                 <td class="kpi-cell highlight">
-                    <div class="kpi-tag">{{ $isAmharic ? 'ጠቅላላ የጎብኝዎች ብዛት' : 'Total Patron Traffic' }}</div>
+                    <div class="kpi-tag">{{ $isAmharic ? 'ጠቅላላ የተጠቃሚዎች ብዛት' : 'Total Patron Traffic' }}</div>
                     <div class="kpi-val">{{ number_format($totalCount) }}</div>
                     <div class="kpi-sub">{{ $isAmharic ? 'በተመረጠው የጊዜ ገደብ የገቡ' : 'Aggregated campus visits' }}</div>
                 </td>
                 <td class="kpi-cell">
-                    <div class="kpi-tag">{{ $isAmharic ? 'ወንድ ጎብኝዎች' : 'Male Patrons' }}</div>
+                    <div class="kpi-tag">{{ $isAmharic ? 'ወንድ ተጠቃሚዎች' : 'Male Patrons' }}</div>
                     <div class="kpi-val">{{ number_format($maleCount) }}</div>
                     <div class="kpi-sub">{{ $malePercent }}% {{ $isAmharic ? 'የጠቅላላው ድርሻ' : 'of recorded traffic' }}</div>
                 </td>
                 <td class="kpi-cell">
-                    <div class="kpi-tag">{{ $isAmharic ? 'ሴት ጎብኝዎች' : 'Female Patrons' }}</div>
+                    <div class="kpi-tag">{{ $isAmharic ? 'ሴት ተጠቃሚዎች' : 'Female Patrons' }}</div>
                     <div class="kpi-val">{{ number_format($femaleCount) }}</div>
                     <div class="kpi-sub">{{ $femalePercent }}% {{ $isAmharic ? 'የጠቅላላው ድርሻ' : 'of recorded traffic' }}</div>
                 </td>
@@ -484,7 +484,7 @@
                 <td class="kpi-cell">
                     <div class="kpi-tag">{{ $isAmharic ? 'ከፍተኛ የተጠቃሚዎች ሰዓት' : 'Peak Traffic Window' }}</div>
                     <div class="kpi-val" style="font-size: 15px;">{{ $peakHourLabel }}</div>
-                    <div class="kpi-sub">{{ number_format($peakHourCount) }} {{ $isAmharic ? 'ጎብኝዎች በሰዓት' : 'peak visitors' }}</div>
+                    <div class="kpi-sub">{{ number_format($peakHourCount) }} {{ $isAmharic ? 'ተጠቃሚዎች በሰዓት' : 'peak visitors' }}</div>
                 </td>
                 <td class="kpi-cell">
                     <div class="kpi-tag">{{ $isAmharic ? 'ከፍተኛ ተጠቃሚ ቅርንጫፍ' : 'Busiest Branch' }}</div>
@@ -559,7 +559,7 @@
                     <th class="text-right" style="width: 13%;">{{ $isAmharic ? 'ተማሪዎች' : 'Students' }}</th>
                     <th class="text-right" style="width: 13%;">{{ $isAmharic ? 'መምህራን' : 'Teachers' }}</th>
                     <th class="text-right" style="width: 13%;">{{ $isAmharic ? 'ሠራተኞች' : 'Staff' }}</th>
-                    <th class="text-right" style="width: 14%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
+                    <th class="text-right" style="width: 14%;">{{ $isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons' }}</th>
                     <th class="text-right" style="width: 13%;">{{ $isAmharic ? 'የድርሻ መጠን (%)' : 'Traffic Share (%)' }}</th>
                 </tr>
             </thead>
@@ -596,7 +596,7 @@
                     <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ተማሪዎች' : 'Students' }}</th>
                     <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'መምህራን' : 'Teachers' }}</th>
                     <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ሠራተኞች' : 'Staff' }}</th>
-                    <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
+                    <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons' }}</th>
                     <th class="text-right" style="width: 9%;">{{ $isAmharic ? 'ድርሻ (%)' : 'Share (%)' }}</th>
                     <th style="width: 11%;">{{ $isAmharic ? 'የጥግግት ደረጃ' : 'Congestion' }}</th>
                 </tr>
@@ -620,14 +620,14 @@
         <!-- Section 5: Day-of-Week Operational Foot-Traffic Analysis Table -->
         @if(!empty($dayOfWeekAnalytics))
         <div class="section-header">
-            <span>{{ $isAmharic ? '5. ሰኞ – እሑድ የሳምንት ቀናት የጎብኝዎች ፍሰት ትንተና' : '5. Day-of-the-Week Operational Foot-Traffic Analysis' }}</span>
+            <span>{{ $isAmharic ? '5. ሰኞ – እሑድ የሳምንት ቀናት የተጠቃሚዎች ፍሰት ትንተና' : '5. Day-of-the-Week Operational Foot-Traffic Analysis' }}</span>
         </div>
         <table class="formal-table">
             <thead>
                 <tr>
                     <th style="width: 16%;">{{ $isAmharic ? 'የሳምንቱ ዕለት' : 'Day of Week' }}</th>
                     <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Avg' }}</th>
-                    <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
+                    <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons' }}</th>
                     <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ድርሻ (%)' : 'Share (%)' }}</th>
                     <th style="width: 18%;">{{ $isAmharic ? 'የፈረቃ ክፍፍል (ጠ/ቀ/ማ)' : 'Morn / Aft / Night' }}</th>
                     <th style="width: 14%;">{{ $isAmharic ? 'የፍሰት ደረጃ' : 'Surge Level' }}</th>
@@ -665,7 +665,7 @@
             <thead>
                 <tr>
                     <th style="width: 25%;">{{ $isAmharic ? 'የወሩ ሳምንታዊ ክፍለ-ጊዜ' : 'Weekly Cycle in Month' }}</th>
-                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
+                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons' }}</th>
                     <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Average' }}</th>
                     <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'የወሩ ድርሻ (%)' : 'Monthly Share (%)' }}</th>
                     <th style="width: 30%;">{{ $isAmharic ? 'የአሰራርና የጥናት ሁኔታ' : 'Operational Status' }}</th>
@@ -754,7 +754,7 @@
             <thead>
                 <tr>
                     <th style="width: 25%;">{{ $isAmharic ? 'የአካዳሚክ ዓመት' : 'Academic Year' }}</th>
-                    <th class="text-right" style="width: 25%;">{{ $isAmharic ? 'ጠቅላላ የዓመት ጎብኝ' : 'Annual Total Visitors' }}</th>
+                    <th class="text-right" style="width: 25%;">{{ $isAmharic ? 'ጠቅላላ የዓመት ተጠቃሚ' : 'Annual Total Visitors' }}</th>
                     <th class="text-right" style="width: 25%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Average' }}</th>
                     <th class="text-right" style="width: 25%;">{{ $isAmharic ? 'የዓመት እድገት (YoY)' : 'Yearly Growth Rate' }}</th>
                 </tr>

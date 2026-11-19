@@ -1,15 +1,27 @@
 <template>
   <header class="h-16 bg-card-bg/95 backdrop-blur-md border-b border-card-border px-3 sm:px-6 flex items-center justify-between shrink-0 shadow-2xs z-20 sticky top-0 transition-colors">
-    <!-- Left: Mobile Menu Toggle + Context Title & Active Subtitle -->
+    <!-- Left: Sidebar Toggler + Mobile Menu Toggle + Context Title & Active Subtitle -->
     <div class="flex items-center gap-2 sm:gap-3">
       <!-- Mobile Drawer Trigger Button -->
       <button
         type="button"
         @click="emit('toggleMobileMenu')"
         class="lg:hidden p-2 -ml-1 rounded-xs text-main-text/70 hover:text-main-text hover:bg-card-hover/40 transition active:scale-95 cursor-pointer"
-        aria-label="Toggle navigation menu"
+        aria-label="Toggle mobile menu"
       >
         <Menu class="w-5 h-5" />
+      </button>
+
+      <!-- Desktop Sidebar Collapse/Expand Toggler (Senebt System Style) -->
+      <button
+        type="button"
+        @click="emit('toggleSidebar')"
+        class="hidden lg:flex p-1.5 -ml-1 rounded text-main-text/60 hover:text-brand-blue hover:bg-brand-blue/10 transition active:scale-95 cursor-pointer"
+        :title="isCollapsed ? langStore.t('nav.expand_sidebar', 'Expand Sidebar') : langStore.t('nav.collapse_sidebar', 'Collapse Sidebar')"
+        aria-label="Toggle Sidebar"
+      >
+        <PanelLeftOpen v-if="isCollapsed" class="w-5 h-5 text-brand-blue dark:text-brand-yellow" />
+        <PanelLeftClose v-else class="w-5 h-5" />
       </button>
 
       <h1 class="text-xs sm:text-sm font-bold text-main-text tracking-tight truncate max-w-[150px] sm:max-w-none">
@@ -40,14 +52,24 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { Menu } from 'lucide-vue-next';
+import { Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-vue-next';
 import { useLanguageStore } from '@/stores/languageStore';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import ThemeToggle from './ThemeToggle.vue';
 import HeaderProfileDropdown from './HeaderProfileDropdown.vue';
 
+withDefaults(
+  defineProps<{
+    isCollapsed?: boolean;
+  }>(),
+  {
+    isCollapsed: false,
+  }
+);
+
 const emit = defineEmits<{
   (e: 'toggleMobileMenu'): void;
+  (e: 'toggleSidebar'): void;
 }>();
 
 const route = useRoute();
@@ -55,12 +77,12 @@ const langStore = useLanguageStore();
 
 const title = computed(() => {
   const path = route.path;
-  if (path.startsWith('/attendance')) return langStore.t('nav.attendance', 'Physical Attendance');
-  if (path.startsWith('/users')) return langStore.t('nav.users', 'User Accounts & Access');
-  if (path.startsWith('/roles')) return langStore.t('nav.roles', 'Roles & RBAC Matrix');
-  if (path.startsWith('/schedules')) return langStore.t('nav.schedules', 'Duty Shift Schedules');
+  if (path.startsWith('/attendance')) return langStore.t('nav.attendance', 'Attendance Counter');
+  if (path.startsWith('/users')) return langStore.t('nav.users', 'User Accounts');
+  if (path.startsWith('/roles')) return langStore.t('nav.roles', 'Roles & Permissions');
+  if (path.startsWith('/schedules')) return langStore.t('nav.schedules', 'Shift Schedules');
   if (path.startsWith('/my-turns')) return langStore.t('nav.my_turns', 'My Duty Turns');
   if (path.startsWith('/libraries')) return langStore.t('nav.libraries', 'Campus Library Branches');
-  return langStore.t('nav.dashboard', 'Overview Dashboard');
+  return langStore.t('nav.dashboard', 'Dashboard');
 });
 </script>

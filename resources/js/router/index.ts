@@ -58,7 +58,7 @@ const routes: RouteRecordRaw[] = [
                 path: 'schedules',
                 name: 'Schedules',
                 component: () => import('@/views/schedules/SchedulesView.vue'),
-                meta: { title: 'Duty Schedules', icon: 'CalendarDays' },
+                meta: { title: 'Duty Schedules', icon: 'CalendarDays', roles: ['Super Admin', 'Admin', 'Manager', 'Head Librarian'] },
             },
             {
                 path: 'my-turns',
@@ -137,6 +137,19 @@ router.beforeEach(async (to) => {
     // Libraries authorization guard
     if (to.name === 'Libraries' && !authStore.canViewLibraries) {
         return getLandingRoute(authStore);
+    }
+
+    // Attendance authorization guard
+    if (to.name === 'Attendance') {
+        const canAccess =
+            authStore.isSuperAdmin ||
+            authStore.isAdmin ||
+            authStore.hasPermission('attendance.record') ||
+            authStore.hasPermission('attendance.view') ||
+            authStore.hasRole(['Super Admin', 'Admin', 'Manager', 'Librarian', 'Attendant']);
+        if (!canAccess) {
+            return getLandingRoute(authStore);
+        }
     }
 
     // Role guard

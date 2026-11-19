@@ -46,9 +46,40 @@ class DashboardController extends Controller
             $todayTotal = (int) (clone $todayAttendance)->sum('visitor_count');
             $todayMale = (int) (clone $todayAttendance)->where('gender', 'male')->sum('visitor_count');
             $todayFemale = (int) (clone $todayAttendance)->where('gender', 'female')->sum('visitor_count');
+            $todayStudent = (int) (clone $todayAttendance)->where('user_type', 'student')->sum('visitor_count');
+            $todayTeacher = (int) (clone $todayAttendance)->where('user_type', 'teacher')->sum('visitor_count');
+            $todayStaff = (int) (clone $todayAttendance)->where('user_type', 'staff')->sum('visitor_count');
+
+            $malePercent = $todayTotal > 0 ? round(($todayMale / $todayTotal) * 100, 1) : 0;
+            $femalePercent = $todayTotal > 0 ? round(($todayFemale / $todayTotal) * 100, 1) : 0;
+            $studentPercent = $todayTotal > 0 ? round(($todayStudent / $todayTotal) * 100, 1) : 0;
+            $teacherPercent = $todayTotal > 0 ? round(($todayTeacher / $todayTotal) * 100, 1) : 0;
+            $staffPercent = $todayTotal > 0 ? round(($todayStaff / $todayTotal) * 100, 1) : 0;
 
             $totalBranches = Library::count();
             $totalStaff = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['Super Admin', 'Head Librarian', 'Desk Librarian', 'Cataloging Specialist', 'Archive Assistant']))->count();
+
+            // Branch Breakdown for today
+            $branchesList = Library::select('id', 'name', 'name_am', 'code')->get();
+            $branchesTraffic = [];
+            foreach ($branchesList as $b) {
+                $bCount = (int) (clone $todayAttendance)->where('library_id', $b->id)->sum('visitor_count');
+                $bPercent = $todayTotal > 0 ? round(($bCount / $todayTotal) * 100, 1) : 0;
+                $branchesTraffic[] = [
+                    'id' => $b->id,
+                    'name' => $b->name,
+                    'name_am' => $b->name_am ?? $b->name,
+                    'code' => $b->code,
+                    'total' => $bCount,
+                    'percent' => $bPercent,
+                ];
+            }
+            usort($branchesTraffic, fn ($a, $b) => $b['total'] <=> $a['total']);
+            $busiestBranch = $branchesTraffic[0]['name'] ?? 'General Library';
+
+            // 7-day and 30-day aggregate trend
+            $weekAgo = Carbon::today()->subDays(6)->toDateString();
+            $weekTotal = (int) (clone $baseAttendance)->whereBetween('entry_at', [$weekAgo . ' 00:00:00', $today . ' 23:59:59'])->sum('visitor_count');
 
             // Staff on duty today
             $onDutyStaffQuery = DutySchedule::where('shift_date', $today)
@@ -77,8 +108,19 @@ class DashboardController extends Controller
                 'today_total' => $todayTotal,
                 'today_male' => $todayMale,
                 'today_female' => $todayFemale,
+                'today_student' => $todayStudent,
+                'today_teacher' => $todayTeacher,
+                'today_staff' => $todayStaff,
+                'male_percent' => $malePercent,
+                'female_percent' => $femalePercent,
+                'student_percent' => $studentPercent,
+                'teacher_percent' => $teacherPercent,
+                'staff_percent' => $staffPercent,
                 'total_branches' => $totalBranches,
                 'total_staff' => $totalStaff,
+                'busiest_branch' => $busiestBranch,
+                'branches_traffic' => $branchesTraffic,
+                'week_total' => $weekTotal,
                 'on_duty_staff_today' => $onDutyStaff,
             ];
         });

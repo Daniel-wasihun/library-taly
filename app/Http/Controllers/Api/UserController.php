@@ -23,6 +23,14 @@ class UserController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->hasAdminPrivilege() && !$user->hasRole(['Super Admin', 'Admin', 'Manager']) && !$user->can('users.view')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized: Permission required to view user accounts.',
+            ], 403);
+        }
+
         $search = $request->query('search');
         $roleFilter = $request->query('role');
         $statusFilter = $request->query('status');
@@ -103,6 +111,14 @@ class UserController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $currentUser = $request->user();
+        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin']) && !$currentUser->can('users.create')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized: Permission required to create user accounts.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'alpha_dash', 'min:3', 'max:50', 'unique:users,username'],
@@ -145,8 +161,16 @@ class UserController extends Controller
     /**
      * Show single user details.
      */
-    public function show(User $user): JsonResponse
+    public function show(Request $request, User $user): JsonResponse
     {
+        $currentUser = $request->user();
+        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin', 'Manager']) && !$currentUser->can('users.view')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized: Permission required to view user details.',
+            ], 403);
+        }
+
         if ($user->isSuperAdmin()) {
             return response()->json([
                 'success' => false,
@@ -165,6 +189,14 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): JsonResponse
     {
+        $currentUser = $request->user();
+        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin']) && !$currentUser->can('users.update')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized: Permission required to update user accounts.',
+            ], 403);
+        }
+
         if ($user->isSuperAdmin()) {
             return response()->json([
                 'success' => false,
@@ -218,6 +250,14 @@ class UserController extends Controller
      */
     public function destroy(Request $request, User $user): JsonResponse
     {
+        $currentUser = $request->user();
+        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin']) && !$currentUser->can('users.delete')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized: Permission required to delete user accounts.',
+            ], 403);
+        }
+
         if ($user->isSuperAdmin()) {
             return response()->json([
                 'success' => false,
@@ -225,7 +265,7 @@ class UserController extends Controller
             ], 403);
         }
 
-        if ($request->user()->id === $user->id) {
+        if ($currentUser->id === $user->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'You cannot delete your own account.',
@@ -247,6 +287,14 @@ class UserController extends Controller
      */
     public function overridePermissions(Request $request, User $user): JsonResponse
     {
+        $currentUser = $request->user();
+        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized: Only Super Admin and Admin can override permissions.',
+            ], 403);
+        }
+
         if ($user->isSuperAdmin()) {
             return response()->json([
                 'success' => false,

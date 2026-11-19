@@ -306,7 +306,7 @@ class AttendanceController extends Controller
             fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
 
             if ($isAmharic) {
-                fputcsv($file, ['የመዝገብ መለያ', 'የቤተ-መጻሕፍት ቅርንጫፍ', 'የተጠቃሚ ዓይነት', 'ጾታ', 'የጎብኝ ብዛት', 'የተመዘገበበት ቀንና ሰዓት', 'መዝጋቢ ሠራተኛ']);
+                fputcsv($file, ['የመዝገብ መለያ', 'የቤተ-መጻሕፍት ቅርንጫፍ', 'የተጠቃሚ ዓይነት', 'ጾታ', 'የተጠቃሚ ብዛት', 'የተመዘገበበት ቀንና ሰዓት', 'መዝጋቢ ሠራተኛ']);
             } else {
                 fputcsv($file, ['Log ID', 'Library Branch', 'Patron Type', 'Gender', 'Visitor Count', 'Recorded At', 'Staff Member']);
             }

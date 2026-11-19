@@ -16,18 +16,28 @@
       ></div>
     </transition>
 
-    <!-- Sidebar: off-canvas drawer on mobile (< lg), standard static column on desktop (lg+) -->
+    <!-- Sidebar: off-canvas drawer on mobile (< lg), standard static column on desktop (lg+) with collapse support -->
     <div
-      class="fixed inset-y-0 left-0 z-50 transform lg:static lg:translate-x-0 transition-transform duration-200 ease-in-out shrink-0"
-      :class="isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'"
+      class="fixed inset-y-0 left-0 z-50 transform lg:static lg:translate-x-0 transition-all duration-300 ease-in-out shrink-0"
+      :class="[
+        isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0',
+        isSidebarCollapsed ? 'w-18' : 'w-60'
+      ]"
     >
-      <Sidebar />
+      <Sidebar
+        :is-collapsed="isSidebarCollapsed"
+        @toggle="toggleSidebar"
+      />
     </div>
 
     <!-- Main Content Area -->
     <div class="flex flex-col flex-1 min-w-0 overflow-hidden bg-main-bg">
-      <!-- Navbar with mobile drawer toggle -->
-      <Navbar @toggleMobileMenu="isMobileMenuOpen = !isMobileMenuOpen" />
+      <!-- Navbar with mobile drawer toggle and desktop sidebar toggle -->
+      <Navbar
+        :is-collapsed="isSidebarCollapsed"
+        @toggleSidebar="toggleSidebar"
+        @toggleMobileMenu="isMobileMenuOpen = !isMobileMenuOpen"
+      />
 
       <!-- Scrollable Main Content -->
       <main class="flex-1 overflow-y-auto p-3 sm:p-5 md:p-8 bg-main-bg">
@@ -49,7 +59,13 @@ import Navbar from '@/components/Navbar.vue';
 import Toast from '@/components/Toast.vue';
 
 const isMobileMenuOpen = ref(false);
+const isSidebarCollapsed = ref(localStorage.getItem('sidebar_collapsed') === 'true');
 const route = useRoute();
+
+const toggleSidebar = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value;
+  localStorage.setItem('sidebar_collapsed', isSidebarCollapsed.value.toString());
+};
 
 // Auto-close mobile drawer when route changes
 watch(() => route.path, () => {

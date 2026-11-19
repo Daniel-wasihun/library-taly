@@ -169,7 +169,13 @@ const fillDemo = (login: string, pass: string) => {
 const handleLogin = async () => {
   const success = await authStore.login({ login: form.login, password: form.password });
   if (success) {
-    router.push('/dashboard');
+    if (authStore.canViewDashboard) {
+      router.push('/dashboard');
+    } else if (authStore.hasPermission('attendance.record') || authStore.hasPermission('attendance.view')) {
+      router.push('/attendance');
+    } else {
+      router.push('/my-turns');
+    }
   }
 };
 </script>

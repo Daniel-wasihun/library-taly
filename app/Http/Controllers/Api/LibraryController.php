@@ -16,6 +16,13 @@ class LibraryController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->canViewLibraryList() && !$user->hasPermissionTo('attendance.record') && !$user->hasPermissionTo('attendance.view')) {
+            return response()->json([
+                'message' => 'Unauthorized: Permission required to view library branches.',
+            ], 403);
+        }
+
         $search = $request->query('search');
         $activeOnly = $request->query('active_only');
 
@@ -53,6 +60,12 @@ class LibraryController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        if (!$request->user()->canCreateLibrary()) {
+            return response()->json([
+                'message' => 'Unauthorized: Permission required to create library branches.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:libraries,name'],
             'name_am' => ['nullable', 'string', 'max:255'],
@@ -116,6 +129,12 @@ class LibraryController extends Controller
      */
     public function update(Request $request, Library $library): JsonResponse
     {
+        if (!$request->user()->canUpdateLibrary()) {
+            return response()->json([
+                'message' => 'Unauthorized: Permission required to update library branches.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('libraries', 'name')->ignore($library->id)],
             'name_am' => ['nullable', 'string', 'max:255'],
@@ -149,8 +168,14 @@ class LibraryController extends Controller
     /**
      * Remove the specified library branch from storage.
      */
-    public function destroy(Library $library): JsonResponse
+    public function destroy(Request $request, Library $library): JsonResponse
     {
+        if (!$request->user()->canDeleteLibrary()) {
+            return response()->json([
+                'message' => 'Unauthorized: Permission required to delete library branches.',
+            ], 403);
+        }
+
         $library->delete();
 
         return response()->json([

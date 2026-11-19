@@ -31,6 +31,8 @@ class EthiopianShiftScheduleTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Freeze time to 10:00 AM East Africa Time on Nov 18, 2026 (Hidar 9, 2019 E.C.) during day shift window
+        Carbon::setTestNow(Carbon::create(2026, 11, 18, 10, 0, 0, 'Africa/Addis_Ababa'));
 
         // Setup roles & permissions
         $role = Role::create(['name' => 'Admin']);
@@ -115,6 +117,12 @@ class EthiopianShiftScheduleTest extends TestCase
             'ethiopian_end_time' => '05:00 ከምሽቱ',
             'is_active' => true,
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
     }
 
     /**

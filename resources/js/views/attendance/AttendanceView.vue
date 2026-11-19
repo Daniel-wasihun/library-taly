@@ -277,6 +277,7 @@ const handlePrint = (range: 'day' | 'week' | 'month' | 'current' = 'current') =>
 };
 
 const refreshStats = async () => {
+  if (!authStore.canManageReporting) return;
   attendanceStore.filters.date_from = dateRange.value.from;
   attendanceStore.filters.date_to = dateRange.value.to;
   attendanceStore.filters.library_id = selectedLibrary.value || '';
@@ -315,11 +316,14 @@ onMounted(async () => {
   attendanceStore.filters.date_from = todayStr;
   attendanceStore.filters.date_to = todayStr;
 
-  // Use cached logs and stats
-  await Promise.all([
+  // Fetch logs, and only fetch stats if authorized and on analytics tab
+  const initPromises: Promise<any>[] = [
     attendanceStore.fetchLogs(1, undefined, false),
-    attendanceStore.fetchStats(false),
-  ]);
+  ];
+  if (authStore.canManageReporting && activeTab.value === 'analytics') {
+    initPromises.push(attendanceStore.fetchStats(false));
+  }
+  await Promise.all(initPromises);
 });
 
 onUnmounted(() => {
@@ -334,7 +338,15 @@ watch(selectedLibrary, (newVal) => {
   if (activeTab.value === 'counter') {
     attendanceStore.fetchLogs(1, undefined, true);
   }
-  attendanceStore.fetchStats(true);
+  if (authStore.canManageReporting && activeTab.value === 'analytics') {
+    attendanceStore.fetchStats(true);
+  }
+});
+
+watch(activeTab, (newTab) => {
+  if (newTab === 'analytics' && authStore.canManageReporting) {
+    attendanceStore.fetchStats(true);
+  }
 });
 </script>
 

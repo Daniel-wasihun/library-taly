@@ -24,8 +24,16 @@ class DashboardController extends Controller
      */
     public function stats(Request $request): JsonResponse
     {
-        $today = Carbon::today()->toDateString();
         $user = $request->user();
+
+        // Enforce dashboard viewing authorization
+        if (!$user->canViewDashboard()) {
+            return response()->json([
+                'message' => 'Unauthorized: Dashboard view permission is required.',
+            ], 403);
+        }
+
+        $today = Carbon::today()->toDateString();
 
         // Overall physical attendance stats
         $stats = Cache::remember('dashboard_stats_' . ($user->library_id ?? 'all'), 30, function () use ($today, $user) {

@@ -217,13 +217,14 @@ class AttendanceController extends Controller
     {
         $user = $request->user();
 
-        // Only users with library management permission or admin can export reports
-        if (!$user->canManageReportingAndAnalytics()) {
+        // Authorized for reporting managers, librarians, or attendants
+        if (!$user->canManageReportingAndAnalytics() && !$user->hasPermissionTo('attendance.view') && !$user->hasPermissionTo('attendance.record')) {
             return response()->json([
-                'message' => 'Unauthorized: Library management permission is required to export reports.',
+                'message' => 'Unauthorized: Library attendance viewing or reporting permission is required to export reports.',
             ], 403);
         }
 
+        $isAmharic = $request->query('lang') === 'am';
         $query = LibraryAttendance::with(['library', 'staff']);
 
         if (!$user->canManageAllLibraries()) {
@@ -251,27 +252,58 @@ class AttendanceController extends Controller
         $attendances = $query->orderBy('entry_at', 'desc')->get();
 
         $headers = [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="attendance_report_' . now()->format('Y_m_d_His') . '.csv"',
             'Pragma' => 'no-cache',
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Expires' => '0',
         ];
 
-        return new StreamedResponse(function () use ($attendances) {
+        return new StreamedResponse(function () use ($attendances, $isAmharic) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
-            fputcsv($file, ['Log ID', 'Library Branch', 'User Type', 'Gender', 'Visitor Count', 'Recorded At', 'Staff Member']);
+
+            if ($isAmharic) {
+                fputcsv($file, ['የመዝገብ መለያ', 'የቤተ-መጻሕፍት ቅርንጫፍ', 'የተጠቃሚ ዓይነት', 'ጾታ', 'የጎብኝ ብዛት', 'የተመዘገበበት ቀንና ሰዓት', 'መዝጋቢ ሠራተኛ']);
+            } else {
+                fputcsv($file, ['Log ID', 'Library Branch', 'Patron Type', 'Gender', 'Visitor Count', 'Recorded At', 'Staff Member']);
+            }
 
             foreach ($attendances as $log) {
+                $dt = EthiopianDateService::formatDT($log->entry_at, $isAmharic);
+                $branchName = $isAmharic ? ($log->library?->name_am ?? $log->library?->name ?? 'ጠቅላላ') : ($log->library?->name ?? 'General');
+                
+                $userType = $log->user_type;
+                if ($isAmharic) {
+                    $userType = match ($userType) {
+                        'student' => 'ተማሪ',
+                        'teacher' => 'መምህር',
+                        'staff' => 'ሰራተኛ',
+                        default => $userType,
+                    };
+                } else {
+                    $userType = ucfirst($userType);
+                }
+
+                $gender = $log->gender;
+                if ($isAmharic) {
+                    $gender = match ($gender) {
+                        'male' => 'ወንድ',
+                        'female' => 'ሴት',
+                        default => $gender,
+                    };
+                } else {
+                    $gender = ucfirst($gender);
+                }
+
                 fputcsv($file, [
                     $log->slug,
-                    $log->library?->name ?? 'General',
-                    ucfirst($log->user_type),
-                    ucfirst($log->gender),
+                    $branchName,
+                    $userType,
+                    $gender,
                     $log->visitor_count,
-                    $log->entry_at?->toDateTimeString() ?? '',
-                    $log->staff?->name ?? 'System',
+                    $dt['full'],
+                    $log->staff?->name ?? ($isAmharic ? 'የስርዓት መዝጋቢ' : 'System'),
                 ]);
             }
             fclose($file);
@@ -379,8 +411,8 @@ class AttendanceController extends Controller
             abort(401, 'Unauthenticated');
         }
 
-        if (!$user->canManageReportingAndAnalytics()) {
-            abort(403, 'Unauthorized: Library management permission is required to print reports.');
+        if (!$user->canManageReportingAndAnalytics() && !$user->hasPermissionTo('attendance.view') && !$user->hasPermissionTo('attendance.record')) {
+            abort(403, 'Unauthorized: Library management or attendance viewing permission is required to print reports.');
         }
 
         $isAmharic = $request->query('lang') === 'am';

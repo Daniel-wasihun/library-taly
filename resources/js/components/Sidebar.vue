@@ -65,6 +65,7 @@
 
         <!-- Dashboard -->
         <router-link
+          v-if="authStore.canViewDashboard"
           to="/dashboard"
           class="flex items-center gap-3 px-3 py-2 rounded-sm text-xs transition-all duration-200 cursor-pointer relative group"
           :class="isActive('/dashboard')
@@ -84,6 +85,7 @@
 
         <!-- Library Branches (LMS CRUD) -->
         <router-link
+          v-if="authStore.canViewLibraries"
           to="/libraries"
           class="flex items-center gap-3 px-3 py-2 rounded-sm text-xs transition-all duration-200 cursor-pointer relative group"
           :class="isActive('/libraries')

@@ -265,7 +265,7 @@
     <div class="print-toolbar no-print">
         <span style="font-weight: 600; font-size: 11px;">{{ $isAmharic ? 'ይፋዊ ሪፖርት' : 'Official Report Ready' }}</span>
         <button class="btn-print" onclick="window.print()">
-            {{ $isAmharic ? '🖨️ አትም (Print)' : '🖨️ Print / Save as PDF' }}
+            {{ $isAmharic ? '🖨️ አትም / በፒዲኤፍ አስቀምጥ' : '🖨️ Print / Save as PDF' }}
         </button>
     </div>
 
@@ -303,7 +303,7 @@
             </span>
         </div>
         <div class="meta-item">
-            <b>{{ $isAmharic ? 'የተዘጋጀበት ሰዓት (12hr)' : 'Generated At (12hr)' }}</b>
+            <b>{{ $isAmharic ? 'የተዘጋጀበት ሰዓት' : 'Generated At (12hr)' }}</b>
             <span>{{ $generatedAt['date'] }} · {{ $generatedAt['time'] }}</span>
         </div>
         <div class="meta-item">
@@ -379,7 +379,7 @@
 
     <!-- Detailed Recorded Logs Table -->
     <h3 style="font-size: 12px; font-weight: 800; color: var(--brand-blue); text-transform: uppercase; margin-bottom: 8px;">
-        {{ $isAmharic ? '2. የተመዘገቡ የቀጥታ ምዝገባዎች ዝርዝር (12hr ሰዓት)' : '2. Detailed Entries Log (12-hour format)' }}
+        {{ $isAmharic ? '2. የተመዘገቡ የቀጥታ ምዝገባዎች ዝርዝር' : '2. Detailed Entries Log (12-hour format)' }}
     </h3>
     <table>
         <thead>

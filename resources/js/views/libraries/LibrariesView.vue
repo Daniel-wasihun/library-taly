@@ -23,6 +23,7 @@
           {{ langStore.t('common.refresh', 'Refresh') }}
         </Button>
         <Button
+          v-if="authStore.canCreateLibrary"
           variant="primary"
           size="sm"
           :icon="Plus"
@@ -121,6 +122,7 @@
       <template #actions="{ item }">
         <div class="flex items-center justify-end gap-1">
           <button
+            v-if="authStore.canUpdateLibrary"
             type="button"
             class="table-action-btn text-brand-blue hover:bg-brand-blue/10 transition cursor-pointer"
             title="Edit Branch"
@@ -129,6 +131,7 @@
             <Pencil class="w-4 h-4 stroke-[2.2]" />
           </button>
           <button
+            v-if="authStore.canDeleteLibrary"
             type="button"
             class="table-action-btn text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
             title="Delete Branch"
@@ -136,6 +139,9 @@
           >
             <Trash2 class="w-4 h-4 stroke-[2.2]" />
           </button>
+          <span v-if="!authStore.canUpdateLibrary && !authStore.canDeleteLibrary" class="text-xs text-main-text/30 italic">
+            —
+          </span>
         </div>
       </template>
     </DataTable>
@@ -317,6 +323,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useLibraryStore } from '@/stores/libraryStore';
 import { useLanguageStore } from '@/stores/languageStore';
+import { useAuthStore } from '@/stores/authStore';
 import Button from '@/components/ui/Button.vue';
 import DataTable, { ColumnDef } from '@/components/ui/DataTable.vue';
 import Modal from '@/components/ui/Modal.vue';
@@ -325,6 +332,7 @@ import type { Library } from '@/types';
 
 const libraryStore = useLibraryStore();
 const langStore = useLanguageStore();
+const authStore = useAuthStore();
 
 const searchQuery = ref('');
 const showModal = ref(false);

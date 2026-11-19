@@ -36,6 +36,9 @@ class DatabaseSeeder extends Seeder
 
         // 2. Exact Permission List (CRUD on user, library, and physical attendance)
         $permissions = [
+            // Dashboard
+            'dashboard.view',
+
             // User Management CRUD
             'users.view',
             'users.create',
@@ -75,6 +78,7 @@ class DatabaseSeeder extends Seeder
 
         // Manager: Library management, scoped reporting & analytics, and viewing users
         $managerRole->syncPermissions([
+            'dashboard.view',
             'users.view',
             'libraries.view',
             'libraries.manage',
@@ -89,9 +93,8 @@ class DatabaseSeeder extends Seeder
             'attendance.record',
         ]);
 
-        // Attendant: View library, record attendance, and 2-minute update/delete
+        // Attendant: Record attendance, and 2-minute update/delete
         $attendantRole->syncPermissions([
-            'libraries.view',
             'attendance.view',
             'attendance.record',
             'attendance.update',

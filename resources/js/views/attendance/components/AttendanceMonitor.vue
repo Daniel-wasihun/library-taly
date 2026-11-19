@@ -2,6 +2,7 @@
 import { History, Download, Plus, Minus, Trash2, Printer, Building2, Clock, UserCheck, Users2, Users } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import { useLanguageStore } from '@/stores/languageStore';
+import { useAuthStore } from '@/stores/authStore';
 import { formatDT } from '@/utils/ethiopianDate';
 import type { Attendance } from '@/types';
 
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 }>();
 
 const langStore = useLanguageStore();
+const authStore = useAuthStore();
 
 const getTimeDisplay = (dateStr: string) => {
   return formatDT(dateStr, langStore.isAmharic()).time;
@@ -108,7 +110,7 @@ const getDateDisplay = (dateStr: string) => {
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-end">
+        <div v-if="authStore.canManageReporting || authStore.hasPermission('attendance.view')" class="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-end">
           <!-- Backend Print Button -->
           <Button
             variant="primary"

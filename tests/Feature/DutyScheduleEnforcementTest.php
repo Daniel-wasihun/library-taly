@@ -358,4 +358,94 @@ class DutyScheduleEnforcementTest extends TestCase
             ])
             ->assertStatus(403);
     }
+
+    public function test_attendant_cannot_access_dashboard_stats(): void
+    {
+        $attendant = User::where('username', 'yohannes_attendant')->first();
+
+        // Attendant does not have dashboard.view permission
+        $response = $this->actingAs($attendant)
+            ->getJson('/api/dashboard/stats');
+
+        $response->assertStatus(403)
+            ->assertJsonPath('message', 'Unauthorized: Dashboard view permission is required.');
+    }
+
+    public function test_admin_and_manager_can_access_dashboard_stats(): void
+    {
+        $admin = User::where('username', 'admin')->first();
+        $this->actingAs($admin)
+            ->getJson('/api/dashboard/stats')
+            ->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'stats' => ['today_total', 'total_branches'],
+            ]);
+
+        $manager = User::where('username', 'manager_haile')->first();
+        if ($manager) {
+            $this->actingAs($manager)
+                ->getJson('/api/dashboard/stats')
+                ->assertStatus(200);
+        }
+    }
+
+    public function test_attendant_cannot_create_or_modify_libraries(): void
+    {
+        $attendant = User::where('username', 'yohannes_attendant')->first();
+        $targetLib = Library::first();
+
+        // Attendant cannot create branch
+        $this->actingAs($attendant)
+            ->postJson('/api/libraries', [
+                'name' => 'Unauthorized Library',
+                'code' => 'UNAUTH',
+            ])
+            ->assertStatus(403);
+
+        // Attendant cannot update branch
+        $this->actingAs($attendant)
+            ->putJson("/api/libraries/{$targetLib->id}", [
+                'name' => 'Updated Branch Name',
+                'code' => $targetLib->code,
+            ])
+            ->assertStatus(403);
+
+        // Attendant cannot delete branch
+        $this->actingAs($attendant)
+            ->deleteJson("/api/libraries/{$targetLib->id}")
+            ->assertStatus(403);
+    }
+
+    public function test_backend_report_generation_print_and_export(): void
+    {
+        $admin = User::where('username', 'admin')->first();
+
+        // 1. Official HTML report generation
+        $responsePrint = $this->actingAs($admin)
+            ->get('/api/physical/attendance/report/print?lang=en');
+
+        $responsePrint->assertStatus(200)
+            ->assertHeader('Content-Type', 'text/html; charset=UTF-8')
+            ->assertSee('Official Library Attendance Report')
+            ->assertSee('Demographic Patron Distribution');
+
+        // 2. Official Amharic HTML report generation
+        $responsePrintAm = $this->actingAs($admin)
+            ->get('/api/physical/attendance/report/print?lang=am');
+
+        $responsePrintAm->assertStatus(200)
+            ->assertHeader('Content-Type', 'text/html; charset=UTF-8')
+            ->assertSee('የቤተ-መጻሕፍት አጠቃቀም ይፋዊ ሪፖርት')
+            ->assertSee('1. የተጠቃሚዎች ስርጭት ትንተና')
+            ->assertDontSee('(Print)')
+            ->assertDontSee('(12hr)');
+
+        // 3. CSV report export
+        $responseExport = $this->actingAs($admin)
+            ->get('/api/physical/attendance/export?lang=en');
+
+        $responseExport->assertStatus(200)
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
 }

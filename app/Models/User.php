@@ -100,6 +100,62 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine if user can view the overview dashboard.
+     */
+    public function canViewDashboard(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasAdminPrivilege()
+            || $this->hasRole(['Super Admin', 'Admin', 'Manager'])
+            || $this->can('dashboard.view');
+    }
+
+    /**
+     * Determine if user can access the Library Branches management view.
+     */
+    public function canViewLibraryList(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasAdminPrivilege()
+            || $this->hasRole(['Super Admin', 'Admin', 'Manager'])
+            || $this->can('libraries.view')
+            || $this->can('libraries.manage');
+    }
+
+    /**
+     * Determine if user can create a library branch.
+     */
+    public function canCreateLibrary(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasAdminPrivilege()
+            || $this->can('libraries.create')
+            || $this->can('libraries.manage');
+    }
+
+    /**
+     * Determine if user can update a library branch.
+     */
+    public function canUpdateLibrary(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasAdminPrivilege()
+            || $this->can('libraries.update')
+            || $this->can('libraries.manage');
+    }
+
+    /**
+     * Determine if user can delete a library branch.
+     */
+    public function canDeleteLibrary(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasAdminPrivilege()
+            || $this->can('libraries.delete')
+            || $this->can('libraries.manage');
+    }
+
+    /**
      * Determine if user can access reporting and analytics.
      * Permitted only for users with library management permission or attendance analytics.
      */

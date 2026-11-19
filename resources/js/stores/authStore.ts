@@ -23,6 +23,28 @@ export const useAuthStore = defineStore(
         const canManageAllLibraries = computed(() => isSuperAdmin.value || (user.value?.can_manage_all_libraries ?? false));
         const canManageLibrary = computed(() => isSuperAdmin.value || (user.value as any)?.can_manage_library || hasRole('Manager') || hasPermission('libraries.manage'));
         const canManageReporting = computed(() => isSuperAdmin.value || (user.value as any)?.can_manage_reporting || hasRole('Manager') || hasPermission('attendance.analytics') || hasPermission('libraries.manage'));
+        const canViewDashboard = computed(() => {
+            const u = user.value as any;
+            if (!u) return false;
+            return isSuperAdmin.value ||
+                   isAdmin.value ||
+                   Boolean(u.can_view_dashboard) ||
+                   hasPermission('dashboard.view') ||
+                   hasRole(['Super Admin', 'Admin', 'Manager']);
+        });
+        const canViewLibraries = computed(() => {
+            const u = user.value as any;
+            if (!u) return false;
+            return isSuperAdmin.value ||
+                   isAdmin.value ||
+                   Boolean(u.can_view_libraries) ||
+                   hasPermission('libraries.view') ||
+                   hasPermission('libraries.manage') ||
+                   hasRole(['Super Admin', 'Admin', 'Manager']);
+        });
+        const canCreateLibrary = computed(() => isSuperAdmin.value || isAdmin.value || Boolean((user.value as any)?.can_create_library) || hasPermission('libraries.create') || hasPermission('libraries.manage'));
+        const canUpdateLibrary = computed(() => isSuperAdmin.value || isAdmin.value || Boolean((user.value as any)?.can_update_library) || hasPermission('libraries.update') || hasPermission('libraries.manage'));
+        const canDeleteLibrary = computed(() => isSuperAdmin.value || isAdmin.value || Boolean((user.value as any)?.can_delete_library) || hasPermission('libraries.delete') || hasPermission('libraries.manage'));
         const userRoles = computed(() => user.value?.roles ?? []);
         const isOnDutyToday = computed(() => isSuperAdmin.value || (user.value?.duty_status?.has_active_shift_today ?? false));
         const canCirculateBooks = computed(() => isSuperAdmin.value || (user.value?.duty_status?.circulation_authorized_today ?? false));
@@ -97,6 +119,11 @@ export const useAuthStore = defineStore(
             canManageAllLibraries,
             canManageLibrary,
             canManageReporting,
+            canViewDashboard,
+            canViewLibraries,
+            canCreateLibrary,
+            canUpdateLibrary,
+            canDeleteLibrary,
             userRoles,
             isOnDutyToday,
             canCirculateBooks,

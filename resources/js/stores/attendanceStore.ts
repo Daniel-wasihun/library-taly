@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import { ref, reactive } from 'vue';
 import { attendanceApi } from '@/api';
 import { useToastStore } from './toastStore';
+import { useAuthStore } from './authStore';
+import { useLanguageStore } from './languageStore';
 import type { Attendance, AttendanceStats } from '@/types';
 
 export const useAttendanceStore = defineStore('attendance', () => {
@@ -16,6 +18,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
     const statsLoaded = ref(false);
 
     const toast = useToastStore();
+    const authStore = useAuthStore();
+    const langStore = useLanguageStore();
 
     const pagination = reactive({
         currentPage: 1,
@@ -88,7 +92,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
                 await fetchLogs(1, undefined, true);
             }
 
-            await fetchStats(true);
+            if (authStore.canManageReporting) {
+                await fetchStats(true);
+            }
             return data;
         } catch (err: any) {
             const msg = err.response?.data?.message || 'Failed to log attendance.';
@@ -100,6 +106,11 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
 
     async function fetchStats(force = false) {
+        // Enforce reporting authorization: never make unpermitted stats requests
+        if (!authStore.canManageReporting) {
+            return;
+        }
+
         const hasFilters = Boolean(filters.library_id || filters.date_from || filters.date_to);
         if (!force && statsLoaded.value && !hasFilters && stats.value) {
             return;
@@ -116,7 +127,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
             if (!hasFilters) {
                 statsLoaded.value = true;
             }
-        } catch {
+        } catch (err: any) {
+            if (err?.response?.status === 403 || err?.response?.status === 401) {
+                return;
+            }
             toast.error('Failed to load attendance analytics.');
         } finally {
             statsLoading.value = false;
@@ -125,7 +139,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
     async function exportLogs(customFilters?: any) {
         try {
-            const params = customFilters || { ...filters };
+            const params = {
+                ...(customFilters || filters),
+                lang: langStore.currentLanguage,
+            };
             const response = await attendanceApi.export(params);
 
             const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -152,7 +169,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
                 logs.value[idx] = data.data;
             }
 
-            await fetchStats(true);
+            if (authStore.canManageReporting) {
+                await fetchStats(true);
+            }
             return data;
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Failed to update attendance count.');
@@ -168,7 +187,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
             await attendanceApi.destroy(slug);
             logs.value = logs.value.filter((l) => l.slug !== slug);
             pagination.total = Math.max(0, pagination.total - 1);
-            await fetchStats(true);
+            if (authStore.canManageReporting) {
+                await fetchStats(true);
+            }
             toast.success('Attendance entry cancelled.');
             return true;
         } catch (err: any) {

@@ -1,6 +1,16 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 
+function getLandingRoute(authStore: any) {
+    if (authStore.canViewDashboard) {
+        return { name: 'Dashboard' };
+    }
+    if (authStore.hasPermission('attendance.record') || authStore.hasPermission('attendance.view')) {
+        return { name: 'Attendance' };
+    }
+    return { name: 'MyTurns' };
+}
+
 const routes: RouteRecordRaw[] = [
     {
         path: '/login',
@@ -15,25 +25,28 @@ const routes: RouteRecordRaw[] = [
         children: [
             {
                 path: '',
-                redirect: '/dashboard',
+                redirect: () => {
+                    const authStore = useAuthStore();
+                    return getLandingRoute(authStore);
+                },
             },
             {
                 path: 'dashboard',
                 name: 'Dashboard',
                 component: () => import('@/views/dashboard/DashboardView.vue'),
-                meta: { title: 'Dashboard', icon: 'LayoutDashboard' },
+                meta: { title: 'Dashboard', icon: 'LayoutDashboard', permission: 'dashboard.view' },
             },
             {
                 path: 'libraries',
                 name: 'Libraries',
                 component: () => import('@/views/libraries/LibrariesView.vue'),
-                meta: { title: 'Library Branches', icon: 'Landmark', roles: ['Super Admin', 'Head Librarian'] },
+                meta: { title: 'Library Branches', icon: 'Landmark', permission: 'libraries.view' },
             },
             {
                 path: 'users',
                 name: 'Users',
                 component: () => import('@/views/users/UsersView.vue'),
-                meta: { title: 'User Management', icon: 'Users', roles: ['Super Admin', 'Head Librarian'] },
+                meta: { title: 'User Management', icon: 'Users', roles: ['Super Admin', 'Head Librarian', 'Manager'] },
             },
             {
                 path: 'roles',
@@ -63,7 +76,10 @@ const routes: RouteRecordRaw[] = [
     },
     {
         path: '/:pathMatch(.*)*',
-        redirect: '/dashboard',
+        redirect: () => {
+            const authStore = useAuthStore();
+            return getLandingRoute(authStore);
+        },
     },
 ];
 
@@ -110,12 +126,33 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.guest && authStore.isAuthenticated) {
-        return { name: 'Dashboard' };
+        return getLandingRoute(authStore);
+    }
+
+    // Dashboard authorization guard
+    if (to.name === 'Dashboard' && !authStore.canViewDashboard) {
+        return getLandingRoute(authStore);
+    }
+
+    // Libraries authorization guard
+    if (to.name === 'Libraries' && !authStore.canViewLibraries) {
+        return getLandingRoute(authStore);
     }
 
     // Role guard
     if (to.meta.roles && !authStore.hasRole(to.meta.roles as string[])) {
-        return { name: 'Dashboard' };
+        return getLandingRoute(authStore);
+    }
+
+    // Permission guard
+    if (to.meta.permission && !authStore.hasPermission(to.meta.permission as string)) {
+        if (to.name === 'Dashboard' && authStore.canViewDashboard) {
+            return true;
+        }
+        if (to.name === 'Libraries' && authStore.canViewLibraries) {
+            return true;
+        }
+        return getLandingRoute(authStore);
     }
 
     return true;

@@ -316,6 +316,7 @@ class AttendanceReportService
                 'day_index' => $d,
                 'day_name' => $daysMap[$d]['en'],
                 'day_name_am' => $daysMap[$d]['am'],
+                'short_name' => $isAmharic ? $daysMap[$d]['am'] : substr($daysMap[$d]['en'], 0, 3),
                 'display_name' => $isAmharic ? $daysMap[$d]['am'] : $daysMap[$d]['en'],
                 'total' => 0,
                 'dates_seen' => [],
@@ -369,6 +370,9 @@ class AttendanceReportService
             $info['student_share'] = $info['total'] > 0 ? round(($info['students'] / $info['total']) * 100, 1) : 0.0;
             $info['teacher_share'] = $info['total'] > 0 ? round(($info['teachers'] / $info['total']) * 100, 1) : 0.0;
             $info['staff_share'] = $info['total'] > 0 ? round(($info['staff'] / $info['total']) * 100, 1) : 0.0;
+            $info['morning_share'] = $info['total'] > 0 ? round(($info['morning'] / $info['total']) * 100, 1) : 0.0;
+            $info['afternoon_share'] = $info['total'] > 0 ? round(($info['afternoon'] / $info['total']) * 100, 1) : 0.0;
+            $info['night_share'] = $info['total'] > 0 ? round(($info['night'] / $info['total']) * 100, 1) : 0.0;
             unset($info['dates_seen']);
 
             if ($info['daily_average'] > $maxAvg) {

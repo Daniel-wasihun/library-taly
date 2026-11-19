@@ -174,6 +174,7 @@ export const attendanceApi = {
         library_id?: string | number;
         date_from?: string;
         date_to?: string;
+        lang?: string;
     }) => api.get<AttendanceStats>('/physical/attendance/stats', { params }),
 
     export: (params?: any) =>

@@ -159,6 +159,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
                 library_id: filters.library_id || undefined,
                 date_from: filters.date_from || undefined,
                 date_to: filters.date_to || undefined,
+                lang: langStore.currentLanguage,
             });
             stats.value = data;
             if (!hasFilters) {

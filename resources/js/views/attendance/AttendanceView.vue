@@ -10,6 +10,7 @@ import Modal from '@/components/ui/Modal.vue';
 import Button from '@/components/ui/Button.vue';
 import api from '@/api/client';
 import type { Attendance } from '@/types';
+import { toEthiopian, toGregorian } from '@/utils/ethiopianDate';
 
 // Sub-components
 import AttendanceHeader from './components/AttendanceHeader.vue';
@@ -77,11 +78,19 @@ const checkDutyStatus = async () => {
   }
 };
 
+// Local ISO date formatter avoiding UTC midnight offset bugs
+const toLocalIso = (d: Date = new Date()): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Real-time ticking clock for exact 2-minute expiration
 const currentTime = ref(Date.now());
 let timerInterval: any = null;
 
-const todayStr = new Date().toISOString().split('T')[0];
+const todayStr = toLocalIso(new Date());
 const dateRange = ref({
   from: todayStr,
   to: todayStr,
@@ -262,10 +271,15 @@ const handleExport = (range: 'day' | 'week' | 'month' | 'current') => {
 
   if (range === 'week') {
     const pastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    from = pastWeek.toISOString().split('T')[0];
+    from = toLocalIso(pastWeek);
   } else if (range === 'month') {
-    const pastMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    from = pastMonth.toISOString().split('T')[0];
+    if (langStore.isAmharic()) {
+      const [ey, em] = toEthiopian(now.getFullYear(), now.getMonth() + 1, now.getDate());
+      const [gy, gm, gd] = toGregorian(ey, em, 1);
+      from = `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
+    } else {
+      from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    }
   } else if (range === 'current') {
     from = dateRange.value.from;
     to = dateRange.value.to;
@@ -379,6 +393,15 @@ watch(activeTab, (newTab) => {
     attendanceStore.fetchLogs(1, undefined, true);
   }
 });
+
+watch(
+  () => langStore.currentLanguage,
+  () => {
+    if (activeTab.value === 'analytics' && authStore.canManageReporting) {
+      attendanceStore.fetchStats(true);
+    }
+  }
+);
 </script>
 
 <template>

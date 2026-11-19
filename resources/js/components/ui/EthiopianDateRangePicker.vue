@@ -139,10 +139,18 @@ const emitRange = (range: DateRange) => {
   emit('change', range);
 };
 
+// Local ISO date formatter avoiding UTC midnight offset bugs
+const toLocalIso = (d: Date = new Date()): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Preset ranges
 const applyPreset = (preset: 'today' | 'week' | 'month' | 'academic_year') => {
   const now = new Date();
-  const todayIso = now.toISOString().split('T')[0];
+  const todayIso = toLocalIso(now);
   const isAmharic = langStore.isAmharic();
 
   if (preset === 'today') {
@@ -152,20 +160,20 @@ const applyPreset = (preset: 'today' | 'week' | 'month' | 'academic_year') => {
 
   if (preset === 'week') {
     const past7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    emitRange({ from: past7.toISOString().split('T')[0], to: todayIso });
+    emitRange({ from: toLocalIso(past7), to: todayIso });
     return;
   }
 
   if (preset === 'month') {
     if (isAmharic) {
-      // Current Ethiopian month start (e.g. 1st day of current Ethiopian month)
+      // Exact 1st day of current Ethiopian month (e.g. ኅዳር 1)
       const [ey, em] = toEthiopian(now.getFullYear(), now.getMonth() + 1, now.getDate());
       const fromIso = ethToIso(ey, em, 1);
       emitRange({ from: fromIso, to: todayIso });
     } else {
-      // 1st of Gregorian month
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      emitRange({ from: firstDay.toISOString().split('T')[0], to: todayIso });
+      // Exact 1st day of current Gregorian month (e.g. Nov 1)
+      const fromIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      emitRange({ from: fromIso, to: todayIso });
     }
     return;
   }

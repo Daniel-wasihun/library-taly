@@ -405,7 +405,7 @@ const kpis = computed(() => {
             <BarChart3 class="w-4 h-4 text-brand-blue dark:text-brand-yellow" />
             <span>{{ langStore.t('attendance.demographic_breakdown', 'Patron Demographic Segmentation') }}</span>
           </h4>
-          <span class="text-[10px] font-mono text-main-text/50">100% Normalized</span>
+          <span class="text-[10px] font-mono text-main-text/50">{{ langStore.isAmharic() ? '100% የተመጣጠነ' : '100% Normalized' }}</span>
         </div>
 
         <!-- Gender Proportional Split Bar -->
@@ -454,7 +454,7 @@ const kpis = computed(() => {
             <Building2 class="w-4 h-4 text-brand-blue dark:text-brand-yellow" />
             <span>{{ langStore.t('attendance.branch_comparison', 'Campus Facilities Foot-Traffic') }}</span>
           </h4>
-          <span class="text-[10px] font-mono text-main-text/50">3 Active Branches</span>
+          <span class="text-[10px] font-mono text-main-text/50">{{ branchComparisonList.length }} {{ langStore.isAmharic() ? 'ንቁ ቅርንጫፎች' : 'Active Branches' }}</span>
         </div>
 
         <div class="overflow-x-auto">
@@ -509,7 +509,7 @@ const kpis = computed(() => {
           </p>
         </div>
         <span class="text-[11px] font-mono font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border self-start sm:self-auto">
-          7-Day Longitudinal Profile
+          {{ langStore.isAmharic() ? 'የ7 ቀናት ተከታታይ መገለጫ' : '7-Day Longitudinal Profile' }}
         </span>
       </div>
 
@@ -528,21 +528,21 @@ const kpis = computed(() => {
         >
           <!-- Top Tag & Peak Badge -->
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-main-text uppercase tracking-wide">{{ day.short_name }}</span>
+            <span class="text-xs font-bold text-main-text uppercase tracking-wide">{{ langStore.isAmharic() ? (day.day_name_am || day.short_name) : (day.short_name || day.day_name) }}</span>
             <span
               v-if="day.is_peak"
               class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20"
               title="Peak Surge Day"
             >
               <Flame class="w-2.5 h-2.5" />
-              PEAK
+              {{ langStore.isAmharic() ? 'ከፍተኛ' : 'PEAK' }}
             </span>
             <span
               v-else
               class="text-[9px] font-mono uppercase px-1 py-0.2 rounded"
               :class="day.surge_level === 'HIGH' ? 'bg-amber-500/15 text-amber-600' : 'text-main-text/40'"
             >
-              {{ day.surge_level }}
+              {{ langStore.isAmharic() ? (day.surge_level_am || day.surge_level) : day.surge_level }}
             </span>
           </div>
 
@@ -570,14 +570,15 @@ const kpis = computed(() => {
             <!-- Diurnal Distribution Segment (Morn / Aft / Night) -->
             <div class="flex items-center justify-between text-[9px] font-mono text-main-text/50">
               <span>{{ day.percentage }}%</span>
-              <span>M:{{ day.morning_share }}% N:{{ day.night_share }}%</span>
+              <span v-if="langStore.isAmharic()">ጠ: {{ day.morning_share ?? 0 }}% · ም: {{ day.night_share ?? 0 }}%</span>
+              <span v-else>M: {{ day.morning_share ?? 0 }}% · N: {{ day.night_share ?? 0 }}%</span>
             </div>
 
             <!-- Patron Type Segmentation -->
             <div class="flex items-center justify-between text-[9px] font-mono pt-1 border-t border-card-border/40">
-              <span class="text-emerald-600 dark:text-emerald-400 font-semibold" title="Students">S: {{ day.students }}</span>
-              <span class="text-blue-600 dark:text-blue-400 font-semibold" title="Faculty/Teachers">T: {{ day.teachers ?? 0 }}</span>
-              <span class="text-purple-600 dark:text-purple-400 font-semibold" title="Staff">St: {{ day.staff ?? 0 }}</span>
+              <span class="text-emerald-600 dark:text-emerald-400 font-semibold" :title="langStore.isAmharic() ? 'ተማሪዎች' : 'Students'">{{ langStore.isAmharic() ? 'ተ' : 'S' }}: {{ day.students }}</span>
+              <span class="text-blue-600 dark:text-blue-400 font-semibold" :title="langStore.isAmharic() ? 'መምህራን' : 'Faculty/Teachers'">{{ langStore.isAmharic() ? 'መ' : 'T' }}: {{ day.teachers ?? 0 }}</span>
+              <span class="text-purple-600 dark:text-purple-400 font-semibold" :title="langStore.isAmharic() ? 'ሠራተኞች' : 'Staff'">{{ langStore.isAmharic() ? 'ሠ' : 'St' }}: {{ day.staff ?? 0 }}</span>
             </div>
           </div>
         </div>
@@ -591,9 +592,9 @@ const kpis = computed(() => {
             {{ langStore.t('attendance.admin_prediction', 'Administrative Prediction & Staffing Recommendation') }}:
           </div>
           <p class="text-main-text/70 leading-relaxed">
-            {{ selectedDowIndex && dayOfWeekList.find(d => d.day_index === selectedDowIndex)?.prediction
-              ? dayOfWeekList.find(d => d.day_index === selectedDowIndex)?.prediction
-              : (dayOfWeekList.find(d => d.is_peak)?.prediction || langStore.t('attendance.day_of_week_desc')) }}
+            {{ selectedDowIndex && dayOfWeekList.find(d => d.day_index === selectedDowIndex)
+              ? (langStore.isAmharic() ? (dayOfWeekList.find(d => d.day_index === selectedDowIndex)?.prediction_am || dayOfWeekList.find(d => d.day_index === selectedDowIndex)?.prediction) : dayOfWeekList.find(d => d.day_index === selectedDowIndex)?.prediction)
+              : (langStore.isAmharic() ? (dayOfWeekList.find(d => d.is_peak)?.prediction_am || dayOfWeekList.find(d => d.is_peak)?.prediction || langStore.t('attendance.day_of_week_desc')) : (dayOfWeekList.find(d => d.is_peak)?.prediction || langStore.t('attendance.day_of_week_desc'))) }}
           </p>
         </div>
       </div>
@@ -612,7 +613,7 @@ const kpis = computed(() => {
           </p>
         </div>
         <span class="text-[11px] font-mono font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border self-start sm:self-auto">
-          Intra-Month Recurrence Matrix
+          {{ langStore.isAmharic() ? 'የወሩ ውስጥ ተደጋጋሚነት ማትሪክስ' : 'Intra-Month Recurrence Matrix' }}
         </span>
       </div>
 
@@ -621,7 +622,7 @@ const kpis = computed(() => {
         <div class="lg:col-span-5 p-4 rounded-md border border-card-border bg-main-bg/30 space-y-3">
           <div class="text-xs font-bold text-main-text uppercase tracking-wider flex items-center justify-between">
             <span>{{ langStore.t('attendance.weekly_cycles', 'Weekly Cycles in Month') }}</span>
-            <span class="text-[10px] font-mono text-main-text/50">4-Week Flow</span>
+            <span class="text-[10px] font-mono text-main-text/50">{{ langStore.isAmharic() ? 'የ4 ሳምንታት ዑደት' : '4-Week Flow' }}</span>
           </div>
 
           <div class="space-y-3">
@@ -631,7 +632,7 @@ const kpis = computed(() => {
               class="space-y-1.5"
             >
               <div class="flex items-center justify-between text-xs">
-                <span class="font-bold text-main-text">{{ wk.label }}</span>
+                <span class="font-bold text-main-text">{{ langStore.isAmharic() ? (wk.label_am || wk.label) : wk.label }}</span>
                 <span class="font-mono font-bold text-brand-blue dark:text-brand-yellow">
                   {{ wk.total.toLocaleString() }} <span class="font-normal text-[10px] text-main-text/50">({{ wk.percentage }}%)</span>
                 </span>
@@ -664,7 +665,7 @@ const kpis = computed(() => {
                   ? 'bg-brand-blue dark:bg-brand-yellow text-white dark:text-slate-900 shadow-2xs'
                   : 'text-main-text/70 hover:text-main-text hover:bg-main-bg'"
               >
-                {{ day.day_name.substring(0, 3) }}
+                {{ langStore.isAmharic() ? (day.day_name_am || day.day_name) : day.day_name.substring(0, 3) }}
               </button>
             </div>
           </div>
@@ -678,12 +679,12 @@ const kpis = computed(() => {
               :class="occ.is_peak ? 'border-rose-500/50 ring-1 ring-rose-500/20' : 'border-card-border'"
             >
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold text-main-text">{{ occ.label }}</span>
+                <span class="text-[11px] font-bold text-main-text">{{ langStore.isAmharic() ? (occ.label_am || occ.label) : occ.label }}</span>
                 <span
                   v-if="occ.is_peak"
                   class="px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400"
                 >
-                  SURGE
+                  {{ langStore.isAmharic() ? 'ከፍተኛ ፍሰት' : 'SURGE' }}
                 </span>
               </div>
               <div>
@@ -691,7 +692,7 @@ const kpis = computed(() => {
                   {{ occ.total.toLocaleString() }}
                 </div>
                 <div class="text-[10px] text-main-text/50 font-mono mt-0.5">
-                  {{ occ.percentage }}% of {{ currentOccDay?.day_name }}s
+                  {{ occ.percentage }}% {{ langStore.isAmharic() ? `ከ${currentOccDay?.day_name_am || currentOccDay?.day_name} ቀናት` : `of ${currentOccDay?.day_name}s` }}
                 </div>
               </div>
               <div class="w-full h-1.5 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
@@ -702,9 +703,9 @@ const kpis = computed(() => {
                 ></div>
               </div>
               <div class="flex items-center justify-between text-[8px] font-mono text-main-text/60 pt-0.5 border-t border-card-border/40">
-                <span class="text-emerald-600 font-medium">S: {{ occ.students ?? 0 }}</span>
-                <span class="text-blue-600 font-medium">T: {{ occ.teachers ?? 0 }}</span>
-                <span class="text-purple-600 font-medium">St: {{ occ.staff ?? 0 }}</span>
+                <span class="text-emerald-600 font-medium">{{ langStore.isAmharic() ? 'ተ' : 'S' }}: {{ occ.students ?? 0 }}</span>
+                <span class="text-blue-600 font-medium">{{ langStore.isAmharic() ? 'መ' : 'T' }}: {{ occ.teachers ?? 0 }}</span>
+                <span class="text-purple-600 font-medium">{{ langStore.isAmharic() ? 'ሠ' : 'St' }}: {{ occ.staff ?? 0 }}</span>
               </div>
             </div>
           </div>
@@ -713,7 +714,7 @@ const kpis = computed(() => {
           <div class="text-xs text-main-text/80 bg-card-bg p-2.5 rounded border border-card-border flex items-center gap-2">
             <AlertCircle class="w-4 h-4 text-brand-blue dark:text-brand-yellow shrink-0" />
             <span class="text-[11px] leading-tight">
-              <strong>{{ currentOccDay?.day_name }}:</strong> {{ currentOccDay?.prediction }}
+              <strong>{{ langStore.isAmharic() ? (currentOccDay?.day_name_am || currentOccDay?.day_name) : currentOccDay?.day_name }}:</strong> {{ currentOccDay?.prediction }}
             </span>
           </div>
         </div>
@@ -733,7 +734,7 @@ const kpis = computed(() => {
           </p>
         </div>
         <span class="text-[11px] font-mono font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border self-start sm:self-auto">
-          Multi-Year Influx Model
+          {{ langStore.isAmharic() ? 'የዓመታት የፍሰት ሞዴል' : 'Multi-Year Influx Model' }}
         </span>
       </div>
 
@@ -741,8 +742,8 @@ const kpis = computed(() => {
         <!-- Left: Month-over-Month Interactive Bar Flow (8 Cols) -->
         <div class="lg:col-span-8 space-y-3">
           <div class="flex items-center justify-between text-xs font-bold text-main-text uppercase tracking-wider">
-            <span>Month-by-Month Foot-Traffic Trajectory</span>
-            <span class="text-[10px] font-mono text-main-text/50">{{ monthlyList.length }} Reporting Months</span>
+            <span>{{ langStore.isAmharic() ? 'የወራት የጎብኝዎች ፍሰትና የዕድገት ሂደት' : 'Month-by-Month Foot-Traffic Trajectory' }}</span>
+            <span class="text-[10px] font-mono text-main-text/50">{{ monthlyList.length }} {{ langStore.isAmharic() ? 'የሪፖርት ወራት' : 'Reporting Months' }}</span>
           </div>
 
           <div class="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
@@ -753,9 +754,9 @@ const kpis = computed(() => {
             >
               <div class="flex items-center justify-between text-xs">
                 <div class="flex items-center gap-2 font-bold text-main-text">
-                  <span>{{ m.month_label }}</span>
+                  <span>{{ langStore.isAmharic() ? (m.name_am || m.month_label) : (m.name_en || m.month_label) }}</span>
                   <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-main-text/60 border border-card-border">
-                    {{ m.ethiopian_month }}
+                    {{ langStore.isAmharic() ? m.name_en : m.ethiopian_month }}
                   </span>
                 </div>
                 <div class="flex items-center gap-3">
@@ -784,9 +785,9 @@ const kpis = computed(() => {
               <div class="flex items-center justify-between text-[10px] text-main-text/60 font-mono flex-wrap gap-1">
                 <span>{{ langStore.t('attendance.operating_days', 'Days') }}: {{ m.operating_days }} · {{ langStore.t('attendance.daily_average', 'Daily Avg') }}: {{ m.daily_average }}</span>
                 <span class="flex items-center gap-1.5 font-semibold">
-                  <span class="text-emerald-600 dark:text-emerald-400">S:{{ m.students }}</span>
-                  <span class="text-blue-600 dark:text-blue-400">T:{{ m.teachers ?? 0 }}</span>
-                  <span class="text-purple-600 dark:text-purple-400">St:{{ m.staff ?? 0 }}</span>
+                  <span class="text-emerald-600 dark:text-emerald-400">{{ langStore.isAmharic() ? 'ተ' : 'S' }}:{{ m.students }}</span>
+                  <span class="text-blue-600 dark:text-blue-400">{{ langStore.isAmharic() ? 'መ' : 'T' }}:{{ m.teachers ?? 0 }}</span>
+                  <span class="text-purple-600 dark:text-purple-400">{{ langStore.isAmharic() ? 'ሠ' : 'St' }}:{{ m.staff ?? 0 }}</span>
                 </span>
                 <span>{{ langStore.t('attendance.peak_day', 'Peak Day') }}: <strong>{{ m.peak_weekday }}</strong></span>
               </div>
@@ -797,7 +798,7 @@ const kpis = computed(() => {
         <!-- Right: Year-over-Year Annual Growth Cards (4 Cols) -->
         <div class="lg:col-span-4 space-y-3">
           <div class="text-xs font-bold text-main-text uppercase tracking-wider">
-            Year-over-Year Trajectory
+            {{ langStore.isAmharic() ? 'የዓመታት ንጽጽርና የዕድገት ሂደት' : 'Year-over-Year Trajectory' }}
           </div>
 
           <div class="space-y-3">
@@ -807,7 +808,11 @@ const kpis = computed(() => {
               class="p-4 rounded-md border border-card-border bg-main-bg/40 space-y-2.5"
             >
               <div class="flex items-center justify-between">
-                <div>
+                <div v-if="langStore.isAmharic()">
+                  <div class="text-base font-bold text-main-text">{{ yr.ethiopian_year }} ዓ.ም</div>
+                  <div class="text-[10px] font-mono text-main-text/50">({{ yr.year }} እ.ኤ.አ)</div>
+                </div>
+                <div v-else>
                   <div class="text-base font-bold text-main-text">{{ yr.year }} G.C.</div>
                   <div class="text-[10px] font-mono text-main-text/50">({{ yr.ethiopian_year }} E.C.)</div>
                 </div>
@@ -817,7 +822,7 @@ const kpis = computed(() => {
                   :class="yr.growth_rate.startsWith('+') ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'"
                 >
                   <TrendingUp class="w-3.5 h-3.5" />
-                  {{ yr.growth_rate }} YoY
+                  {{ yr.growth_rate }} {{ langStore.isAmharic() ? 'የዓመት ዕድገት' : 'YoY' }}
                 </span>
               </div>
 
@@ -831,7 +836,7 @@ const kpis = computed(() => {
                 <div>
                   <div class="text-[10px] text-main-text/50 uppercase">{{ langStore.t('attendance.daily_average', 'Daily Average') }}</div>
                   <div class="text-sm font-bold font-mono text-main-text">
-                    {{ yr.daily_average }} / day
+                    {{ yr.daily_average }} / {{ langStore.isAmharic() ? 'ቀን' : 'day' }}
                   </div>
                 </div>
               </div>
@@ -854,7 +859,7 @@ const kpis = computed(() => {
           </p>
         </div>
         <span class="text-[11px] font-mono font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border self-start sm:self-auto">
-          Diurnal 08:00 – 23:00
+          {{ langStore.isAmharic() ? 'የቀንና ሌሊት 08:00 – 23:00' : 'Diurnal 08:00 – 23:00' }}
         </span>
       </div>
 
@@ -977,11 +982,11 @@ const kpis = computed(() => {
         <div class="flex items-center justify-between text-xs font-bold text-main-text uppercase tracking-wider">
           <span class="flex items-center gap-1.5">
             <Activity class="w-4 h-4 text-brand-blue dark:text-brand-yellow" />
-            16-Hour Continuous Diurnal Density Curve
+            {{ langStore.isAmharic() ? 'የ16 ሰዓታት ተከታታይ የጥግግት ኩርባ' : '16-Hour Continuous Diurnal Density Curve' }}
           </span>
           <span class="text-[10px] font-mono text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 font-bold flex items-center gap-1">
             <Flame class="w-3 h-3" />
-            Peak Hour: {{ shiftTimeData?.peak_hour || '10:00 – 11:00' }}
+            {{ langStore.isAmharic() ? 'ከፍተኛ ሰዓት' : 'Peak Hour' }}: {{ shiftTimeData?.peak_hour || '10:00 – 11:00' }}
           </span>
         </div>
 
@@ -1020,7 +1025,7 @@ const kpis = computed(() => {
           <Users class="w-4 h-4 text-brand-blue dark:text-brand-yellow" />
           <span>{{ langStore.t('attendance.staff_activity', 'Attendant Duty Desk Operational Activity Log') }}</span>
         </h4>
-        <span class="text-[11px] font-mono text-main-text/50 font-semibold">{{ staffActivityList.length }} Staff Members Active</span>
+        <span class="text-[11px] font-mono text-main-text/50 font-semibold">{{ staffActivityList.length }} {{ langStore.isAmharic() ? 'ንቁ ሠራተኞች' : 'Staff Members Active' }}</span>
       </div>
 
       <div class="overflow-x-auto">

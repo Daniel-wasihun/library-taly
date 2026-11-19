@@ -6,6 +6,8 @@ use Carbon\Carbon;
 
 class EthiopianDateService
 {
+    protected const ETHIOPIC_EPOCH = 1724221;
+
     protected static array $amMonths = [
         1 => 'መስከረም',
         2 => 'ጥቅምት',
@@ -23,74 +25,85 @@ class EthiopianDateService
     ];
 
     protected static array $amDays = [
-        0 => 'እሁድ',
+        0 => 'እሑድ',
         1 => 'ሰኞ',
         2 => 'ማክሰኞ',
         3 => 'ረቡዕ',
         4 => 'ሐሙስ',
-        5 => 'አርብ',
+        5 => 'ዓርብ',
         6 => 'ቅዳሜ',
     ];
 
-    protected static function startDayOfEthiopian(int $year): int
+    public static function gregorianToJdn(int $year, int $month, int $day): int
     {
-        $newYearDay = (int) (floor($year / 100) - floor($year / 400) - 4);
-        return (($year - 1) % 4 === 3) ? $newYearDay + 1 : $newYearDay;
+        $a = (int) floor((14 - $month) / 12);
+        $y = $year + 4800 - $a;
+        $m = $month + 12 * $a - 3;
+        return $day + (int) floor((153 * $m + 2) / 5) + 365 * $y + (int) floor($y / 4) - (int) floor($y / 100) + (int) floor($y / 400) - 32045;
     }
 
+    public static function jdnToGregorian(int $jdn): array
+    {
+        $a = $jdn + 32044;
+        $b = (int) floor((4 * $a + 3) / 146097);
+        $c = $a - (int) floor((146097 * $b) / 4);
+        $d = (int) floor((4 * $c + 3) / 1461);
+        $e = $c - (int) floor((1461 * $d) / 4);
+        $m = (int) floor((5 * $e + 2) / 153);
+        $day = $e - (int) floor((153 * $m + 2) / 5) + 1;
+        $month = $m + 3 - 12 * (int) floor($m / 10);
+        $year = 100 * $b + $d - 4800 + (int) floor($m / 10);
+        return [$year, $month, $day];
+    }
+
+    public static function ethiopianToJdn(int $year, int $month, int $day): int
+    {
+        return self::ETHIOPIC_EPOCH + ($year - 1) * 365 + (int) floor($year / 4) + ($month - 1) * 30 + $day - 1;
+    }
+
+    public static function jdnToEthiopian(int $jdn): array
+    {
+        $daysSinceEpoch = $jdn - self::ETHIOPIC_EPOCH;
+        $cycle = (int) floor($daysSinceEpoch / 1461);
+        $rem = $daysSinceEpoch % 1461;
+
+        if ($rem < 365) {
+            $yInCycle = 0;
+            $dayInYear = $rem;
+        } elseif ($rem < 730) {
+            $yInCycle = 1;
+            $dayInYear = $rem - 365;
+        } elseif ($rem < 1096) {
+            $yInCycle = 2;
+            $dayInYear = $rem - 730;
+        } else {
+            $yInCycle = 3;
+            $dayInYear = $rem - 1096;
+        }
+
+        $year = $cycle * 4 + $yInCycle + 1;
+        $month = (int) floor($dayInYear / 30) + 1;
+        $day = ($dayInYear % 30) + 1;
+
+        return [$year, $month, $day];
+    }
+
+    /**
+     * Convert Gregorian Calendar [Y, M, D] to Ethiopian Calendar [Y, M, D].
+     */
     public static function toEthiopian(int $year, int $month, int $date): array
     {
-        $gregorianMonths = [0.0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-        $ethiopianMonths = [0.0, 30, 30, 30, 30, 30, 30, 30, 30, 30, 5, 30, 30, 30, 30];
+        $jdn = self::gregorianToJdn($year, $month, $date);
+        return self::jdnToEthiopian($jdn);
+    }
 
-        if (($year % 4 === 0 && $year % 100 !== 0) || $year % 400 === 0) {
-            $gregorianMonths[2] = 29;
-        }
-
-        $ethiopianYear = $year - 8;
-        if ($ethiopianYear % 4 === 3) {
-            $ethiopianMonths[10] = 6;
-        }
-
-        $newYearDay = self::startDayOfEthiopian($year - 8);
-
-        $until = 0;
-        for ($i = 1; $i < $month; $i++) {
-            $until += $gregorianMonths[$i];
-        }
-        $until += $date;
-
-        $tahissas = ($ethiopianYear % 4) === 0 ? 26 : 25;
-        if ($year < 1582) {
-            $ethiopianMonths[1] = 0;
-            $ethiopianMonths[2] = $tahissas;
-        } elseif ($until <= 277 && $year === 1582) {
-            $ethiopianMonths[1] = 0;
-            $ethiopianMonths[2] = $tahissas;
-        } else {
-            $tahissas = $newYearDay - 3;
-            $ethiopianMonths[1] = $tahissas;
-        }
-
-        $m = 1;
-        $ethiopianDate = 1;
-        for ($m = 1; $m < count($ethiopianMonths); $m++) {
-            if ($until <= $ethiopianMonths[$m]) {
-                $ethiopianDate = ($m === 1 || $ethiopianMonths[$m] === 0) ? $until + (30 - $tahissas) : $until;
-                break;
-            } else {
-                $until -= $ethiopianMonths[$m];
-            }
-        }
-
-        if ($m > 10) {
-            $ethiopianYear += 1;
-        }
-
-        $order = [0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1, 2, 3, 4];
-        $ethiopianMonth = $order[$m] ?? 1;
-
-        return [$ethiopianYear, $ethiopianMonth, $ethiopianDate];
+    /**
+     * Convert Ethiopian Calendar [Y, M, D] to Gregorian Calendar [Y, M, D].
+     */
+    public static function toGregorian(int $year, int $month, int $date): array
+    {
+        $jdn = self::ethiopianToJdn($year, $month, $date);
+        return self::jdnToGregorian($jdn);
     }
 
     public static function formatDT(Carbon|string|null $dateInput, bool $isAmharic = false): array

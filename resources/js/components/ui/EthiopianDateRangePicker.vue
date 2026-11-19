@@ -147,8 +147,12 @@ const toLocalIso = (d: Date = new Date()): string => {
   return `${year}-${month}-${day}`;
 };
 
+// Active preset tracker
+const activePreset = ref<'today' | 'week' | 'month' | 'academic_year' | 'custom'>('today');
+
 // Preset ranges
 const applyPreset = (preset: 'today' | 'week' | 'month' | 'academic_year') => {
+  activePreset.value = preset;
   const now = new Date();
   const todayIso = toLocalIso(now);
   const isAmharic = langStore.isAmharic();
@@ -192,6 +196,22 @@ const applyPreset = (preset: 'today' | 'week' | 'month' | 'academic_year') => {
     return;
   }
 };
+
+// Listen for language changes and automatically realign calendar intervals (e.g. month preset)
+watch(
+  () => langStore.currentLanguage,
+  () => {
+    if (activePreset.value === 'month') {
+      applyPreset('month');
+    } else if (activePreset.value === 'academic_year') {
+      applyPreset('academic_year');
+    } else if (activePreset.value === 'today') {
+      applyPreset('today');
+    } else {
+      syncFromModel();
+    }
+  }
+);
 
 // Formatted active display strings
 const activeRangeLabel = computed(() => {
@@ -272,28 +292,40 @@ onUnmounted(() => {
         <button
           type="button"
           @click="applyPreset('today')"
-          class="px-2 py-0.5 rounded text-[10px] font-semibold transition hover:bg-brand-blue/10 hover:text-brand-blue border border-card-border/40"
+          class="px-2.5 py-1 rounded text-[10px] font-bold transition border"
+          :class="activePreset === 'today'
+            ? 'bg-brand-blue text-white border-brand-blue shadow-2xs'
+            : 'border-card-border/60 hover:bg-brand-blue/10 hover:text-brand-blue text-main-text/70'"
         >
           {{ langStore.isAmharic() ? 'ዛሬ' : 'Today' }}
         </button>
         <button
           type="button"
           @click="applyPreset('week')"
-          class="px-2 py-0.5 rounded text-[10px] font-semibold transition hover:bg-brand-blue/10 hover:text-brand-blue border border-card-border/40"
+          class="px-2.5 py-1 rounded text-[10px] font-bold transition border"
+          :class="activePreset === 'week'
+            ? 'bg-brand-blue text-white border-brand-blue shadow-2xs'
+            : 'border-card-border/60 hover:bg-brand-blue/10 hover:text-brand-blue text-main-text/70'"
         >
           {{ langStore.isAmharic() ? '7 ቀናት' : '7 Days' }}
         </button>
         <button
           type="button"
           @click="applyPreset('month')"
-          class="px-2 py-0.5 rounded text-[10px] font-semibold transition hover:bg-brand-blue/10 hover:text-brand-blue border border-card-border/40"
+          class="px-2.5 py-1 rounded text-[10px] font-bold transition border"
+          :class="activePreset === 'month'
+            ? 'bg-brand-blue text-white border-brand-blue shadow-2xs'
+            : 'border-card-border/60 hover:bg-brand-blue/10 hover:text-brand-blue text-main-text/70'"
         >
           {{ langStore.isAmharic() ? 'ይህ ወር (ወርኃዊ)' : 'This Month' }}
         </button>
         <button
           type="button"
           @click="applyPreset('academic_year')"
-          class="px-2 py-0.5 rounded text-[10px] font-semibold transition hover:bg-brand-blue/10 hover:text-brand-blue border border-card-border/40"
+          class="px-2.5 py-1 rounded text-[10px] font-bold transition border"
+          :class="activePreset === 'academic_year'
+            ? 'bg-brand-blue text-white border-brand-blue shadow-2xs'
+            : 'border-card-border/60 hover:bg-brand-blue/10 hover:text-brand-blue text-main-text/70'"
         >
           {{ langStore.isAmharic() ? 'አካዳሚክ ዓመት' : 'Academic Year' }}
         </button>

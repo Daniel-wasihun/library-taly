@@ -99,12 +99,10 @@
     <!-- Tab 5: Individual Duty Turns & Logs -->
     <div v-else-if="activeTab === 'duty_logs'" class="space-y-4">
       <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <input
-            v-model="dateFilter"
-            type="date"
-            class="px-3 py-2 text-xs rounded-sm bg-card-bg border border-card-border text-main-text shadow-2xs"
-          />
+        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center">
+          <div class="w-full sm:w-60">
+            <EthiopianDatePicker v-model="dateFilter" />
+          </div>
           <div class="relative">
             <select
               v-model="taskFilter"
@@ -233,14 +231,10 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-main-text mb-1">
-              Shift Date <span class="text-rose-500">*</span>
-            </label>
-            <input
+            <EthiopianDatePicker
               v-model="individualForm.shift_date"
-              type="date"
+              :label="langStore.isAmharic() ? 'የተረኝነት ቀን' : 'Shift Date'"
               required
-              class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-mono"
             />
           </div>
           <div>
@@ -313,6 +307,7 @@ import EthiopianShiftCalendar from './components/EthiopianShiftCalendar.vue';
 import ShiftGroupsTab from './components/ShiftGroupsTab.vue';
 import ShiftDefinitionsTab from './components/ShiftDefinitionsTab.vue';
 import EthiopianHolidaysTab from './components/EthiopianHolidaysTab.vue';
+import EthiopianDatePicker from '@/components/ui/EthiopianDatePicker.vue';
 import Button from '@/components/ui/Button.vue';
 import DataTable, { ColumnDef } from '@/components/ui/DataTable.vue';
 import Modal from '@/components/ui/Modal.vue';

@@ -195,6 +195,32 @@ const kpis = computed(() => {
     dominant_patron: 'Students',
   };
 });
+
+const intervalDaysCount = computed(() => {
+  if (!props.dateRange?.from || !props.dateRange?.to) return 1;
+  const f = new Date(props.dateRange.from).getTime();
+  const t = new Date(props.dateRange.to).getTime();
+  const diff = Math.round(Math.abs(t - f) / 86400000) + 1;
+  return Math.max(1, diff);
+});
+
+const formattedActiveRange = computed(() => {
+  const isAmharic = langStore.isAmharic();
+  const fPrim = formatDT(props.dateRange.from, isAmharic);
+  const tPrim = formatDT(props.dateRange.to, isAmharic);
+  const fSec = formatDT(props.dateRange.from, !isAmharic);
+  const tSec = formatDT(props.dateRange.to, !isAmharic);
+
+  const primary = (props.dateRange.from === props.dateRange.to)
+    ? (fPrim.full || fPrim.date)
+    : `${fPrim.date} – ${tPrim.date}`;
+
+  const secondary = (props.dateRange.from === props.dateRange.to)
+    ? (fSec.full || fSec.date)
+    : `${fSec.date} – ${tSec.date}`;
+
+  return { primary, secondary };
+});
 </script>
 
 <template>
@@ -313,6 +339,37 @@ const kpis = computed(() => {
 
     <!-- Active Loaded Analytics State -->
     <div v-else class="space-y-6">
+      <!-- Active Analysis Scope & Selected Date Interval Header Banner -->
+      <div class="bg-card-bg border border-card-border rounded-md p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-start sm:items-center gap-3">
+          <div class="p-2 rounded bg-brand-blue/10 text-brand-blue dark:text-brand-yellow shrink-0 mt-0.5 sm:mt-0">
+            <Calendar class="w-5 h-5" />
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-main-text uppercase tracking-wider">
+                {{ langStore.isAmharic() ? 'የተመረጠው የትንተና ጊዜ ወሰን' : 'Active Analytical Interval Window' }}
+              </span>
+              <span class="text-[9px] font-mono px-2 py-0.5 rounded font-bold uppercase bg-brand-blue/10 text-brand-blue border border-brand-blue/20">
+                {{ langStore.isAmharic() ? 'የኢትዮጵያ ዘመን አቆጣጠር' : 'Gregorian Calendar' }}
+              </span>
+            </div>
+            <div class="text-sm font-bold font-mono text-brand-blue dark:text-brand-yellow mt-0.5">
+              {{ formattedActiveRange.primary }}
+              <span class="font-normal text-xs text-main-text/50 font-mono ml-2">
+                ({{ formattedActiveRange.secondary }})
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs font-mono bg-main-bg/60 px-3 py-1.5 rounded border border-card-border self-start sm:self-auto">
+          <span class="font-bold text-main-text">{{ selectedLibraryName }}</span>
+          <span class="text-main-text/40">·</span>
+          <span class="text-main-text/70">{{ intervalDaysCount }} {{ langStore.isAmharic() ? 'ቀናት' : 'days' }}</span>
+        </div>
+      </div>
+
       <!-- Executive Context & Formal Audit Narrative Banner -->
       <div v-if="narrativeDescription" class="bg-card-bg border-l-4 border-l-brand-blue border border-card-border rounded-md p-4 shadow-2xs space-y-2">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs font-bold text-brand-blue uppercase tracking-wider">

@@ -618,10 +618,15 @@ class AttendanceReportService
 
         foreach ($monthGroups as $ym => $logs) {
             $c = Carbon::parse($ym . '-01');
-            $mNum = $c->month;
             $gregorianMonthName = $c->format('F Y');
-            $ethMonth = $ethMonthNames[$mNum] ?? 'ኅዳር';
-            $ethYear = $c->year - 7;
+            [$ey, $em] = EthiopianDateService::toEthiopian($c->year, $c->month, 15);
+            $amMonthsList = [
+                1 => 'መስከረም', 2 => 'ጥቅምት', 3 => 'ኅዳር', 4 => 'ታኅሣሥ',
+                5 => 'ጥር', 6 => 'የካቲት', 7 => 'መጋቢት', 8 => 'ሚያዝያ',
+                9 => 'ግንቦት', 10 => 'ሰኔ', 11 => 'ሐምሌ', 12 => 'ነሐሴ', 13 => 'ጳጉሜን'
+            ];
+            $ethMonth = $amMonthsList[$em] ?? 'ኅዳር';
+            $ethYear = $ey;
             $tot = (int) $logs->sum('visitor_count');
 
             $growthRate = '—';
@@ -690,7 +695,7 @@ class AttendanceReportService
 
         foreach ($yearGroups as $yr => $logs) {
             $tot = (int) $logs->sum('visitor_count');
-            $ethYr = ((int)$yr) - 7;
+            $ethYr = EthiopianDateService::toEthiopian((int)$yr, 11, 1)[0];
 
             $growthRate = '—';
             if ($prevYearTotal !== null && $prevYearTotal > 0) {

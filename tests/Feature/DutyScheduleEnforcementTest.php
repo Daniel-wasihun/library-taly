@@ -462,7 +462,7 @@ class DutyScheduleEnforcementTest extends TestCase
         $responseDoc->assertStatus(200)
             ->assertHeader('Content-Type', 'application/msword; charset=UTF-8')
             ->assertSee('html')
-            ->assertSee('ADDIS ABABA UNIVERSITY')
+            ->assertSee('WOLDIA UNIVERSITY')
             ->assertSee('Directorate of Academic Library');
 
         $responseCsv = $this->actingAs($admin)
@@ -477,6 +477,6 @@ class DutyScheduleEnforcementTest extends TestCase
         $responseAmDoc->assertStatus(200)
             ->assertHeader('Content-Type', 'application/msword; charset=UTF-8')
             ->assertSee('የቤተ-መጻሕፍት አጠቃቀም እና የስነ-ሕዝብ ትንተና ይፋዊ ሪፖርት')
-            ->assertSee('አዲስ አበባ ዩኒቨርሲቲ');
+            ->assertSee('ወልድያ ዩኒቨርሲቲ');
     }
 }

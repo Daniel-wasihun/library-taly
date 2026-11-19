@@ -16,6 +16,16 @@ export const useAttendanceStore = defineStore('attendance', () => {
     // Pinia Cache Flags
     const isLoaded = ref(false);
     const statsLoaded = ref(false);
+
+    const loadSavedHistory = () => {
+        try {
+            const raw = sessionStorage.getItem('wdu_attendance_exports');
+            return raw ? JSON.parse(raw) : [];
+        } catch {
+            return [];
+        }
+    };
+
     const exportHistory = ref<Array<{
         id: string;
         name: string;
@@ -24,35 +34,15 @@ export const useAttendanceStore = defineStore('attendance', () => {
         timestamp: string;
         scope: string;
         size: string;
-    }>>([
-        {
-            id: 'EXP-101',
-            name: 'WDU_Official_Attendance_Executive_Audit',
-            format: 'xlsx',
-            date: 'Today',
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            scope: 'Academic Campus Facilities',
-            size: '46 KB',
-        },
-        {
-            id: 'EXP-102',
-            name: 'WDU_Library_Demographic_Analysis_Memo',
-            format: 'doc',
-            date: 'Today',
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            scope: 'Academic Campus Facilities',
-            size: '34 KB',
-        },
-        {
-            id: 'EXP-103',
-            name: 'WDU_Physical_Gate_Raw_Audit_Log',
-            format: 'csv',
-            date: 'Today',
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            scope: 'Academic Campus Facilities',
-            size: '18 KB',
-        },
-    ]);
+    }>>(loadSavedHistory());
+
+    const saveExportHistory = () => {
+        try {
+            sessionStorage.setItem('wdu_attendance_exports', JSON.stringify(exportHistory.value));
+        } catch {
+            // ignore
+        }
+    };
 
     const toast = useToastStore();
     const authStore = useAuthStore();
@@ -198,6 +188,18 @@ export const useAttendanceStore = defineStore('attendance', () => {
             const dateTo = params.date_to ? `&date_to=${params.date_to}` : '';
             const url = `/api/physical/attendance/report/print?lang=${params.lang}&token=${encodeURIComponent(token)}${libParam}${dateFrom}${dateTo}&auto_print=1`;
             window.open(url, '_blank');
+
+            const filename = `WDU_Official_Print_Report_${Date.now()}`;
+            exportHistory.value.unshift({
+                id: `EXP-${Math.floor(100 + Math.random() * 900)}`,
+                name: filename,
+                format: 'pdf',
+                date: langStore.isAmharic() ? 'ዛሬ' : 'Today',
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                scope: params.library_id ? (langStore.isAmharic() ? 'የተመረጠው ቅርንጫፍ' : 'Assigned Branch Facility') : (langStore.isAmharic() ? 'ሁሉም የዩኒቨርሲቲው ቅርንጫፎች' : 'All Campus Facilities'),
+                size: '~ 42 KB',
+            });
+            saveExportHistory();
             return;
         }
 
@@ -220,11 +222,12 @@ export const useAttendanceStore = defineStore('attendance', () => {
                 id: `EXP-${Math.floor(100 + Math.random() * 900)}`,
                 name: filename.replace(`.${ext}`, ''),
                 format,
-                date: 'Today',
+                date: langStore.isAmharic() ? 'ዛሬ' : 'Today',
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                scope: params.library_id ? 'Assigned Branch Facility' : 'All Campus Facilities',
+                scope: params.library_id ? (langStore.isAmharic() ? 'የተመረጠው ቅርንጫፍ' : 'Assigned Branch Facility') : (langStore.isAmharic() ? 'ሁሉም የዩኒቨርሲቲው ቅርንጫፎች' : 'All Campus Facilities'),
                 size: estSize,
             });
+            saveExportHistory();
 
             toast.success(
                 langStore.isAmharic()

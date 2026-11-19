@@ -639,11 +639,12 @@
         <table class="formal-table" style="margin-top: 6px;">
             <thead>
                 <tr>
-                    <th style="width: 20%;">{{ $isAmharic ? 'የሳምንት ዕለት' : 'Day of Week' }}</th>
-                    <th style="width: 20%;">{{ $isAmharic ? '1ኛ ድግግሞሽ (ቀናት 1–7)' : '1st Occurrence (Days 1–7)' }}</th>
-                    <th style="width: 20%;">{{ $isAmharic ? '2ኛ ድግግሞሽ (ቀናት 8–14)' : '2nd Occurrence (Days 8–14)' }}</th>
-                    <th style="width: 20%;">{{ $isAmharic ? '3ኛ ድግግሞሽ (ቀናት 15–21)' : '3rd Occurrence (Days 15–21)' }}</th>
-                    <th style="width: 20%;">{{ $isAmharic ? '4ኛ ድግግሞሽ (ቀናት 22–28)' : '4th Occurrence (Days 22–28)' }}</th>
+                    <th style="width: 15%;">{{ $isAmharic ? 'የሳምንት ዕለት' : 'Day of Week' }}</th>
+                    <th style="width: 17%;">{{ $isAmharic ? '1ኛ ድግግሞሽ (ቀናት 1–7)' : '1st Occurrence (Days 1–7)' }}</th>
+                    <th style="width: 17%;">{{ $isAmharic ? '2ኛ ድግግሞሽ (ቀናት 8–14)' : '2nd Occurrence (Days 8–14)' }}</th>
+                    <th style="width: 17%;">{{ $isAmharic ? '3ኛ ድግግሞሽ (ቀናት 15–21)' : '3rd Occurrence (Days 15–21)' }}</th>
+                    <th style="width: 17%;">{{ $isAmharic ? '4ኛ ድግግሞሽ (ቀናት 22–28)' : '4th Occurrence (Days 22–28)' }}</th>
+                    <th style="width: 17%;">{{ $isAmharic ? '5ኛ ድግግሞሽ (ቀናት 29–31)' : '5th Occurrence (Days 29–31)' }}</th>
                 </tr>
             </thead>
             <tbody>

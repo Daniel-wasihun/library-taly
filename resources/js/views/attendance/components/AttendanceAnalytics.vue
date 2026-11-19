@@ -151,9 +151,29 @@ const intraMonthData = computed(() => {
   return attendanceStore.stats?.intra_month_analytics || null;
 });
 
-const currentOccDay = computed(() => {
+const selectedIntraMonthKey = ref<string>('');
+
+watch(
+  () => intraMonthData.value?.selected_month_key,
+  (newKey) => {
+    if (newKey && (!selectedIntraMonthKey.value || !intraMonthData.value?.by_month?.[selectedIntraMonthKey.value])) {
+      selectedIntraMonthKey.value = newKey;
+    }
+  },
+  { immediate: true }
+);
+
+const activeIntraMonth = computed(() => {
   if (!intraMonthData.value) return null;
-  return intraMonthData.value.occurrences_by_day.find(d => d.day_index === selectedOccDow.value) || intraMonthData.value.occurrences_by_day[0];
+  if (selectedIntraMonthKey.value && intraMonthData.value.by_month?.[selectedIntraMonthKey.value]) {
+    return intraMonthData.value.by_month[selectedIntraMonthKey.value];
+  }
+  return intraMonthData.value;
+});
+
+const currentOccDay = computed(() => {
+  if (!activeIntraMonth.value || !activeIntraMonth.value.occurrences_by_day) return null;
+  return activeIntraMonth.value.occurrences_by_day.find(d => d.day_index === selectedOccDow.value) || activeIntraMonth.value.occurrences_by_day[0];
 });
 
 const monthlyList = computed(() => {
@@ -268,13 +288,6 @@ const formattedActiveRange = computed(() => {
 
     <!-- Skeleton Loading State -->
     <div v-if="statsLoading" class="space-y-6 animate-pulse">
-      <!-- Executive narrative skeleton -->
-      <div class="bg-card-bg border border-card-border rounded-md p-5 space-y-3">
-        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
-        <div class="h-3 bg-slate-200 dark:bg-slate-700/60 rounded w-full"></div>
-        <div class="h-3 bg-slate-200 dark:bg-slate-700/60 rounded w-5/6"></div>
-      </div>
-
       <!-- 6 KPI Skeletons -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div v-for="i in 6" :key="i" class="bg-card-bg border border-card-border rounded-md p-4 space-y-2">
@@ -368,22 +381,6 @@ const formattedActiveRange = computed(() => {
           <span class="text-main-text/40">·</span>
           <span class="text-main-text/70">{{ intervalDaysCount }} {{ langStore.isAmharic() ? 'ቀናት' : 'days' }}</span>
         </div>
-      </div>
-
-      <!-- Executive Context & Formal Audit Narrative Banner -->
-      <div v-if="narrativeDescription" class="bg-card-bg border-l-4 border-l-brand-blue border border-card-border rounded-md p-4 shadow-2xs space-y-2">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs font-bold text-brand-blue uppercase tracking-wider">
-          <span class="flex items-center gap-1.5">
-            <ShieldCheck class="w-4 h-4 text-brand-blue" />
-            {{ langStore.t('attendance.executive_summary', 'Executive Analytics Context & Institutional Scope') }}
-          </span>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-blue/10 text-brand-blue border border-brand-blue/20 self-start sm:self-auto font-semibold">
-            {{ selectedLibraryName }}
-          </span>
-        </div>
-        <p class="text-xs text-main-text/80 leading-relaxed text-justify">
-          {{ narrativeDescription }}
-        </p>
       </div>
 
     <!-- Perspective 1: Key Performance Metrics & Executive Indicators -->
@@ -669,9 +666,25 @@ const formattedActiveRange = computed(() => {
             {{ langStore.t('attendance.intra_month_desc', 'Compare recurring day positions (1st Monday vs 2nd Monday) and 4-week academic progress cycles to anticipate exam preparation rushes.') }}
           </p>
         </div>
-        <span class="text-[11px] font-mono font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border self-start sm:self-auto">
-          {{ langStore.isAmharic() ? 'የወሩ ውስጥ ተደጋጋሚነት ማትሪክስ' : 'Intra-Month Recurrence Matrix' }}
-        </span>
+        
+        <!-- Month Selector Dropdown for Previous & Academic Months -->
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <label class="text-[11px] font-semibold text-main-text/60 shrink-0">
+            {{ langStore.isAmharic() ? 'የትንተና ወር:' : 'Assessment Month:' }}
+          </label>
+          <select
+            v-model="selectedIntraMonthKey"
+            class="text-xs font-bold font-mono px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-brand-blue dark:text-brand-yellow border border-card-border cursor-pointer shadow-2xs focus:outline-none focus:ring-1 focus:ring-brand-blue"
+          >
+            <option
+              v-for="m in (intraMonthData?.available_months || [])"
+              :key="m.month_key"
+              :value="m.month_key"
+            >
+              {{ langStore.isAmharic() ? m.name_am : m.name_en }} {{ m.is_previous ? (langStore.isAmharic() ? '★ (ያለፈው ወር)' : '★ (Previous Month)') : '' }}
+            </option>
+          </select>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -684,7 +697,7 @@ const formattedActiveRange = computed(() => {
 
           <div class="space-y-3">
             <div
-              v-for="wk in (intraMonthData?.week_progression || [])"
+              v-for="wk in (activeIntraMonth?.week_progression || [])"
               :key="wk.week"
               class="space-y-1.5"
             >
@@ -704,16 +717,16 @@ const formattedActiveRange = computed(() => {
           </div>
         </div>
 
-        <!-- Right: Day Selector & 4 Occurrences Comparison (1st, 2nd, 3rd, 4th Occurrence) -->
+        <!-- Right: Day Selector & 5 Occurrences Comparison (1st to 5th Occurrence) -->
         <div class="lg:col-span-7 p-4 rounded-md border border-card-border bg-main-bg/30 space-y-3">
           <!-- Day Tabs (Mon, Tue, Wed, Thu, Fri, Sat, Sun) -->
           <div class="flex items-center justify-between flex-wrap gap-1">
             <span class="text-xs font-bold text-main-text uppercase tracking-wider">
               {{ langStore.t('attendance.recurring_occurrences', 'Recurring Day Occurrences') }}
             </span>
-            <div class="flex items-center gap-1 bg-card-bg p-0.5 rounded border border-card-border">
+            <div class="flex items-center gap-1 bg-card-bg p-0.5 rounded border border-card-border flex-wrap">
               <button
-                v-for="day in (intraMonthData?.occurrences_by_day || [])"
+                v-for="day in (activeIntraMonth?.occurrences_by_day || [])"
                 :key="day.day_index"
                 type="button"
                 @click="selectedOccDow = day.day_index"
@@ -722,13 +735,13 @@ const formattedActiveRange = computed(() => {
                   ? 'bg-brand-blue dark:bg-brand-yellow text-white dark:text-slate-900 shadow-2xs'
                   : 'text-main-text/70 hover:text-main-text hover:bg-main-bg'"
               >
-                {{ langStore.isAmharic() ? (day.day_name_am || day.day_name) : day.day_name.substring(0, 3) }}
+                {{ langStore.isAmharic() ? (day.day_name_am || day.day_name) : (day.short_name || day.day_name.substring(0, 3)) }}
               </button>
             </div>
           </div>
 
-          <!-- 4 Occurrences Cards for Selected Day -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <!-- 5 Occurrences Cards for Selected Day -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
             <div
               v-for="occ in (currentOccDay?.occurrences || [])"
               :key="occ.occurrence"
@@ -741,7 +754,7 @@ const formattedActiveRange = computed(() => {
                   v-if="occ.is_peak"
                   class="px-1 py-0.2 rounded text-[8px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400"
                 >
-                  {{ langStore.isAmharic() ? 'ከፍተኛ ፍሰት' : 'SURGE' }}
+                  {{ langStore.isAmharic() ? 'ከፍተኛ' : 'PEAK' }}
                 </span>
               </div>
               <div>
@@ -749,7 +762,7 @@ const formattedActiveRange = computed(() => {
                   {{ occ.total.toLocaleString() }}
                 </div>
                 <div class="text-[10px] text-main-text/50 font-mono mt-0.5">
-                  {{ occ.percentage }}% {{ langStore.isAmharic() ? `ከ${currentOccDay?.day_name_am || currentOccDay?.day_name} ቀናት` : `of ${currentOccDay?.day_name}s` }}
+                  {{ occ.percentage }}% {{ langStore.isAmharic() ? `ከ${currentOccDay?.day_name_am || currentOccDay?.day_name}` : `of ${currentOccDay?.day_name}s` }}
                 </div>
               </div>
               <div class="w-full h-1.5 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
@@ -912,11 +925,13 @@ const formattedActiveRange = computed(() => {
             <span>{{ langStore.t('attendance.diurnal_shift_title', 'Diurnal Shift Windows & 16-Hour Peak Foot-Traffic Curve') }}</span>
           </h4>
           <p class="text-xs text-main-text/60 mt-0.5">
-            {{ langStore.t('attendance.diurnal_shift_desc', 'Continuous diurnal density tracking across Morning (08:00–12:00), Afternoon (12:00–17:00), and Night (17:00–23:00) shift duty intervals.') }}
+            {{ langStore.isAmharic()
+              ? 'የቀንና የምሽት የጎብኝዎች ጥግግት በጠዋት (02:00–06:00)፣ ከቀኑ (06:00–11:00) እና ምሽት (11:00–05:00) የፈረቃ ክፍለ-ጊዜያት ውስጥ።'
+              : 'Continuous diurnal density tracking across Morning (08:00 AM – 12:00 PM), Afternoon (12:00 PM – 05:00 PM), and Night (05:00 PM – 11:00 PM) shift duty intervals.' }}
           </p>
         </div>
         <span class="text-[11px] font-mono font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border self-start sm:self-auto">
-          {{ langStore.isAmharic() ? 'የቀንና ሌሊት 08:00 – 23:00' : 'Diurnal 08:00 – 23:00' }}
+          {{ langStore.isAmharic() ? 'የቀንና ሌሊት 02:00 ጠዋት – 05:00 ምሽት' : 'Diurnal 08:00 AM – 11:00 PM' }}
         </span>
       </div>
 
@@ -1043,7 +1058,7 @@ const formattedActiveRange = computed(() => {
           </span>
           <span class="text-[10px] font-mono text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 font-bold flex items-center gap-1">
             <Flame class="w-3 h-3" />
-            {{ langStore.isAmharic() ? 'ከፍተኛ ሰዓት' : 'Peak Hour' }}: {{ shiftTimeData?.peak_hour || '10:00 – 11:00' }}
+            {{ langStore.isAmharic() ? 'ከፍተኛ ሰዓት' : 'Peak Hour' }}: {{ shiftTimeData?.peak_hour || (langStore.isAmharic() ? '08:00 – 09:00 ከቀኑ' : '02:00 PM – 03:00 PM') }}
           </span>
         </div>
 
@@ -1053,7 +1068,7 @@ const formattedActiveRange = computed(() => {
             v-for="h in hourlyCurveList"
             :key="h.hour"
             class="flex flex-col items-center gap-1.5 group cursor-pointer"
-            :title="langStore.isAmharic() ? `${h.label_am || h.display_label || h.label}: ${h.count} ጎብኝዎች (${h.percent}%)` : `${h.label || (h.hour + ':00')}: ${h.count} patrons (${h.percent}%)`"
+            :title="langStore.isAmharic() ? `${h.tooltip_label || h.ethiopian_time || h.label_am}: ${h.count} ጎብኝዎች (${h.percent}%)` : `${h.tooltip_label || h.gregorian_12h || h.label}: ${h.count} patrons (${h.percent}%)`"
           >
             <!-- Vertical Column -->
             <div class="w-full bg-slate-200 dark:bg-slate-700/60 rounded-t h-20 flex items-end overflow-hidden">
@@ -1068,7 +1083,7 @@ const formattedActiveRange = computed(() => {
               class="text-[9px] font-mono truncate"
               :class="h.is_peak ? 'font-bold text-rose-600 dark:text-rose-400' : 'text-main-text/50'"
             >
-              {{ langStore.isAmharic() ? ((h.hour >= 6 ? (h.hour - 6 === 0 ? 12 : h.hour - 6) : (h.hour + 6 === 0 ? 12 : h.hour + 6)) + 'ሰ') : ((h.label || String(h.hour)).split(':')[0] + 'h') }}
+              {{ langStore.isAmharic() ? (h.label_am || ((h.hour >= 6 ? (h.hour - 6 === 0 ? 12 : h.hour - 6) : (h.hour + 6 === 0 ? 12 : h.hour + 6)) + 'ሰ')) : (h.label || (h.hour + ':00')) }}
             </span>
           </div>
         </div>
@@ -1186,7 +1201,19 @@ const formattedActiveRange = computed(() => {
           <span>{{ attendanceStore.exportHistory.length }} {{ langStore.t('attendance.files_ready', 'files available') }}</span>
         </div>
 
-        <div class="divide-y divide-card-border/60 border border-card-border rounded-md overflow-hidden bg-main-bg/40">
+        <div v-if="attendanceStore.exportHistory.length === 0" class="p-8 text-center border border-dashed border-card-border rounded-md bg-main-bg/30">
+          <FileSpreadsheet class="w-8 h-8 text-main-text/30 mx-auto mb-2" />
+          <div class="text-xs font-bold text-main-text/70">
+            {{ langStore.isAmharic() ? 'በዚህ ክፍለ-ጊዜ የተዘጋጀ ፋይል እስካሁን የለም' : 'No Exported Documents In Current Session' }}
+          </div>
+          <p class="text-[11px] text-main-text/50 mt-1 max-w-md mx-auto">
+            {{ langStore.isAmharic()
+              ? 'ይፋዊ ሰነዶችን በExcel (.xlsx)፣ Word (.doc)፣ CSV (.csv) ወይም PDF ማውረጃ ቁልፎች በመጠቀም ያመንጩ። የወረዱ ሰነዶች በሙሉ በዚህ መዝገብ ይቀመጣሉ።'
+              : 'Generate authoritative audit files using the Excel (.xlsx), Word (.doc), CSV (.csv), or PDF buttons above. Exported files will be archived here for instant retrieval.' }}
+          </p>
+        </div>
+
+        <div v-else class="divide-y divide-card-border/60 border border-card-border rounded-md overflow-hidden bg-main-bg/40">
           <div
             v-for="item in attendanceStore.exportHistory"
             :key="item.id"

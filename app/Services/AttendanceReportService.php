@@ -115,8 +115,8 @@ class AttendanceReportService
         $shiftWindows = [
             'morning' => [
                 'code' => 'morning',
-                'title' => $isAmharic ? 'የጠዋት ፈረቃ (08:00–12:00)' : 'Morning Window (08:00–12:00)',
-                'time_range' => '08:00 – 12:00 (02:00 – 06:00)',
+                'title' => $isAmharic ? 'የጠዋት ፈረቃ (02:00 – 06:00)' : 'Morning Window (08:00 AM – 12:00 PM)',
+                'time_range' => $isAmharic ? '02:00 ጠዋት – 06:00 ከቀኑ' : '08:00 AM – 12:00 PM',
                 'count' => 0,
                 'students' => 0,
                 'teachers' => 0,
@@ -126,8 +126,8 @@ class AttendanceReportService
             ],
             'afternoon' => [
                 'code' => 'afternoon',
-                'title' => $isAmharic ? 'የቀን ፈረቃ (12:00–17:00)' : 'Afternoon Window (12:00–17:00)',
-                'time_range' => '12:00 – 17:00 (06:00 – 11:00)',
+                'title' => $isAmharic ? 'የከሰዓት ፈረቃ (06:00 – 11:00)' : 'Afternoon Window (12:00 PM – 05:00 PM)',
+                'time_range' => $isAmharic ? '06:00 ከቀኑ – 11:00 ከቀኑ' : '12:00 PM – 05:00 PM',
                 'count' => 0,
                 'students' => 0,
                 'teachers' => 0,
@@ -137,8 +137,8 @@ class AttendanceReportService
             ],
             'night' => [
                 'code' => 'night',
-                'title' => $isAmharic ? 'የማታ ፈረቃ (17:00–23:00)' : 'Night Shift Window (17:00–23:00)',
-                'time_range' => '17:00 – 23:00 (11:00 – 05:00)',
+                'title' => $isAmharic ? 'የምሽት ፈረቃ (11:00 – 05:00)' : 'Night Shift Window (05:00 PM – 11:00 PM)',
+                'time_range' => $isAmharic ? '11:00 ከቀኑ – 05:00 ምሽት' : '05:00 PM – 11:00 PM',
                 'count' => 0,
                 'students' => 0,
                 'teachers' => 0,
@@ -183,11 +183,11 @@ class AttendanceReportService
         }
         unset($s);
 
-        // Peak hour identification
+        // Peak hour identification in 12-hour / Ethiopian dawn-based format
         arsort($hourlyDistribution);
         $peakHourNum = key($hourlyDistribution) ?? 14;
         $peakHourCount = current($hourlyDistribution) ?? 0;
-        $peakHourLabel = sprintf('%02d:00 – %02d:00', $peakHourNum, $peakHourNum + 1);
+        $peakHourLabel = $this->format12HourRange($peakHourNum, $isAmharic);
 
         // 5. Duty Attendant & Registry Activity Log
         $staffActivity = [];
@@ -414,32 +414,160 @@ class AttendanceReportService
     }
 
     /**
-     * Calculate Intra-Month Day Occurrences (1st Mon, 2nd Mon...) & Weekly Cycles in a Month.
+     * Format an hour integer (0..23) into 12-hour format or Ethiopian dawn-based time counting.
+     */
+    protected function format12HourRange(int $h, bool $isAmharic): string
+    {
+        $startAmPm = ($h < 12) ? 'AM' : 'PM';
+        $start12 = ($h % 12 === 0) ? 12 : ($h % 12);
+        $nextH = $h + 1;
+        $endAmPm = ($nextH < 12) ? 'AM' : 'PM';
+        $end12 = ($nextH % 12 === 0) ? 12 : ($nextH % 12);
+        $gregorian = sprintf('%02d:00 %s – %02d:00 %s', $start12, $startAmPm, $end12, $endAmPm);
+
+        if (!$isAmharic) {
+            return $gregorian;
+        }
+
+        // Ethiopian dawn-based time (06:00 AM = 12:00 ጠዋት)
+        $ethStart = ($h >= 6) ? ($h - 6) : ($h + 6);
+        $ethStart = ($ethStart === 0) ? 12 : $ethStart;
+        $ethNext = ($nextH >= 6) ? ($nextH - 6) : ($nextH + 6);
+        $ethNext = ($ethNext === 0) ? 12 : $ethNext;
+
+        $periodStart = ($h >= 6 && $h < 12) ? 'ጠዋት' : (($h >= 12 && $h < 18) ? 'ከቀኑ' : 'ምሽት');
+        $periodEnd = ($nextH >= 6 && $nextH < 12) ? 'ጠዋት' : (($nextH >= 12 && $nextH < 18) ? 'ከቀኑ' : 'ምሽት');
+
+        if ($periodStart === $periodEnd) {
+            return sprintf('%02d:00 – %02d:00 %s', $ethStart, $ethNext, $periodStart);
+        }
+
+        return sprintf('%02d:00 %s – %02d:00 %s', $ethStart, $periodStart, $ethNext, $periodEnd);
+    }
+
+    /**
+     * Calculate Intra-Month Day Occurrences (1st Mon, 2nd Mon...) & Weekly Cycles across 7 days and 5 occurrences.
+     * Supports selecting any month of the current/academic year, defaulting to the previous completed month.
      */
     protected function calculateIntraMonthDayAnalytics($records, bool $isAmharic): array
     {
+        $monthGroups = $records->groupBy(function($r) {
+            return Carbon::parse($r->entry_at)->format('Y-m');
+        })->sortKeysDesc();
+
+        if ($monthGroups->isEmpty()) {
+            $now = Carbon::now();
+            return $this->buildSingleMonthIntraDataset(collect(), $now, $isAmharic);
+        }
+
+        $amMonthsList = [
+            1 => 'መስከረም', 2 => 'ጥቅምት', 3 => 'ኅዳር', 4 => 'ታኅሣሥ',
+            5 => 'ጥር', 6 => 'የካቲት', 7 => 'መጋቢት', 8 => 'ሚያዝያ',
+            9 => 'ግንቦት', 10 => 'ሰኔ', 11 => 'ሐምሌ', 12 => 'ነሐሴ', 13 => 'ጳጉሜን'
+        ];
+
+        // Identify previous calendar month
+        $currentMonthKey = Carbon::now()->format('Y-m');
+        $previousCalendarMonthKey = Carbon::now()->subMonth()->format('Y-m');
+
+        // Determine default month key (prioritize previous month)
+        $defaultMonthKey = null;
+        if ($monthGroups->has($previousCalendarMonthKey)) {
+            $defaultMonthKey = $previousCalendarMonthKey;
+        } elseif ($monthGroups->count() > 1 && $monthGroups->keys()->first() === $currentMonthKey) {
+            $defaultMonthKey = $monthGroups->keys()->slice(1, 1)->first();
+        } else {
+            $defaultMonthKey = $monthGroups->keys()->first();
+        }
+
+        $byMonth = [];
+        $availableMonths = [];
+
+        foreach ($monthGroups as $ym => $monthRecords) {
+            $monthCarbon = Carbon::parse($ym . '-01');
+            [$ey, $em] = EthiopianDateService::toEthiopian($monthCarbon->year, $monthCarbon->month, 15);
+            $ethMonthName = $amMonthsList[$em] ?? 'ጥቅምት';
+            $isPrev = ($ym === $defaultMonthKey);
+
+            $singleMonthData = $this->buildSingleMonthIntraDataset($monthRecords, $monthCarbon, $isAmharic);
+            $singleMonthData['month_key'] = $ym;
+            $singleMonthData['name_en'] = $monthCarbon->format('F Y');
+            $singleMonthData['name_am'] = $ethMonthName . ' ' . $ey . ' ዓ.ም';
+            $singleMonthData['is_previous'] = $isPrev;
+
+            $byMonth[$ym] = $singleMonthData;
+
+            $availableMonths[] = [
+                'month_key' => $ym,
+                'name_en' => $monthCarbon->format('F Y'),
+                'name_am' => $ethMonthName . ' ' . $ey . ' ዓ.ም',
+                'is_previous' => $isPrev,
+                'total' => (int) $monthRecords->sum('visitor_count'),
+            ];
+        }
+
+        $defaultDataset = $byMonth[$defaultMonthKey] ?? reset($byMonth);
+
+        return [
+            'selected_month_key' => $defaultMonthKey,
+            'selected_month_name_en' => $defaultDataset['name_en'] ?? '',
+            'selected_month_name_am' => $defaultDataset['name_am'] ?? '',
+            'available_months' => $availableMonths,
+            'by_month' => $byMonth,
+            'peak_occurrence' => $defaultDataset['peak_occurrence'] ?? '',
+            'prediction' => $defaultDataset['prediction'] ?? '',
+            'occurrences_by_day' => $defaultDataset['occurrences_by_day'] ?? [],
+            'weekly_cycles' => $defaultDataset['weekly_cycles'] ?? [],
+            'week_progression' => $defaultDataset['week_progression'] ?? [],
+        ];
+    }
+
+    /**
+     * Compute intra-month recurrence and weekly cycles for a single specified month.
+     */
+    protected function buildSingleMonthIntraDataset($records, Carbon $monthCarbon, bool $isAmharic): array
+    {
         $daysMap = [
-            1 => ['en' => 'Monday', 'am' => 'ሰኞ'],
-            2 => ['en' => 'Tuesday', 'am' => 'ማክሰኞ'],
-            3 => ['en' => 'Wednesday', 'am' => 'ረቡዕ'],
-            4 => ['en' => 'Thursday', 'am' => 'ሐሙስ'],
-            5 => ['en' => 'Friday', 'am' => 'ዓርብ'],
+            1 => ['en' => 'Monday', 'am' => 'ሰኞ', 'short_en' => 'Mon'],
+            2 => ['en' => 'Tuesday', 'am' => 'ማክሰኞ', 'short_en' => 'Tue'],
+            3 => ['en' => 'Wednesday', 'am' => 'ረቡዕ', 'short_en' => 'Wed'],
+            4 => ['en' => 'Thursday', 'am' => 'ሐሙስ', 'short_en' => 'Thu'],
+            5 => ['en' => 'Friday', 'am' => 'ዓርብ', 'short_en' => 'Fri'],
+            6 => ['en' => 'Saturday', 'am' => 'ቅዳሜ', 'short_en' => 'Sat'],
+            7 => ['en' => 'Sunday', 'am' => 'እሑድ', 'short_en' => 'Sun'],
+        ];
+
+        $occSuffix = [
+            1 => ['en' => '1st', 'am' => '1ኛ'],
+            2 => ['en' => '2nd', 'am' => '2ኛ'],
+            3 => ['en' => '3rd', 'am' => '3ኛ'],
+            4 => ['en' => '4th', 'am' => '4ኛ'],
+            5 => ['en' => '5th', 'am' => '5ኛ'],
         ];
 
         $occurrences = [];
-        for ($dow = 1; $dow <= 5; $dow++) {
+        for ($dow = 1; $dow <= 7; $dow++) {
             $occurrences[$dow] = [
                 'day_index' => $dow,
                 'day_name' => $daysMap[$dow]['en'],
                 'day_name_am' => $daysMap[$dow]['am'],
+                'short_name' => $daysMap[$dow]['short_en'],
                 'display_name' => $isAmharic ? $daysMap[$dow]['am'] : $daysMap[$dow]['en'],
-                'occurrences' => [
-                    1 => ['occurrence' => 1, 'label' => '1st ' . $daysMap[$dow]['en'], 'label_am' => '1ኛ ' . $daysMap[$dow]['am'], 'total' => 0, 'count' => 0, 'students' => 0, 'teachers' => 0, 'staff' => 0],
-                    2 => ['occurrence' => 2, 'label' => '2nd ' . $daysMap[$dow]['en'], 'label_am' => '2ኛ ' . $daysMap[$dow]['am'], 'total' => 0, 'count' => 0, 'students' => 0, 'teachers' => 0, 'staff' => 0],
-                    3 => ['occurrence' => 3, 'label' => '3rd ' . $daysMap[$dow]['en'], 'label_am' => '3ኛ ' . $daysMap[$dow]['am'], 'total' => 0, 'count' => 0, 'students' => 0, 'teachers' => 0, 'staff' => 0],
-                    4 => ['occurrence' => 4, 'label' => '4th ' . $daysMap[$dow]['en'], 'label_am' => '4ኛ ' . $daysMap[$dow]['am'], 'total' => 0, 'count' => 0, 'students' => 0, 'teachers' => 0, 'staff' => 0],
-                ],
+                'occurrences' => [],
             ];
+
+            for ($occ = 1; $occ <= 5; $occ++) {
+                $occurrences[$dow]['occurrences'][$occ] = [
+                    'occurrence' => $occ,
+                    'label' => $occSuffix[$occ]['en'] . ' ' . $daysMap[$dow]['en'],
+                    'label_am' => $occSuffix[$occ]['am'] . ' ' . $daysMap[$dow]['am'],
+                    'total' => 0,
+                    'count' => 0,
+                    'students' => 0,
+                    'teachers' => 0,
+                    'staff' => 0,
+                ];
+            }
         }
 
         $weeklyCycles = [
@@ -454,9 +582,10 @@ class AttendanceReportService
             $d = $c->day;
             $dow = $c->dayOfWeekIso;
             $occ = (int) ceil($d / 7);
+            $occ = min(5, max(1, $occ));
             $vCount = (int) $rec->visitor_count;
 
-            if ($dow <= 5 && isset($occurrences[$dow]['occurrences'][$occ])) {
+            if (isset($occurrences[$dow]['occurrences'][$occ])) {
                 $occurrences[$dow]['occurrences'][$occ]['total'] += $vCount;
                 $occurrences[$dow]['occurrences'][$occ]['count']++;
                 if ($rec->user_type === 'student') $occurrences[$dow]['occurrences'][$occ]['students'] += $vCount;
@@ -494,11 +623,11 @@ class AttendanceReportService
             foreach ($dayBlock['occurrences'] as $occNum => &$oInfo) {
                 $ratio = $highestOccurrenceAvg > 0 ? ($oInfo['average'] / $highestOccurrenceAvg) : 0;
                 $oInfo['percentage'] = $dayTotal > 0 ? round(($oInfo['total'] / $dayTotal) * 100, 1) : 0.0;
-                if ($ratio >= 0.85) {
+                if ($ratio >= 0.85 && $oInfo['total'] > 0) {
                     $oInfo['surge_badge'] = 'Peak Surge';
                     $oInfo['surge_badge_am'] = 'ከፍተኛ ፍሰት';
                     $oInfo['is_peak'] = true;
-                } elseif ($ratio >= 0.65) {
+                } elseif ($ratio >= 0.60 && $oInfo['total'] > 0) {
                     $oInfo['surge_badge'] = 'Heavy';
                     $oInfo['surge_badge_am'] = 'ከፍተኛ';
                     $oInfo['is_peak'] = false;
@@ -639,7 +768,8 @@ class AttendanceReportService
             }
             $prevMonthTotal = $tot;
 
-            $dailyAvg = round($tot / max(1, $c->daysInMonth), 1);
+            $operatingDays = max(1, count($logs->groupBy(fn($l) => Carbon::parse($l->entry_at)->toDateString())));
+            $dailyAvg = round($tot / $operatingDays, 1);
             $students = (int) $logs->where('user_type', 'student')->sum('visitor_count');
             $teachers = (int) $logs->where('user_type', 'teacher')->sum('visitor_count');
             $staff = (int) $logs->where('user_type', 'staff')->sum('visitor_count');
@@ -665,7 +795,7 @@ class AttendanceReportService
                 'total' => $tot,
                 'daily_avg' => $dailyAvg,
                 'daily_average' => $dailyAvg,
-                'operating_days' => max(1, count($logs->groupBy(fn($l) => Carbon::parse($l->entry_at)->toDateString()))),
+                'operating_days' => $operatingDays,
                 'students' => $students,
                 'teachers' => $teachers,
                 'staff' => $staff,
@@ -741,15 +871,36 @@ class AttendanceReportService
 
         $hourlyCurve = [];
         foreach ($hourlyDistribution as $h => $count) {
+            $gStartAmPm = ($h < 12) ? 'AM' : 'PM';
+            $g12Start = ($h % 12 === 0) ? 12 : ($h % 12);
+            $nextH = $h + 1;
+            $gEndAmPm = ($nextH < 12) ? 'AM' : 'PM';
+            $g12End = ($nextH % 12 === 0) ? 12 : ($nextH % 12);
+            $gregorian12h = sprintf('%02d:00 %s – %02d:00 %s', $g12Start, $gStartAmPm, $g12End, $gEndAmPm);
+            $gregorianLabel = sprintf('%02d %s', $g12Start, $gStartAmPm);
+
             $ethH = ($h >= 6) ? ($h - 6) : ($h + 6);
-            $timeOfDayAm = ($h < 12) ? 'ጠዋት' : (($h < 18) ? 'ከሰዓት' : 'ምሽት');
+            $ethH = ($ethH === 0) ? 12 : $ethH;
+            $ethNextH = ($nextH >= 6) ? ($nextH - 6) : ($nextH + 6);
+            $ethNextH = ($ethNextH === 0) ? 12 : $ethNextH;
+            $periodAm = ($h >= 6 && $h < 12) ? 'ጠዋት' : (($h >= 12 && $h < 18) ? 'ከቀኑ' : 'ምሽት');
+            $nextPeriodAm = ($nextH >= 6 && $nextH < 12) ? 'ጠዋት' : (($nextH >= 12 && $nextH < 18) ? 'ከቀኑ' : 'ምሽት');
+
+            $ethTime = ($periodAm === $nextPeriodAm)
+                ? sprintf('%02d:00 – %02d:00 %s', $ethH, $ethNextH, $periodAm)
+                : sprintf('%02d:00 %s – %02d:00 %s', $ethH, $periodAm, $ethNextH, $nextPeriodAm);
+            $ethLabel = sprintf('%dሰ', $ethH);
+
             $shiftCat = ($h >= 8 && $h < 12) ? 'morning' : (($h >= 12 && $h < 17) ? 'afternoon' : 'night');
 
             $hourlyCurve[] = [
                 'hour' => $h,
-                'label' => sprintf('%02d:00', $h),
-                'label_am' => sprintf('%02d:00 %s', $ethH, $timeOfDayAm),
-                'display_label' => $isAmharic ? sprintf('%02d:00 %s', $ethH, $timeOfDayAm) : sprintf('%02d:00', $h),
+                'label' => $gregorianLabel,
+                'label_am' => $ethLabel,
+                'gregorian_12h' => $gregorian12h,
+                'ethiopian_time' => $ethTime,
+                'display_label' => $isAmharic ? $ethLabel : $gregorianLabel,
+                'tooltip_label' => $isAmharic ? $ethTime : $gregorian12h,
                 'count' => $count,
                 'percent' => $totalDiurnal > 0 ? round(($count / $totalDiurnal) * 100, 1) : 0.0,
                 'height_percent' => $maxHourCount > 0 ? round(($count / $maxHourCount) * 100) : 0,
@@ -758,18 +909,18 @@ class AttendanceReportService
             ];
         }
 
-        // Add congestion metrics to shift windows
+        // Add congestion metrics to shift windows with 12-hour / Ethiopian dawn-based time intervals
         foreach ($shiftWindows as $code => &$win) {
             if ($code === 'morning') {
-                $win['peak_hour'] = '10:00 – 11:00 (04:00 – 05:00)';
+                $win['peak_hour'] = $isAmharic ? '04:00 – 05:00 ጠዋት' : '10:00 AM – 11:00 AM';
                 $win['congestion_index'] = 'High Density';
                 $win['congestion_index_am'] = 'ከፍተኛ ጥግግት';
             } elseif ($code === 'afternoon') {
-                $win['peak_hour'] = '14:00 – 15:00 (08:00 – 09:00)';
+                $win['peak_hour'] = $isAmharic ? '08:00 – 09:00 ከቀኑ' : '02:00 PM – 03:00 PM';
                 $win['congestion_index'] = 'Peak Surge';
                 $win['congestion_index_am'] = 'ከፍተኛው ጥግግት';
             } else {
-                $win['peak_hour'] = '19:00 – 20:00 (01:00 – 02:00)';
+                $win['peak_hour'] = $isAmharic ? '01:00 – 02:00 ምሽት' : '07:00 PM – 08:00 PM';
                 $win['congestion_index'] = 'Moderate Density';
                 $win['congestion_index_am'] = 'መካከለኛ ጥግግት';
             }
@@ -779,6 +930,7 @@ class AttendanceReportService
         return [
             'windows' => $shiftWindows,
             'hourly_curve' => $hourlyCurve,
+            'peak_hour' => $this->format12HourRange($peakHourNum, $isAmharic),
         ];
     }
 
@@ -1304,9 +1456,9 @@ class AttendanceReportService
             }
             $html .= '</table>';
 
-            // Day occurrences table (1st Mon vs 2nd Mon...)
+            // Day occurrences table (1st Mon vs 2nd Mon... 5th Mon)
             $html .= '<table>';
-            $html .= '<tr><th>' . ($isAmharic ? 'የሳምንት ዕለት' : 'Day of Week') . '</th><th>' . ($isAmharic ? '1ኛ ድግግሞሽ (ቀናት 1–7)' : '1st Occurrence (Days 1–7)') . '</th><th>' . ($isAmharic ? '2ኛ ድግግሞሽ (ቀናት 8–14)' : '2nd Occurrence (Days 8–14)') . '</th><th>' . ($isAmharic ? '3ኛ ድግግሞሽ (ቀናት 15–21)' : '3rd Occurrence (Days 15–21)') . '</th><th>' . ($isAmharic ? '4ኛ ድግግሞሽ (ቀናት 22–28)' : '4th Occurrence (Days 22–28)') . '</th></tr>';
+            $html .= '<tr><th>' . ($isAmharic ? 'የሳምንት ዕለት' : 'Day of Week') . '</th><th>' . ($isAmharic ? '1ኛ ድግግሞሽ (ቀናት 1–7)' : '1st Occurrence (Days 1–7)') . '</th><th>' . ($isAmharic ? '2ኛ ድግግሞሽ (ቀናት 8–14)' : '2nd Occurrence (Days 8–14)') . '</th><th>' . ($isAmharic ? '3ኛ ድግግሞሽ (ቀናት 15–21)' : '3rd Occurrence (Days 15–21)') . '</th><th>' . ($isAmharic ? '4ኛ ድግግሞሽ (ቀናት 22–28)' : '4th Occurrence (Days 22–28)') . '</th><th>' . ($isAmharic ? '5ኛ ድግግሞሽ (ቀናት 29–31)' : '5th Occurrence (Days 29–31)') . '</th></tr>';
             foreach ($intra['occurrences_by_day'] as $occDay) {
                 $html .= '<tr>';
                 $html .= '<td><b>' . htmlspecialchars($occDay['display_name']) . '</b></td>';

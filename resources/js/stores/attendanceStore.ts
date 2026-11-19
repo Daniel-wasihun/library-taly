@@ -27,7 +27,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }>>([
         {
             id: 'EXP-101',
-            name: 'AAU_Official_Attendance_Executive_Audit',
+            name: 'WDU_Official_Attendance_Executive_Audit',
             format: 'xlsx',
             date: 'Today',
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -36,7 +36,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
         },
         {
             id: 'EXP-102',
-            name: 'AAU_Library_Demographic_Analysis_Memo',
+            name: 'WDU_Library_Demographic_Analysis_Memo',
             format: 'doc',
             date: 'Today',
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -45,7 +45,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
         },
         {
             id: 'EXP-103',
-            name: 'AAU_Physical_Gate_Raw_Audit_Log',
+            name: 'WDU_Physical_Gate_Raw_Audit_Log',
             format: 'csv',
             date: 'Today',
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -207,7 +207,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
             const link = document.createElement('a');
             link.href = url;
             const ext = format === 'xlsx' ? 'xlsx' : (format === 'doc' ? 'doc' : 'csv');
-            const filename = `AAU_Library_Report_${Date.now()}.${ext}`;
+            const filename = `WDU_Library_Report_${Date.now()}.${ext}`;
             link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();

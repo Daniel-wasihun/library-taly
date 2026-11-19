@@ -31,6 +31,7 @@ import {
   Flame,
 } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
+import EthiopianDateRangePicker from '@/components/ui/EthiopianDateRangePicker.vue';
 import { useLanguageStore } from '@/stores/languageStore';
 import { useAttendanceStore } from '@/stores/attendanceStore';
 import { useLibraryStore } from '@/stores/libraryStore';
@@ -51,6 +52,7 @@ const props = defineProps<{
   trends: { date: string; count: number }[];
   dateRange: { from: string; to: string };
   statsLoading: boolean;
+  selectedLibrary?: number | null;
 }>();
 
 const emit = defineEmits<{
@@ -126,6 +128,16 @@ const narrativeDescription = computed(() => {
   return attendanceStore.stats?.description || '';
 });
 
+const selectedLibraryName = computed(() => {
+  if (!props.selectedLibrary) {
+    return langStore.isAmharic()
+      ? '🏛️ አጠቃላይ ቤተ-መጻሕፍት (ሁሉም ቅርንጫፎች / ማዕከላዊ ሥርዓት)'
+      : '🏛️ General Library (All Branches / Overall University System)';
+  }
+  const lib = libraryStore.libraries.find(l => Number(l.id) === Number(props.selectedLibrary));
+  return lib ? `[${lib.code}] ${langStore.localizeBranch(lib)}` : 'Selected Branch';
+});
+
 const dayOfWeekList = computed(() => {
   return attendanceStore.stats?.day_of_week_analytics || [];
 });
@@ -187,69 +199,19 @@ const kpis = computed(() => {
 
 <template>
   <div class="space-y-6 pb-8">
-    <!-- Controls Bar with Gregorian Inputs + Ethiopian Calendar Overlay -->
-    <div class="bg-card-bg border border-card-border rounded-md p-4 sm:p-5 flex flex-col lg:flex-row lg:items-end justify-between gap-4 shadow-2xs">
-      <!-- Date Range Controls -->
-      <div class="flex flex-col gap-2 flex-1 min-w-0 lg:max-w-[550px]">
-        <div class="flex items-center justify-between text-[10px] font-bold text-main-text/60 uppercase">
-          <div class="flex items-center gap-2">
-            <Calendar class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
-            <span>{{ langStore.t('attendance.select_date_range', 'Analytical Date Window & Filter Scope') }}</span>
-          </div>
-          <!-- Quick Presets -->
-          <div class="flex items-center gap-1.5 font-sans">
-            <button
-              type="button"
-              @click="setPresetRange('today')"
-              class="px-2 py-0.5 rounded text-[10px] font-semibold transition hover:bg-brand-blue/10 hover:text-brand-blue"
-            >
-              {{ langStore.t('common.today', 'Today') }}
-            </button>
-            <span class="text-main-text/30">·</span>
-            <button
-              type="button"
-              @click="setPresetRange('week')"
-              class="px-2 py-0.5 rounded text-[10px] font-semibold transition hover:bg-brand-blue/10 hover:text-brand-blue"
-            >
-              {{ langStore.t('common.week', '7 Days') }}
-            </button>
-            <span class="text-main-text/30">·</span>
-            <button
-              type="button"
-              @click="setPresetRange('month')"
-              class="px-2 py-0.5 rounded text-[10px] font-semibold transition hover:bg-brand-blue/10 hover:text-brand-blue"
-            >
-              {{ langStore.t('common.month', 'Month') }}
-            </button>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2 bg-main-bg border border-card-border p-2 rounded-md text-xs shadow-2xs">
-          <input
-            type="date"
-            :value="dateRange.from"
-            @input="handleDateInput('from', $event)"
-            class="bg-transparent text-xs font-mono font-bold text-main-text focus:outline-none flex-1 min-w-0"
-          />
-          <ArrowRight class="w-3.5 h-3.5 text-main-text/40 shrink-0" />
-          <input
-            type="date"
-            :value="dateRange.to"
-            @input="handleDateInput('to', $event)"
-            class="bg-transparent text-xs font-mono font-bold text-main-text focus:outline-none flex-1 min-w-0"
-          />
-        </div>
-
-        <!-- Ethiopian Dates Subtext when Amharic is active -->
-        <div v-if="langStore.isAmharic()" class="flex items-center gap-2 px-2 text-[11px] text-brand-blue font-medium truncate">
-          <span class="flex-1 truncate">{{ formatDT(dateRange.from, true).date }}</span>
-          <span class="w-6 text-center text-main-text/40">→</span>
-          <span class="flex-1 truncate">{{ formatDT(dateRange.to, true).date }}</span>
-        </div>
+    <!-- Controls Bar with Dual Ethiopian / Gregorian Calendar Range Picker -->
+    <div class="bg-card-bg border border-card-border rounded-md p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-2xs">
+      <!-- Date Range Controls with Ethiopian / Gregorian Synchronization -->
+      <div class="flex-1 min-w-0 max-w-[580px]">
+        <EthiopianDateRangePicker
+          :modelValue="dateRange"
+          @update:modelValue="emit('update:dateRange', $event)"
+          @change="emit('refresh')"
+        />
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center gap-2 flex-wrap">
+      <div class="flex items-center gap-2 flex-wrap shrink-0">
         <Button
           variant="secondary"
           size="sm"
@@ -352,18 +314,20 @@ const kpis = computed(() => {
     <!-- Active Loaded Analytics State -->
     <div v-else class="space-y-6">
       <!-- Executive Context & Formal Audit Narrative Banner -->
-      <div v-if="narrativeDescription" class="bg-card-bg border-l-4 border-l-brand-blue border border-card-border rounded-md p-4 shadow-2xs space-y-1.5">
-      <div class="flex items-center justify-between text-xs font-bold text-brand-blue uppercase tracking-wider">
-        <span class="flex items-center gap-1.5">
-          <ShieldCheck class="w-4 h-4 text-brand-blue" />
-          {{ langStore.t('attendance.executive_summary', 'Executive Analytics Context & Institutional Scope') }}
-        </span>
-        <span class="text-[10px] font-mono opacity-60">REF-{{ attendanceStore.stats?.kpis?.total ?? 0 }}</span>
+      <div v-if="narrativeDescription" class="bg-card-bg border-l-4 border-l-brand-blue border border-card-border rounded-md p-4 shadow-2xs space-y-2">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs font-bold text-brand-blue uppercase tracking-wider">
+          <span class="flex items-center gap-1.5">
+            <ShieldCheck class="w-4 h-4 text-brand-blue" />
+            {{ langStore.t('attendance.executive_summary', 'Executive Analytics Context & Institutional Scope') }}
+          </span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-blue/10 text-brand-blue border border-brand-blue/20 self-start sm:self-auto font-semibold">
+            {{ selectedLibraryName }}
+          </span>
+        </div>
+        <p class="text-xs text-main-text/80 leading-relaxed text-justify">
+          {{ narrativeDescription }}
+        </p>
       </div>
-      <p class="text-xs text-main-text/80 leading-relaxed text-justify">
-        {{ narrativeDescription }}
-      </p>
-    </div>
 
     <!-- Perspective 1: Key Performance Metrics & Executive Indicators -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -1027,7 +991,7 @@ const kpis = computed(() => {
             v-for="h in hourlyCurveList"
             :key="h.hour"
             class="flex flex-col items-center gap-1.5 group cursor-pointer"
-            :title="`${h.display_label || h.label || (h.hour + ':00')}: ${h.count} patrons (${h.percent}%)`"
+            :title="langStore.isAmharic() ? `${h.label_am || h.display_label || h.label}: ${h.count} ጎብኝዎች (${h.percent}%)` : `${h.label || (h.hour + ':00')}: ${h.count} patrons (${h.percent}%)`"
           >
             <!-- Vertical Column -->
             <div class="w-full bg-slate-200 dark:bg-slate-700/60 rounded-t h-20 flex items-end overflow-hidden">
@@ -1042,7 +1006,7 @@ const kpis = computed(() => {
               class="text-[9px] font-mono truncate"
               :class="h.is_peak ? 'font-bold text-rose-600 dark:text-rose-400' : 'text-main-text/50'"
             >
-              {{ (h.label || String(h.hour)).split(':')[0] }}h
+              {{ langStore.isAmharic() ? ((h.hour >= 6 ? (h.hour - 6 === 0 ? 12 : h.hour - 6) : (h.hour + 6 === 0 ? 12 : h.hour + 6)) + 'ሰ') : ((h.label || String(h.hour)).split(':')[0] + 'h') }}
             </span>
           </div>
         </div>

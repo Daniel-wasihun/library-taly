@@ -369,7 +369,7 @@
             <div class="inst-brand">
                 <div class="inst-logo">📚</div>
                 <div>
-                    <h1 class="inst-title">{{ $isAmharic ? 'አዲስ አበባ ዩኒቨርሲቲ' : 'ADDIS ABABA UNIVERSITY' }}</h1>
+                    <h1 class="inst-title">{{ $isAmharic ? 'ወልድያ ዩኒቨርሲቲ' : 'WOLDIA UNIVERSITY' }}</h1>
                     <div class="inst-sub">{{ $isAmharic ? 'የዩኒቨርሲቲ ቤተ-መጻሕፍት እና መረጃ አገልግሎት ዳይሬክቶሬት' : 'Directorate of University Library & Information Services' }}</div>
                     <div class="inst-office">{{ $isAmharic ? 'የቀጥታ አጠቃቀም ቆጣሪና የስነ-ሕዝብ ትንተና ይፋዊ የኦዲት ሪፖርት' : 'Central Attendance Desk & Patron Demographic Analytics Registry' }}</div>
                 </div>

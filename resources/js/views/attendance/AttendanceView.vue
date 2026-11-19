@@ -96,10 +96,26 @@ const libraryOptions = computed(() => {
     filtered = libraryStore.libraries.filter((l) => Number(l.id) === Number(assignedId));
   }
 
-  return filtered.map((l) => ({
-    value: Number(l.id),
-    label: `[${l.code}] ${langStore.localizeBranch(l)}`,
-  }));
+  const options: { value: number | null; label: string }[] = [];
+
+  // Provide General Library (Overall System) option for users who can manage all libraries or when on analytics tab
+  if (canManageAll) {
+    options.push({
+      value: null,
+      label: langStore.isAmharic()
+        ? '🏛️ አጠቃላይ ቤተ-መጻሕፍት (ሁሉም ቅርንጫፎች / አጠቃላይ ትንተና)'
+        : '🏛️ General Library (All Branches / Overall Analytics)',
+    });
+  }
+
+  filtered.forEach((l) => {
+    options.push({
+      value: Number(l.id),
+      label: `[${l.code}] ${langStore.localizeBranch(l)}`,
+    });
+  });
+
+  return options;
 });
 
 const dailyStats = computed(() => {
@@ -348,7 +364,19 @@ watch(selectedLibrary, (newVal) => {
 
 watch(activeTab, (newTab) => {
   if (newTab === 'analytics' && authStore.canManageReporting) {
+    attendanceStore.filters.library_id = selectedLibrary.value ? String(selectedLibrary.value) : '';
     attendanceStore.fetchStats(true);
+  } else if (newTab === 'counter') {
+    // Live counter requires a physical branch desk
+    if (!selectedLibrary.value) {
+      const assignedId = authStore.user?.library_id;
+      if (assignedId) {
+        selectedLibrary.value = Number(assignedId);
+      } else if (libraryStore.libraries.length > 0) {
+        selectedLibrary.value = Number(libraryStore.libraries[0].id);
+      }
+    }
+    attendanceStore.fetchLogs(1, undefined, true);
   }
 });
 </script>
@@ -389,6 +417,7 @@ watch(activeTab, (newTab) => {
     <AttendanceAnalytics
       v-else-if="activeTab === 'analytics' && authStore.canManageReporting"
       v-model:dateRange="dateRange"
+      :selectedLibrary="selectedLibrary"
       :dailyStats="dailyStats"
       :distributionReport="distributionReport"
       :malePercent="statsBreakdown.malePercent"

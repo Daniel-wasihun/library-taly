@@ -233,7 +233,7 @@ class AttendanceReportService
 
         // Reference Number
         $hashSeed = ($selectedLibrary?->id ?? 'ALL') . $dateFromStr . $dateToStr . $totalCount;
-        $refNumber = 'AAU-LIB-' . date('Y') . '-' . strtoupper(substr(md5($hashSeed), 0, 8));
+        $refNumber = 'WDU-LIB-' . date('Y') . '-' . strtoupper(substr(md5($hashSeed), 0, 8));
 
         // Busiest Branch
         $busiestBranch = collect($branchComparison)->sortByDesc('total')->first();
@@ -249,9 +249,9 @@ class AttendanceReportService
         };
 
         // Formal Executive Narrative Description
-        $descriptionEn = "This official periodic attendance and patron demographic analytics report is compiled by the Directorate of University Library and Information Services in accordance with the Academic Governance and Library Utilization Policy. The audit encompasses physical gate foot-traffic, patron categorization (undergraduate and postgraduate students, teaching and research faculty, and administrative staff), and gender distribution across campus library facilities ({$libraryName}). The reporting window spans from {$fromFormatted['full']} to {$toFormatted['full']}. The primary objective is to evaluate campus learning resource utilization, monitor shift peak occupancy, maintain institutional audit transparency, and support data-driven allocation of facility infrastructure, study desk seating, and catalog staffing.";
+        $descriptionEn = "This official periodic attendance and patron demographic analytics report is compiled by the Woldia University Directorate of Library and Information Services in accordance with the Academic Governance and Library Utilization Policy. The audit encompasses physical gate foot-traffic, patron categorization (undergraduate and postgraduate students, teaching and research faculty, and administrative staff), and gender distribution across campus library facilities ({$libraryName}). The reporting window spans from {$fromFormatted['full']} to {$toFormatted['full']}. The primary objective is to evaluate campus learning resource utilization, monitor shift peak occupancy, maintain institutional audit transparency, and support data-driven allocation of facility infrastructure, study desk seating, and catalog staffing.";
 
-        $descriptionAm = "ይህ ይፋዊ የቤተ-መጻሕፍት አጠቃቀም እና የተጠቃሚዎች ስነ-ሕዝብ ትንተና ሪፖርት በዩኒቨርሲቲው የቤተ-መጻሕፍት እና መረጃ አገልግሎት ዳይሬክቶሬት የአካዳሚክ አስተዳደርና የቤተ-መጻሕፍት አጠቃቀም መመሪያን መሠረት በማድረግ የተዘጋጀ ነው። ሪፖርቱ በዩኒቨርሲቲው የቤተ-መጻሕፍት ቅርንጫፎች ({$libraryName}) የተመዘገቡ የቀጥታ ጎብኝዎችን፣ የተጠቃሚዎችን የትምህርትና የስራ ደረጃ (የቅድመ-ምረቃና ድህረ-ምረቃ ተማሪዎች፣ መምህራንና ተመራማሪዎች፣ የአስተዳደርና ቴክኒክ ሠራተኞች) እንዲሁም የጾታ ስርጭት ትንተናን በዝርዝር ያካትታል። የሪፖርቱ ሽፋን ጊዜ ከ {$fromFormatted['full']} እስከ {$toFormatted['full']} ነው። የዚህ ሪፖርት ዋነኛ ዓላማ የቤተ-መጻሕፍት ሀብት አጠቃቀምን መገምገም፣ የፈረቃ ተረኝነትንና ከፍተኛ የተጠቃሚዎች ሰዓትን መለየት፣ የተቋማዊ ቁጥጥር ግልጽነትን ማስጠበቅ እና በመረጃ ላይ የተመሠረተ የሀብትና የሰው ኃይል ድልድል ማከናወን ነው።";
+        $descriptionAm = "ይህ ይፋዊ የቤተ-መጻሕፍት አጠቃቀም እና የተጠቃሚዎች ስነ-ሕዝብ ትንተና ሪፖርት በወልድያ ዩኒቨርሲቲ የቤተ-መጻሕፍት እና መረጃ አገልግሎት ዳይሬክቶሬት የአካዳሚክ አስተዳደርና የቤተ-መጻሕፍት አጠቃቀም መመሪያን መሠረት በማድረግ የተዘጋጀ ነው። ሪፖርቱ በዩኒቨርሲቲው የቤተ-መጻሕፍት ቅርንጫፎች ({$libraryName}) የተመዘገቡ የቀጥታ ጎብኝዎችን፣ የተጠቃሚዎችን የትምህርትና የስራ ደረጃ (የቅድመ-ምረቃና ድህረ-ምረቃ ተማሪዎች፣ መምህራንና ተመራማሪዎች፣ የአስተዳደርና ቴክኒክ ሠራተኞች) እንዲሁም የጾታ ስርጭት ትንተናን በዝርዝር ያካትታል። የሪፖርቱ ሽፋን ጊዜ ከ {$fromFormatted['full']} እስከ {$toFormatted['full']} ነው። የዚህ ሪፖርት ዋነኛ ዓላማ የቤተ-መጻሕፍት ሀብት አጠቃቀምን መገምገም፣ የፈረቃ ተረኝነትንና ከፍተኛ የተጠቃሚዎች ሰዓትን መለየት፣ የተቋማዊ ቁጥጥር ግልጽነትን ማስጠበቅ እና በመረጃ ላይ የተመሠረተ የሀብትና የሰው ኃይል ድልድል ማከናወን ነው።";
 
         $description = $isAmharic ? $descriptionAm : $descriptionEn;
 
@@ -649,9 +649,9 @@ class AttendanceReportService
             $monthlyData[] = [
                 'month_key' => $ym,
                 'name_en' => $gregorianMonthName,
-                'name_am' => $ethMonth . ' ' . $ethYear,
-                'display_name' => $isAmharic ? ($ethMonth . ' ' . $ethYear) : $gregorianMonthName,
-                'month_label' => $isAmharic ? ($ethMonth . ' ' . $ethYear) : $gregorianMonthName,
+                'name_am' => $ethMonth . ' ' . $ethYear . ' ዓ.ም',
+                'display_name' => $isAmharic ? ($ethMonth . ' ' . $ethYear . ' ዓ.ም') : $gregorianMonthName,
+                'month_label' => $isAmharic ? ($ethMonth . ' ' . $ethYear . ' ዓ.ም') : $gregorianMonthName,
                 'ethiopian_month' => $ethMonth,
                 'total' => $tot,
                 'daily_avg' => $dailyAvg,
@@ -1149,7 +1149,7 @@ class AttendanceReportService
         $html .= '</style></head><body>';
 
         // Official Academic Header
-        $html .= '<h1>' . ($isAmharic ? 'አዲስ አበባ ዩኒቨርሲቲ' : 'ADDIS ABABA UNIVERSITY') . '</h1>';
+        $html .= '<h1>' . ($isAmharic ? 'ወልድያ ዩኒቨርሲቲ' : 'WOLDIA UNIVERSITY') . '</h1>';
         $html .= '<h2>' . htmlspecialchars($subTitle) . '</h2>';
         $html .= '<hr style="border: 0; border-top: 2pt double #0B529C; margin-bottom: 15pt;" />';
 
@@ -1392,7 +1392,7 @@ class AttendanceReportService
         fprintf($f, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
 
         // Executive Header Section
-        fputcsv($f, [$isAmharic ? 'የዩኒቨርሲቲ ቤተ-መጻሕፍት ይፋዊ የአጠቃቀምና የስነ-ሕዝብ ትንተና ሪፖርት' : 'OFFICIAL ACADEMIC LIBRARY ATTENDANCE & DEMOGRAPHIC ANALYTICS REPORT']);
+        fputcsv($f, [$isAmharic ? 'የወልድያ ዩኒቨርሲቲ ቤተ-መጻሕፍት ይፋዊ የአጠቃቀምና የስነ-ሕዝብ ትንተና ሪፖርት' : 'WOLDIA UNIVERSITY OFFICIAL ACADEMIC LIBRARY ATTENDANCE & DEMOGRAPHIC ANALYTICS REPORT']);
         fputcsv($f, [$isAmharic ? 'የሰነድ መለያ ቁጥር' : 'Reference ID', $data['refNumber']]);
         fputcsv($f, [$isAmharic ? 'የተዘጋጀበት ቀን' : 'Generated At', $data['generatedAt']['full'] . ' ' . $data['generatedAt']['time']]);
         fputcsv($f, [$isAmharic ? 'የሪፖርቱ ሽፋን ጊዜ' : 'Reporting Window', $data['dateFromStr']['date'] . ' - ' . $data['dateToStr']['date']]);

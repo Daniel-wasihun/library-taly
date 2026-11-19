@@ -5,7 +5,7 @@ import { useLanguageStore } from '@/stores/languageStore';
 import { useAuthStore } from '@/stores/authStore';
 
 interface LibraryOption {
-  value: number;
+  value: number | null;
   label: string;
 }
 
@@ -36,7 +36,7 @@ const isLibraryDisabled = computed(() => {
 
 const internalSelectedLibrary = computed({
   get: () => props.selectedLibrary,
-  set: (val) => emit('update:selectedLibrary', val ? Number(val) : null),
+  set: (val) => emit('update:selectedLibrary', val !== null && val !== '' && val !== undefined ? Number(val) : null),
 });
 </script>
 

@@ -100,10 +100,16 @@ const setPresetRange = (preset: 'today' | 'week' | 'month' | 'all') => {
   emit('refresh');
 };
 
-const triggerDownload = async (format: 'xlsx' | 'doc' | 'csv' | 'pdf') => {
+const selectedExportScope = ref<'full' | 'patron_types' | 'branches' | 'day_of_week' | 'intra_month'>('full');
+
+const triggerDownload = async (
+  format: 'xlsx' | 'doc' | 'csv' | 'pdf',
+  scope?: 'full' | 'patron_types' | 'branches' | 'day_of_week' | 'intra_month'
+) => {
+  const chosenScope = scope || selectedExportScope.value;
   downloadingFormat.value = format;
   try {
-    await attendanceStore.downloadFormalReport(format);
+    await attendanceStore.downloadFormalReport(format, undefined, chosenScope);
   } finally {
     downloadingFormat.value = null;
   }
@@ -278,7 +284,8 @@ const formattedActiveRange = computed(() => {
           variant="primary"
           size="sm"
           :icon="Printer"
-          @click="triggerDownload('pdf')"
+          :loading="downloadingFormat === 'pdf'"
+          @click="triggerDownload('pdf', 'full')"
           class="!bg-brand-blue text-white shadow-2xs"
         >
           {{ langStore.t('attendance.print_report', 'Print Official Report') }}
@@ -459,7 +466,28 @@ const formattedActiveRange = computed(() => {
             <BarChart3 class="w-4 h-4 text-brand-blue dark:text-brand-yellow" />
             <span>{{ langStore.t('attendance.demographic_breakdown', 'Patron Demographic Segmentation') }}</span>
           </h4>
-          <span class="text-[10px] font-mono text-main-text/50">{{ langStore.isAmharic() ? '100% የተመጣጠነ' : '100% Normalized' }}</span>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="triggerDownload('pdf', 'patron_types')"
+              :disabled="Boolean(downloadingFormat)"
+              class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-brand-blue hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
+              :title="langStore.isAmharic() ? 'የተጠቃሚዎችን ምድብ ብቻ በPDF አውርድ' : 'Export Demographics as PDF'"
+            >
+              <Printer class="w-3 h-3" />
+              <span>PDF</span>
+            </button>
+            <button
+              type="button"
+              @click="triggerDownload('xlsx', 'patron_types')"
+              :disabled="Boolean(downloadingFormat)"
+              class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-emerald-600 hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
+              :title="langStore.isAmharic() ? 'የተጠቃሚዎችን ምድብ ብቻ በExcel አውርድ' : 'Export Demographics as Excel'"
+            >
+              <FileSpreadsheet class="w-3 h-3" />
+              <span>Excel</span>
+            </button>
+          </div>
         </div>
 
         <!-- Gender Proportional Split Bar -->
@@ -508,7 +536,28 @@ const formattedActiveRange = computed(() => {
             <Building2 class="w-4 h-4 text-brand-blue dark:text-brand-yellow" />
             <span>{{ langStore.t('attendance.branch_comparison', 'Campus Facilities Foot-Traffic') }}</span>
           </h4>
-          <span class="text-[10px] font-mono text-main-text/50">{{ branchComparisonList.length }} {{ langStore.isAmharic() ? 'ንቁ ቅርንጫፎች' : 'Active Branches' }}</span>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="triggerDownload('pdf', 'branches')"
+              :disabled="Boolean(downloadingFormat)"
+              class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-brand-blue hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
+              :title="langStore.isAmharic() ? 'የቅርንጫፎች ንጽጽር በPDF አውርድ' : 'Export Branch Comparison as PDF'"
+            >
+              <Printer class="w-3 h-3" />
+              <span>PDF</span>
+            </button>
+            <button
+              type="button"
+              @click="triggerDownload('xlsx', 'branches')"
+              :disabled="Boolean(downloadingFormat)"
+              class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-emerald-600 hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
+              :title="langStore.isAmharic() ? 'የቅርንጫፎች ንጽጽር በExcel አውርድ' : 'Export Branch Comparison as Excel'"
+            >
+              <FileSpreadsheet class="w-3 h-3" />
+              <span>Excel</span>
+            </button>
+          </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -562,9 +611,33 @@ const formattedActiveRange = computed(() => {
             {{ langStore.t('attendance.day_of_week_desc', 'Predict peak patron traffic days across Monday to Sunday to optimize study hall staffing, catalog desks, and crowd control.') }}
           </p>
         </div>
-        <span class="text-[11px] font-mono font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border self-start sm:self-auto">
-          {{ langStore.isAmharic() ? 'የ7 ቀናት ተከታታይ መገለጫ' : '7-Day Longitudinal Profile' }}
-        </span>
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="triggerDownload('pdf', 'day_of_week')"
+              :disabled="Boolean(downloadingFormat)"
+              class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-brand-blue hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
+              :title="langStore.isAmharic() ? 'የቀናት ፍሰት በPDF አውርድ' : 'Export Day Influx as PDF'"
+            >
+              <Printer class="w-3 h-3" />
+              <span>PDF</span>
+            </button>
+            <button
+              type="button"
+              @click="triggerDownload('xlsx', 'day_of_week')"
+              :disabled="Boolean(downloadingFormat)"
+              class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-emerald-600 hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
+              :title="langStore.isAmharic() ? 'የቀናት ፍሰት በExcel አውርድ' : 'Export Day Influx as Excel'"
+            >
+              <FileSpreadsheet class="w-3 h-3" />
+              <span>Excel</span>
+            </button>
+          </div>
+          <span class="text-[11px] font-mono font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border">
+            {{ langStore.isAmharic() ? 'የ7 ቀናት ተከታታይ መገለጫ' : '7-Day Longitudinal Profile' }}
+          </span>
+        </div>
       </div>
 
       <!-- Graph: 7 Days Column Bars (Monday to Sunday) -->
@@ -667,23 +740,47 @@ const formattedActiveRange = computed(() => {
           </p>
         </div>
         
-        <!-- Month Selector Dropdown for Previous & Academic Months -->
-        <div class="flex items-center gap-2 self-start sm:self-auto">
-          <label class="text-[11px] font-semibold text-main-text/60 shrink-0">
-            {{ langStore.isAmharic() ? 'የትንተና ወር:' : 'Assessment Month:' }}
-          </label>
-          <select
-            v-model="selectedIntraMonthKey"
-            class="text-xs font-bold font-mono px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-brand-blue dark:text-brand-yellow border border-card-border cursor-pointer shadow-2xs focus:outline-none focus:ring-1 focus:ring-brand-blue"
-          >
-            <option
-              v-for="m in (intraMonthData?.available_months || [])"
-              :key="m.month_key"
-              :value="m.month_key"
+        <!-- Month Selector Dropdown & Quick Export for Previous & Academic Months -->
+        <div class="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="triggerDownload('pdf', 'intra_month')"
+              :disabled="Boolean(downloadingFormat)"
+              class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-brand-blue hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
+              :title="langStore.isAmharic() ? 'የወሩ ሳምንታት በPDF አውርድ' : 'Export Intra-Month as PDF'"
             >
-              {{ langStore.isAmharic() ? m.name_am : m.name_en }} {{ m.is_previous ? (langStore.isAmharic() ? '★ (ያለፈው ወር)' : '★ (Previous Month)') : '' }}
-            </option>
-          </select>
+              <Printer class="w-3 h-3" />
+              <span>PDF</span>
+            </button>
+            <button
+              type="button"
+              @click="triggerDownload('xlsx', 'intra_month')"
+              :disabled="Boolean(downloadingFormat)"
+              class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-emerald-600 hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
+              :title="langStore.isAmharic() ? 'የወሩ ሳምንታት በExcel አውርድ' : 'Export Intra-Month as Excel'"
+            >
+              <FileSpreadsheet class="w-3 h-3" />
+              <span>Excel</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <label class="text-[11px] font-semibold text-main-text/60 shrink-0">
+              {{ langStore.isAmharic() ? 'የትንተና ወር:' : 'Month:' }}
+            </label>
+            <select
+              v-model="selectedIntraMonthKey"
+              class="text-xs font-bold font-mono px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-brand-blue dark:text-brand-yellow border border-card-border cursor-pointer shadow-2xs focus:outline-none focus:ring-1 focus:ring-brand-blue"
+            >
+              <option
+                v-for="m in (intraMonthData?.available_months || [])"
+                :key="m.month_key"
+                :value="m.month_key"
+              >
+                {{ langStore.isAmharic() ? m.name_am : m.name_en }} {{ m.is_previous ? (langStore.isAmharic() ? '★ (ያለፈው ወር)' : '★ (Previous Month)') : '' }}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1143,7 +1240,7 @@ const formattedActiveRange = computed(() => {
           </p>
         </div>
 
-        <!-- 4 Formal Export Buttons -->
+        <!-- 4 Formal Export Buttons for chosen scope -->
         <div class="flex items-center gap-2 flex-wrap">
           <!-- Excel .xlsx -->
           <button
@@ -1178,7 +1275,7 @@ const formattedActiveRange = computed(() => {
             <span>CSV (.csv)</span>
           </button>
 
-          <!-- Official Print / PDF -->
+          <!-- Direct PDF Download -->
           <button
             type="button"
             @click="triggerDownload('pdf')"
@@ -1186,7 +1283,104 @@ const formattedActiveRange = computed(() => {
             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-brand-blue hover:bg-blue-900 text-white transition shadow-2xs cursor-pointer disabled:opacity-50"
           >
             <Printer class="w-3.5 h-3.5" />
-            <span>PDF (Print)</span>
+            <span>PDF (.pdf)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scope Selector Segmented Controls -->
+      <div class="p-3.5 rounded-md bg-main-bg/50 border border-card-border space-y-2.5">
+        <div class="flex items-center justify-between text-[11px] font-bold text-main-text/70 uppercase tracking-wider">
+          <span>{{ langStore.isAmharic() ? 'የሪፖርት ወሰንና የይዘት ምድብ ይምረጡ' : 'Select Export Audit Scope & Content Domain' }}</span>
+          <span class="font-mono text-brand-blue dark:text-brand-yellow font-bold text-[10px] bg-card-bg px-2 py-0.5 rounded border border-card-border">
+            {{ langStore.isAmharic() ? 'የተመረጠው ወሰን' : 'Active Scope' }}: {{ selectedExportScope.toUpperCase() }}
+          </span>
+        </div>
+        
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          <!-- Full Audit -->
+          <button
+            type="button"
+            @click="selectedExportScope = 'full'"
+            class="px-2.5 py-2 rounded text-left text-xs transition border cursor-pointer flex flex-col gap-0.5"
+            :class="selectedExportScope === 'full'
+              ? 'bg-brand-blue text-white border-brand-blue font-bold shadow-2xs'
+              : 'bg-card-bg text-main-text border-card-border hover:border-brand-blue/40'"
+          >
+            <span class="text-[11px] truncate">
+              {{ langStore.isAmharic() ? 'ሙሉ ይፋዊ ኦዲት' : 'Full Executive Audit' }}
+            </span>
+            <span class="text-[9.5px] opacity-75 truncate">
+              {{ langStore.isAmharic() ? 'ሁሉንም ክፍሎች ያጠቃልላል' : 'All Sections Combined' }}
+            </span>
+          </button>
+
+          <!-- Patron Demographics Only -->
+          <button
+            type="button"
+            @click="selectedExportScope = 'patron_types'"
+            class="px-2.5 py-2 rounded text-left text-xs transition border cursor-pointer flex flex-col gap-0.5"
+            :class="selectedExportScope === 'patron_types'
+              ? 'bg-brand-blue text-white border-brand-blue font-bold shadow-2xs'
+              : 'bg-card-bg text-main-text border-card-border hover:border-brand-blue/40'"
+          >
+            <span class="text-[11px] truncate">
+              {{ langStore.isAmharic() ? 'የተጠቃሚዎች ምድብ ብቻ' : 'Patron Types Only' }}
+            </span>
+            <span class="text-[9.5px] opacity-75 truncate">
+              {{ langStore.isAmharic() ? 'የቆጣሪ አጠቃቀም ስነ-ሕዝብ' : 'Usage Counter & Demographics' }}
+            </span>
+          </button>
+
+          <!-- Branch Facilities Only -->
+          <button
+            type="button"
+            @click="selectedExportScope = 'branches'"
+            class="px-2.5 py-2 rounded text-left text-xs transition border cursor-pointer flex flex-col gap-0.5"
+            :class="selectedExportScope === 'branches'
+              ? 'bg-brand-blue text-white border-brand-blue font-bold shadow-2xs'
+              : 'bg-card-bg text-main-text border-card-border hover:border-brand-blue/40'"
+          >
+            <span class="text-[11px] truncate">
+              {{ langStore.isAmharic() ? 'የቅርንጫፎች ንጽጽር ብቻ' : 'Branch Comparison' }}
+            </span>
+            <span class="text-[9.5px] opacity-75 truncate">
+              {{ langStore.isAmharic() ? 'የካምፓስ ቤተ-መጻሕፍት ድርሻ' : 'Facilities Foot-Traffic & Share' }}
+            </span>
+          </button>
+
+          <!-- Day of Week Influx Only -->
+          <button
+            type="button"
+            @click="selectedExportScope = 'day_of_week'"
+            class="px-2.5 py-2 rounded text-left text-xs transition border cursor-pointer flex flex-col gap-0.5"
+            :class="selectedExportScope === 'day_of_week'
+              ? 'bg-brand-blue text-white border-brand-blue font-bold shadow-2xs'
+              : 'bg-card-bg text-main-text border-card-border hover:border-brand-blue/40'"
+          >
+            <span class="text-[11px] truncate">
+              {{ langStore.isAmharic() ? 'የሳምንት ቀናት ፍሰት' : 'Day Influx Profile' }}
+            </span>
+            <span class="text-[9.5px] opacity-75 truncate">
+              {{ langStore.isAmharic() ? 'ሰኞ–እሑድና የፈረቃ ስርጭት' : 'Mon–Sun & Shift Windows' }}
+            </span>
+          </button>
+
+          <!-- Intra-Month Weekly Cycles Only -->
+          <button
+            type="button"
+            @click="selectedExportScope = 'intra_month'"
+            class="px-2.5 py-2 rounded text-left text-xs transition border cursor-pointer flex flex-col gap-0.5 col-span-2 sm:col-span-1"
+            :class="selectedExportScope === 'intra_month'
+              ? 'bg-brand-blue text-white border-brand-blue font-bold shadow-2xs'
+              : 'bg-card-bg text-main-text border-card-border hover:border-brand-blue/40'"
+          >
+            <span class="text-[11px] truncate">
+              {{ langStore.isAmharic() ? 'የወሩ ሳምንታትና ቀናት' : 'Intra-Month Cycles' }}
+            </span>
+            <span class="text-[9.5px] opacity-75 truncate">
+              {{ langStore.isAmharic() ? 'የ4 ሳምንታትና 5 ድግግሞሾች' : 'Weekly Cycles & Occurrences' }}
+            </span>
           </button>
         </div>
       </div>

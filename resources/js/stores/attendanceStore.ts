@@ -169,48 +169,47 @@ export const useAttendanceStore = defineStore('attendance', () => {
         return downloadFormalReport('csv', customFilters);
     }
 
-    async function downloadFormalReport(format: 'xlsx' | 'doc' | 'csv' | 'pdf', customFilters?: any) {
+    async function downloadFormalReport(
+        format: 'xlsx' | 'doc' | 'csv' | 'pdf',
+        customFilters?: any,
+        scope: 'full' | 'patron_types' | 'branches' | 'day_of_week' | 'intra_month' = 'full'
+    ) {
         if (!authStore.canManageReporting && !authStore.hasPermission('attendance.view') && !authStore.hasPermission('attendance.record')) {
             toast.error(langStore.isAmharic() ? 'ይህንን ሪፖርት የማውረድ ፈቃድ የለዎትም።' : 'You do not have permission to download this report.');
             return;
         }
 
-        const params = {
+        const params: any = {
             format,
+            scope,
             lang: langStore.currentLanguage,
             ...(customFilters || filters),
         };
 
-        if (format === 'pdf') {
-            const token = authStore.token || localStorage.getItem('auth_token') || '';
-            const libParam = params.library_id ? `&library_id=${params.library_id}` : '';
-            const dateFrom = params.date_from ? `&date_from=${params.date_from}` : '';
-            const dateTo = params.date_to ? `&date_to=${params.date_to}` : '';
-            const url = `/api/physical/attendance/report/print?lang=${params.lang}&token=${encodeURIComponent(token)}${libParam}${dateFrom}${dateTo}&auto_print=1`;
-            window.open(url, '_blank');
+        const scopeNames: Record<string, string> = {
+            patron_types: 'Patron_Demographics',
+            branches: 'Branch_Comparison',
+            day_of_week: 'Day_Influx_Profile',
+            intra_month: 'IntraMonth_Cycles',
+            full: 'Official_Attendance_Executive_Audit',
+        };
+        const scopePrefix = scopeNames[scope] || 'Attendance_Audit';
+        const ext = format;
+        const filename = `WDU_${scopePrefix}_${Date.now()}.${ext}`;
 
-            const filename = `WDU_Official_Print_Report_${Date.now()}`;
-            exportHistory.value.unshift({
-                id: `EXP-${Math.floor(100 + Math.random() * 900)}`,
-                name: filename,
-                format: 'pdf',
-                date: langStore.isAmharic() ? 'ዛሬ' : 'Today',
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                scope: params.library_id ? (langStore.isAmharic() ? 'የተመረጠው ቅርንጫፍ' : 'Assigned Branch Facility') : (langStore.isAmharic() ? 'ሁሉም የዩኒቨርሲቲው ቅርንጫፎች' : 'All Campus Facilities'),
-                size: '~ 42 KB',
-            });
-            saveExportHistory();
-            return;
-        }
+        const mimeMap: Record<string, string> = {
+            pdf: 'application/pdf',
+            xlsx: 'application/vnd.ms-excel',
+            doc: 'application/msword',
+            csv: 'text/csv',
+        };
 
         try {
             const response = await attendanceApi.downloadReport(params);
-            const blob = new Blob([response.data]);
+            const blob = new Blob([response.data], { type: mimeMap[format] || 'application/octet-stream' });
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            const ext = format === 'xlsx' ? 'xlsx' : (format === 'doc' ? 'doc' : 'csv');
-            const filename = `WDU_Library_Report_${Date.now()}.${ext}`;
             link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();
@@ -218,21 +217,41 @@ export const useAttendanceStore = defineStore('attendance', () => {
             window.URL.revokeObjectURL(url);
 
             const estSize = Math.max(12, Math.round(blob.size / 1024)) + ' KB';
+            
+            const scopeLabelsAm: Record<string, string> = {
+                patron_types: 'የተጠቃሚዎች ምድብ (Usage Counter)',
+                branches: 'የቅርንጫፍ ንጽጽር (Branch Comparison)',
+                day_of_week: 'የቀናት ፍሰት (Day Influx)',
+                intra_month: 'የወሩ ሳምንታትና ቀናት (Intra-Month)',
+                full: 'ሙሉ ይፋዊ ኦዲት (Full Audit)',
+            };
+            const scopeLabelsEn: Record<string, string> = {
+                patron_types: 'Patron Demographics Only',
+                branches: 'Branch Comparison Only',
+                day_of_week: 'Day of Week Influx Only',
+                intra_month: 'Intra-Month Cycles Only',
+                full: 'Comprehensive Executive Audit',
+            };
+
+            const scopeLabel = langStore.isAmharic() 
+                ? (scopeLabelsAm[scope] || scope) 
+                : (scopeLabelsEn[scope] || scope);
+
             exportHistory.value.unshift({
                 id: `EXP-${Math.floor(100 + Math.random() * 900)}`,
                 name: filename.replace(`.${ext}`, ''),
                 format,
                 date: langStore.isAmharic() ? 'ዛሬ' : 'Today',
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                scope: params.library_id ? (langStore.isAmharic() ? 'የተመረጠው ቅርንጫፍ' : 'Assigned Branch Facility') : (langStore.isAmharic() ? 'ሁሉም የዩኒቨርሲቲው ቅርንጫፎች' : 'All Campus Facilities'),
+                scope: scopeLabel,
                 size: estSize,
             });
             saveExportHistory();
 
             toast.success(
                 langStore.isAmharic()
-                    ? `ይፋዊ የ${format.toUpperCase()} ሪፖርት በተሳካ ሁኔታ ወርዷል።`
-                    : `Official ${format.toUpperCase()} report downloaded successfully.`
+                    ? `ይፋዊ የ${format.toUpperCase()} ሪፖርት (${scopeLabel}) በተሳካ ሁኔታ ወርዷል።`
+                    : `Official ${format.toUpperCase()} report (${scopeLabel}) downloaded successfully.`
             );
         } catch {
             toast.error(

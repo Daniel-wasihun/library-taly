@@ -285,15 +285,16 @@ const handleExport = (range: 'day' | 'week' | 'month' | 'current') => {
     to = dateRange.value.to;
   }
 
-  attendanceStore.exportLogs({
+  const scope = activeTab.value === 'counter' ? 'patron_types' : 'full';
+  attendanceStore.downloadFormalReport('csv', {
     library_id: selectedLibrary.value || undefined,
     date_from: from,
     date_to: to,
-  });
+  }, scope);
 };
 
 /**
- * Professional backend printable report generator
+ * Direct PDF download (no new tab)
  */
 const handlePrint = (range: 'day' | 'week' | 'month' | 'current' = 'current') => {
   let from = dateRange.value.from;
@@ -302,11 +303,12 @@ const handlePrint = (range: 'day' | 'week' | 'month' | 'current' = 'current') =>
     from = todayStr;
     to = todayStr;
   }
-  const token = authStore.token || localStorage.getItem('auth_token') || '';
-  const lang = langStore.currentLanguage;
-  const libId = selectedLibrary.value ? `&library_id=${selectedLibrary.value}` : '';
-  const url = `/api/physical/attendance/report/print?date_from=${from}&date_to=${to}&lang=${lang}&token=${encodeURIComponent(token)}${libId}`;
-  window.open(url, '_blank');
+  const scope = activeTab.value === 'counter' ? 'patron_types' : 'full';
+  attendanceStore.downloadFormalReport('pdf', {
+    date_from: from,
+    date_to: to,
+    library_id: selectedLibrary.value || undefined,
+  }, scope);
 };
 
 const refreshStats = async () => {

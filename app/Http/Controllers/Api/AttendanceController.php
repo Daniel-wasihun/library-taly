@@ -471,15 +471,26 @@ class AttendanceController extends Controller
 
         $format = strtolower($request->query('format', 'xlsx'));
         $lang = $request->query('lang', 'en');
-        $reportData = $this->reportService->compileReportData($user, $request->all(), $lang);
+        $scope = strtolower($request->query('scope', 'full'));
+        
+        $params = $request->all();
+        $params['scope'] = $scope;
+        $reportData = $this->reportService->compileReportData($user, $params, $lang);
 
         $timestamp = now()->format('Y_m_d_His');
+        $scopePrefix = match ($scope) {
+            'patron_types' => 'Patron_Demographic_Usage',
+            'branches' => 'Branch_Facility_Comparison',
+            'day_of_week' => 'DayOfWeek_Influx_Profile',
+            'intra_month' => 'IntraMonth_Weekly_Cycles',
+            default => 'Official_Attendance_Executive_Audit',
+        };
 
         if ($format === 'xlsx' || $format === 'excel') {
             $content = $this->reportService->generateExcelXml($reportData);
             return response($content, 200, [
                 'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="WDU_Library_Report_' . $timestamp . '.xlsx"',
+                'Content-Disposition' => 'attachment; filename="WDU_' . $scopePrefix . '_' . $timestamp . '.xlsx"',
                 'Pragma' => 'no-cache',
                 'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             ]);
@@ -489,7 +500,7 @@ class AttendanceController extends Controller
             $content = $this->reportService->generateWordDoc($reportData);
             return response($content, 200, [
                 'Content-Type' => 'application/msword; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="WDU_Library_Report_' . $timestamp . '.doc"',
+                'Content-Disposition' => 'attachment; filename="WDU_' . $scopePrefix . '_' . $timestamp . '.doc"',
                 'Pragma' => 'no-cache',
                 'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             ]);
@@ -499,13 +510,24 @@ class AttendanceController extends Controller
             $content = $this->reportService->generateCsv($reportData);
             return response($content, 200, [
                 'Content-Type' => 'text/csv; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="WDU_Attendance_Report_' . $timestamp . '.csv"',
+                'Content-Disposition' => 'attachment; filename="WDU_' . $scopePrefix . '_' . $timestamp . '.csv"',
                 'Pragma' => 'no-cache',
                 'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             ]);
         }
 
-        // Default or PDF view
+        if ($format === 'pdf') {
+            $html = view('reports.attendance_print', $reportData)->render();
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('a4', 'portrait');
+            return response($pdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="WDU_' . $scopePrefix . '_' . $timestamp . '.pdf"',
+                'Pragma' => 'no-cache',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            ]);
+        }
+
+        // Default: HTML print view
         $html = view('reports.attendance_print', $reportData)->render();
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=UTF-8',

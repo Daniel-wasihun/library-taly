@@ -256,6 +256,7 @@ class AttendanceReportService
         $description = $isAmharic ? $descriptionAm : $descriptionEn;
 
         return [
+            'scope' => $filters['scope'] ?? 'full',
             'isAmharic' => $isAmharic,
             'lang' => $lang,
             'refNumber' => $refNumber,
@@ -940,7 +941,16 @@ class AttendanceReportService
     public function generateExcelXml(array $data): string
     {
         $isAmharic = $data['isAmharic'];
-        $title = $isAmharic ? 'የቤተ-መጻሕፍት አጠቃቀም እና የስነ-ሕዝብ ትንተና ይፋዊ ሪፖርት' : 'Official Library Attendance and Demographic Analytics Report';
+        $scope = $data['scope'] ?? 'full';
+
+        $titleMap = [
+            'patron_types' => $isAmharic ? 'የወልድያ ዩኒቨርሲቲ የተጠቃሚዎች ስነ-ሕዝብና የአጠቃቀም ቆጣሪ ይፋዊ ሪፖርት' : 'WOLDIA UNIVERSITY PATRON DEMOGRAPHICS & USAGE COUNTER AUDIT REPORT',
+            'branches' => $isAmharic ? 'የወልድያ ዩኒቨርሲቲ የቅርንጫፍ ቤተ-መጻሕፍት አጠቃቀም ንጽጽር ይፋዊ ሪፖርት' : 'WOLDIA UNIVERSITY BRANCH FACILITIES UTILIZATION COMPARISON REPORT',
+            'day_of_week' => $isAmharic ? 'የወልድያ ዩኒቨርሲቲ የዕለታት ፍሰትና የፈረቃ ክፍለ-ጊዜ ይፋዊ ሪፖርት' : 'WOLDIA UNIVERSITY DAY-OF-WEEK INFLUX PROFILE & SHIFT WINDOWS REPORT',
+            'intra_month' => $isAmharic ? 'የወልድያ ዩኒቨርሲቲ የወሩ ሳምንታትና የዕለታት ድግግሞሽ ይፋዊ ሪፖርት' : 'WOLDIA UNIVERSITY INTRA-MONTH WEEKLY CYCLES & RECURRING DAY OCCURRENCES REPORT',
+            'full' => $isAmharic ? 'የወልድያ ዩኒቨርሲቲ ቤተ-መጻሕፍት አጠቃቀምና የስነ-ሕዝብ ትንተና ይፋዊ ሪፖርት' : 'WOLDIA UNIVERSITY OFFICIAL LIBRARY ATTENDANCE & DEMOGRAPHIC ANALYTICS REPORT',
+        ];
+        $title = $titleMap[$scope] ?? $titleMap['full'];
 
         $output = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $output .= '<?mso-application progid="Excel.Sheet"?>' . "\n";
@@ -962,7 +972,234 @@ class AttendanceReportService
         $output .= '  <Style ss:ID="CellTotal"><Font ss:FontName="Segoe UI" ss:Size="10" ss:Bold="1" ss:Color="#0B529C"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/><Alignment ss:Horizontal="Right"/><Borders><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#0B529C"/></Borders></Style>' . "\n";
         $output .= ' </Styles>' . "\n";
 
-        // Worksheet 1: Executive Summary & Multidimensional Analytics
+        // Scope: Patron Demographics Only
+        if ($scope === 'patron_types') {
+            $output .= ' <Worksheet ss:Name="' . ($isAmharic ? 'የተጠቃሚዎች ስነ-ሕዝብ' : 'Patron Demographics') . '">' . "\n";
+            $output .= '  <Table ss:DefaultColumnWidth="120">' . "\n";
+            $output .= '   <Column ss:Width="200"/>' . "\n";
+            $output .= '   <Column ss:Width="90"/>' . "\n";
+            $output .= '   <Column ss:Width="90"/>' . "\n";
+            $output .= '   <Column ss:Width="110"/>' . "\n";
+            $output .= '   <Column ss:Width="90"/>' . "\n";
+
+            $output .= '   <Row ss:Height="28"><Cell ss:MergeAcross="4" ss:StyleID="HeaderTitle"><Data ss:Type="String">' . htmlspecialchars($title) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row><Cell ss:MergeAcross="4" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . $data['dateFromStr']['date'] . ' – ' . $data['dateToStr']['date'] . ' | ' . $data['refNumber']) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row ss:Height="12"><Cell ss:MergeAcross="4"/></Row>' . "\n";
+
+            $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="4" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? 'የተጠቃሚዎች ስነ-ሕዝብና የአጠቃቀም ቆጣሪ ስርጭት' : 'Patron Category Demographic Breakdown') . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row ss:Height="18">' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የተጠቃሚ ምድብ' : 'Patron Category') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ወንድ' : 'Male') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ሴት' : 'Female') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ ድምር' : 'Subtotal') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</Data></Cell>' . "\n";
+            $output .= '   </Row>' . "\n";
+
+            $types = [
+                'student' => $isAmharic ? 'ተማሪዎች (ቅድመ-ምረቃና ድህረ-ምረቃ)' : 'Students (Undergraduate & Postgraduate)',
+                'teacher' => $isAmharic ? 'መምህራንና ተመራማሪዎች' : 'Faculty & Research Scholars',
+                'staff' => $isAmharic ? 'የአስተዳደርና ቴክኒክ ሠራተኞች' : 'Administrative & Technical Staff',
+            ];
+
+            foreach ($types as $key => $label) {
+                $row = $data['demographics'][$key];
+                $output .= '   <Row>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($label) . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $row['male'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $row['female'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $row['total'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $row['percent'] . '%</Data></Cell>' . "\n";
+                $output .= '   </Row>' . "\n";
+            }
+
+            $output .= '   <Row>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="String">' . ($isAmharic ? 'አጠቃላይ ድምር' : 'Grand Total') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $data['maleCount'] . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $data['femaleCount'] . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $data['totalCount'] . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="String">100%</Data></Cell>' . "\n";
+            $output .= '   </Row>' . "\n";
+
+            $output .= '  </Table>' . "\n";
+            $output .= ' </Worksheet>' . "\n";
+            $output .= '</Workbook>' . "\n";
+            return $output;
+        }
+
+        // Scope: Branch Comparison Only
+        if ($scope === 'branches') {
+            $output .= ' <Worksheet ss:Name="' . ($isAmharic ? 'የቅርንጫፎች ንጽጽር' : 'Branch Comparison') . '">' . "\n";
+            $output .= '  <Table ss:DefaultColumnWidth="120">' . "\n";
+            $output .= '   <Column ss:Width="180"/>' . "\n";
+            $output .= '   <Column ss:Width="80"/>' . "\n";
+            $output .= '   <Column ss:Width="90"/>' . "\n";
+            $output .= '   <Column ss:Width="90"/>' . "\n";
+            $output .= '   <Column ss:Width="90"/>' . "\n";
+            $output .= '   <Column ss:Width="100"/>' . "\n";
+            $output .= '   <Column ss:Width="100"/>' . "\n";
+
+            $output .= '   <Row ss:Height="28"><Cell ss:MergeAcross="6" ss:StyleID="HeaderTitle"><Data ss:Type="String">' . htmlspecialchars($title) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . $data['dateFromStr']['date'] . ' – ' . $data['dateToStr']['date'] . ' | ' . $data['refNumber']) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row ss:Height="12"><Cell ss:MergeAcross="6"/></Row>' . "\n";
+
+            $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="6" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? 'የቅርንጫፍ ቤተ-መጻሕፍት አጠቃቀም ንጽጽር' : 'Library Branch Facilities Comparison') . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row ss:Height="18">' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የቅርንጫፍ ስም' : 'Branch Facility') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ኮድ' : 'Code') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ተማሪዎች' : 'Students') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ድርሻ (%)' : 'Traffic Share (%)') . '</Data></Cell>' . "\n";
+            $output .= '   </Row>' . "\n";
+
+            $totStudents = 0; $totTeachers = 0; $totStaff = 0; $totAll = 0;
+            foreach ($data['branchComparison'] as $branch) {
+                $totStudents += $branch['students'];
+                $totTeachers += ($branch['teachers'] ?? 0);
+                $totStaff += ($branch['staff'] ?? 0);
+                $totAll += $branch['total'];
+
+                $output .= '   <Row>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($branch['name']) . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . $branch['code'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $branch['students'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . ($branch['teachers'] ?? 0) . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . ($branch['staff'] ?? 0) . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $branch['total'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $branch['percent'] . '%</Data></Cell>' . "\n";
+                $output .= '   </Row>' . "\n";
+            }
+
+            $output .= '   <Row>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="String">' . ($isAmharic ? 'አጠቃላይ ድምር' : 'Grand Total') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="String">—</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $totStudents . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $totTeachers . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $totStaff . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $totAll . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="String">100%</Data></Cell>' . "\n";
+            $output .= '   </Row>' . "\n";
+
+            $output .= '  </Table>' . "\n";
+            $output .= ' </Worksheet>' . "\n";
+            $output .= '</Workbook>' . "\n";
+            return $output;
+        }
+
+        // Scope: Day-of-Week & Shift Windows Only
+        if ($scope === 'day_of_week') {
+            $output .= ' <Worksheet ss:Name="' . ($isAmharic ? 'የዕለታት ፍሰት' : 'Day of Week Influx') . '">' . "\n";
+            $output .= '  <Table ss:DefaultColumnWidth="120">' . "\n";
+            $output .= '   <Column ss:Width="130"/>' . "\n";
+            $output .= '   <Column ss:Width="100"/>' . "\n";
+            $output .= '   <Column ss:Width="100"/>' . "\n";
+            $output .= '   <Column ss:Width="100"/>' . "\n";
+            $output .= '   <Column ss:Width="120"/>' . "\n";
+            $output .= '   <Column ss:Width="120"/>' . "\n";
+            $output .= '   <Column ss:Width="280"/>' . "\n";
+
+            $output .= '   <Row ss:Height="28"><Cell ss:MergeAcross="6" ss:StyleID="HeaderTitle"><Data ss:Type="String">' . htmlspecialchars($title) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . $data['dateFromStr']['date'] . ' – ' . $data['dateToStr']['date'] . ' | ' . $data['refNumber']) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row ss:Height="12"><Cell ss:MergeAcross="6"/></Row>' . "\n";
+
+            $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="6" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? 'የሳምንት ቀናት የጎብኝዎች ፍሰት ትንተና (Monday - Sunday)' : 'Day-of-the-Week Operational Foot-Traffic Influx Profile') . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row ss:Height="18">' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የሳምንቱ ዕለት' : 'Day of Week') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'አማካይ በቀን' : 'Daily Average') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Visitors') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የሳምንቱ ድርሻ (%)' : 'Weekly Share (%)') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠዋት / ቀን / ማታ' : 'Morn / Aft / Night') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የፍሰት ደረጃ' : 'Surge Level') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የቅድመ-ትንበያ ማስታወሻ' : 'Management Prediction') . '</Data></Cell>' . "\n";
+            $output .= '   </Row>' . "\n";
+
+            foreach ($data['dayOfWeekAnalytics'] as $dow) {
+                $split = $dow['morning'] . ' / ' . $dow['afternoon'] . ' / ' . $dow['night'];
+                $output .= '   <Row>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($dow['display_name']) . ($dow['is_peak'] ? ' ★' : '') . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $dow['daily_average'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $dow['total'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $dow['percentage'] . '%</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . $split . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $dow['surge_level_am'] : $dow['surge_level']) . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $dow['prediction_am'] : $dow['prediction']) . '</Data></Cell>' . "\n";
+                $output .= '   </Row>' . "\n";
+            }
+
+            $output .= '   <Row ss:Height="14"><Cell ss:MergeAcross="6"/></Row>' . "\n";
+            $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="6" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? 'የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት' : 'Operational Shift Windows & Density') . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row ss:Height="18">' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የፈረቃ ክፍለ-ጊዜ' : 'Shift Window') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የሰዓት ገደብ' : 'Time Interval') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ተማሪ' : 'Students') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ' : 'Total Patrons') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</Data></Cell>' . "\n";
+            $output .= '   </Row>' . "\n";
+
+            foreach ($data['shiftWindows'] as $shift) {
+                $output .= '   <Row>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($shift['title']) . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . $shift['time_range'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $shift['students'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . ($shift['teachers'] ?? 0) . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . ($shift['staff'] ?? 0) . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $shift['count'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $shift['percent'] . '%</Data></Cell>' . "\n";
+                $output .= '   </Row>' . "\n";
+            }
+
+            $output .= '  </Table>' . "\n";
+            $output .= ' </Worksheet>' . "\n";
+            $output .= '</Workbook>' . "\n";
+            return $output;
+        }
+
+        // Scope: Intra-Month Cycles Only
+        if ($scope === 'intra_month') {
+            $output .= ' <Worksheet ss:Name="' . ($isAmharic ? 'የወሩ ሳምንታትና ቀናት' : 'Intra-Month Cycles') . '">' . "\n";
+            $output .= '  <Table ss:DefaultColumnWidth="120">' . "\n";
+            $output .= '   <Column ss:Width="160"/>' . "\n";
+            $output .= '   <Column ss:Width="100"/>' . "\n";
+            $output .= '   <Column ss:Width="100"/>' . "\n";
+            $output .= '   <Column ss:Width="100"/>' . "\n";
+            $output .= '   <Column ss:Width="300"/>' . "\n";
+
+            $output .= '   <Row ss:Height="28"><Cell ss:MergeAcross="4" ss:StyleID="HeaderTitle"><Data ss:Type="String">' . htmlspecialchars($title) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row><Cell ss:MergeAcross="4" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . ($data['intraMonthDayAnalytics']['selected_month_name_' . ($isAmharic ? 'am' : 'en')] ?? '') . ' | ' . $data['refNumber']) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row ss:Height="12"><Cell ss:MergeAcross="4"/></Row>' . "\n";
+
+            if (!empty($data['intraMonthDayAnalytics'])) {
+                $intra = $data['intraMonthDayAnalytics'];
+                $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="4" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? 'በወሩ ውስጥ ያሉ ሳምንታት የፍሰት ትንተና' : 'Weekly Cycles In Month') . '</Data></Cell></Row>' . "\n";
+                $output .= '   <Row ss:Height="18">' . "\n";
+                $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የወሩ ሳምንት' : 'Week in Month') . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons') . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'አማካይ በቀን' : 'Daily Average') . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የወሩ ድርሻ (%)' : 'Monthly Share (%)') . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የአሰራር ማስታወሻ' : 'Operational Prediction Context') . '</Data></Cell>' . "\n";
+                $output .= '   </Row>' . "\n";
+
+                foreach ($intra['weekly_cycles'] as $wCycle) {
+                    $output .= '   <Row>' . "\n";
+                    $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $wCycle['label_am'] : $wCycle['label']) . ($wCycle['is_peak_week'] ? ' ★' : '') . '</Data></Cell>' . "\n";
+                    $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $wCycle['total'] . '</Data></Cell>' . "\n";
+                    $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $wCycle['daily_average'] . '</Data></Cell>' . "\n";
+                    $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $wCycle['percent'] . '%</Data></Cell>' . "\n";
+                    $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $wCycle['prediction_am'] : $wCycle['prediction']) . '</Data></Cell>' . "\n";
+                    $output .= '   </Row>' . "\n";
+                }
+            }
+
+            $output .= '  </Table>' . "\n";
+            $output .= ' </Worksheet>' . "\n";
+            $output .= '</Workbook>' . "\n";
+            return $output;
+        }
+
+        // Scope: Full Comprehensive Executive Audit
         $output .= ' <Worksheet ss:Name="' . ($isAmharic ? 'የስራ አስፈጻሚ ትንተና' : 'Executive Analytics') . '">' . "\n";
         $output .= '  <Table ss:DefaultColumnWidth="120">' . "\n";
         $output .= '   <Column ss:Width="180"/>' . "\n";
@@ -1228,57 +1465,7 @@ class AttendanceReportService
             $output .= ' </Worksheet>' . "\n";
         }
 
-        // Worksheet 4: Detailed Entries Audit Registry
-        $output .= ' <Worksheet ss:Name="' . ($isAmharic ? 'የቀጥታ ምዝገባዎች መዝገብ' : 'Granular Audit Registry') . '">' . "\n";
-        $output .= '  <Table ss:DefaultColumnWidth="110">' . "\n";
-        $output .= '   <Column ss:Width="110"/>' . "\n";
-        $output .= '   <Column ss:Width="140"/>' . "\n";
-        $output .= '   <Column ss:Width="120"/>' . "\n";
-        $output .= '   <Column ss:Width="100"/>' . "\n";
-        $output .= '   <Column ss:Width="80"/>' . "\n";
-        $output .= '   <Column ss:Width="80"/>' . "\n";
-        $output .= '   <Column ss:Width="140"/>' . "\n";
-
-        $output .= '   <Row ss:Height="20">' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የመዝገብ መለያ' : 'Log ID') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ቀንና ሰዓት' : 'Timestamp') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ቅርንጫፍ' : 'Branch') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የተጠቃሚ ዓይነት' : 'Patron Type') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጾታ' : 'Gender') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ብዛት' : 'Count') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'መዝጋቢ ሠራተኛ' : 'Logged By') . '</Data></Cell>' . "\n";
-        $output .= '   </Row>' . "\n";
-
-        foreach ($data['attendances']->take(500) as $log) {
-            $dt = EthiopianDateService::formatDT($log->entry_at, $isAmharic);
-            $bName = $isAmharic ? ($log->library?->name_am ?? $log->library?->name ?? '—') : ($log->library?->name ?? '—');
-            $pType = match ($log->user_type) {
-                'student' => $isAmharic ? 'ተማሪ' : 'Student',
-                'teacher' => $isAmharic ? 'መምህር' : 'Faculty',
-                'staff' => $isAmharic ? 'ሰራተኛ' : 'Staff',
-                default => ucfirst($log->user_type),
-            };
-            $gLabel = match ($log->gender) {
-                'male' => $isAmharic ? 'ወንድ' : 'Male',
-                'female' => $isAmharic ? 'ሴት' : 'Female',
-                default => ucfirst($log->gender),
-            };
-
-            $output .= '   <Row>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . $log->slug . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($dt['date'] . ' ' . $dt['time']) . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($bName) . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . $pType . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . $gLabel . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $log->visitor_count . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($log->staff?->name ?? 'System') . '</Data></Cell>' . "\n";
-            $output .= '   </Row>' . "\n";
-        }
-
-        $output .= '  </Table>' . "\n";
-        $output .= ' </Worksheet>' . "\n";
         $output .= '</Workbook>' . "\n";
-
         return $output;
     }
 
@@ -1288,7 +1475,32 @@ class AttendanceReportService
     public function generateWordDoc(array $data): string
     {
         $isAmharic = $data['isAmharic'];
-        $title = $isAmharic ? 'የቤተ-መጻሕፍት አጠቃቀም እና የስነ-ሕዝብ ትንተና ይፋዊ ሪፖርት' : 'Official Library Attendance and Demographic Analytics Report';
+        $scope = $data['scope'] ?? 'full';
+
+        $scopeTitles = [
+            'patron_types' => [
+                'en' => 'Library Patron Demographic & Usage Counter Analytics Report',
+                'am' => 'የቤተ-መጻሕፍት የተጠቃሚዎች ምድብና የስነ-ሕዝብ አጠቃቀም ትንተና ሪፖርት',
+            ],
+            'branches' => [
+                'en' => 'Library Branch Facilities Comparative Attendance Audit',
+                'am' => 'የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽርና የተጠቃሚዎች ፍሰት ኦዲት ሪፖርት',
+            ],
+            'day_of_week' => [
+                'en' => 'Day-of-the-Week Operational Foot-Traffic Influx Report',
+                'am' => 'የሳምንት ቀናት የቤተ-መጻሕፍት የጎብኝዎች ፍሰትና የጥግግት ትንተና ሪፖርት',
+            ],
+            'intra_month' => [
+                'en' => 'Intra-Month Weekly Cycles & Recurring Day Occurrences Report',
+                'am' => 'በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና ሪፖርት',
+            ],
+            'full' => [
+                'en' => 'Official Library Attendance and Demographic Analytics Report',
+                'am' => 'የቤተ-መጻሕፍት አጠቃቀም እና የስነ-ሕዝብ ትንተና ይፋዊ ሪፖርት',
+            ],
+        ];
+
+        $title = $isAmharic ? ($scopeTitles[$scope]['am'] ?? $scopeTitles['full']['am']) : ($scopeTitles[$scope]['en'] ?? $scopeTitles['full']['en']);
         $subTitle = $isAmharic ? 'የአካዳሚክ ቤተ-መጻሕፍት አገልግሎት ዳይሬክቶሬት ይፋዊ የኦዲት ሰነድ' : 'Official Audit Document — Directorate of Academic Library & Information Services';
 
         $html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
@@ -1312,6 +1524,7 @@ class AttendanceReportService
         // Official Academic Header
         $html .= '<h1>' . ($isAmharic ? 'ወልድያ ዩኒቨርሲቲ' : 'WOLDIA UNIVERSITY') . '</h1>';
         $html .= '<h2>' . htmlspecialchars($subTitle) . '</h2>';
+        $html .= '<h3 style="text-align: center; border: none; margin: 4pt 0 12pt 0; color: #1E293B;">' . htmlspecialchars($title) . '</h3>';
         $html .= '<hr style="border: 0; border-top: 2pt double #0B529C; margin-bottom: 15pt;" />';
 
         // Document Metadata Table
@@ -1331,8 +1544,8 @@ class AttendanceReportService
         $html .= '<tr>';
         $html .= '<td style="font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'ያዘጋጀው ኃላፊ/ሠራተኛ' : 'Reporting Officer') . ':</td>';
         $html .= '<td>' . htmlspecialchars($data['generatedBy']) . ' (' . $data['generatedByUsername'] . ')</td>';
-        $html .= '<td style="font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'የሰነዱ ደረጃ' : 'Classification') . ':</td>';
-        $html .= '<td>' . ($isAmharic ? 'ይፋዊ የአካዳሚክ ኦዲት ሰነድ' : 'Official Academic Audit Record') . '</td>';
+        $html .= '<td style="font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'የኦዲት ወሰን' : 'Audit Scope') . ':</td>';
+        $html .= '<td style="font-weight: bold; color: #0B529C;">' . strtoupper($scope) . '</td>';
         $html .= '</tr>';
         $html .= '</table>';
 
@@ -1340,86 +1553,94 @@ class AttendanceReportService
         $html .= '<h3>' . ($isAmharic ? 'የስራ አስፈጻሚ ማጠቃለያና መግለጫ' : 'Executive Summary & Narrative') . '</h3>';
         $html .= '<p>' . htmlspecialchars($data['description']) . '</p>';
 
-        // Section 1: KPI Summary Table
-        $html .= '<h3>' . ($isAmharic ? '1. ዋና ዋና የአፈጻጸም ጠቋሚዎች ማጠቃለያ' : '1. Key Performance Indicators (KPIs)') . '</h3>';
-        $html .= '<table>';
-        $html .= '<tr><th>' . ($isAmharic ? 'የመለኪያ መግለጫ' : 'Metric Indicator') . '</th><th class="text-right">' . ($isAmharic ? 'የተመዘገበ ቁጥር' : 'Recorded Value') . '</th><th>' . ($isAmharic ? 'የድርሻ መጠን' : 'Percentage / Proportion') . '</th><th>' . ($isAmharic ? 'ተጨማሪ የአሰራር ማስታወሻ' : 'Operational Note') . '</th></tr>';
-        $html .= '<tr><td>' . ($isAmharic ? 'ጠቅላላ የጎብኝዎች ብዛት' : 'Total Patron Foot Traffic') . '</td><td class="text-right" style="font-weight:bold;">' . number_format($data['totalCount']) . '</td><td>100.0%</td><td>' . ($isAmharic ? 'በተመረጠው የጊዜ ገደብ የገቡ ጠቅላላ ጎብኝዎች' : 'Aggregated campus gate check-ins') . '</td></tr>';
-        $html .= '<tr><td>' . ($isAmharic ? 'ወንድ ጎብኝዎች' : 'Male Patrons') . '</td><td class="text-right">' . number_format($data['maleCount']) . '</td><td>' . $data['malePercent'] . '%</td><td>' . ($isAmharic ? 'የወንዶች ተሳትፎ ድርሻ' : 'Share of recorded traffic') . '</td></tr>';
-        $html .= '<tr><td>' . ($isAmharic ? 'ሴት ጎብኝዎች' : 'Female Patrons') . '</td><td class="text-right">' . number_format($data['femaleCount']) . '</td><td>' . $data['femalePercent'] . '%</td><td>' . ($isAmharic ? 'የሴቶች ተሳትፎ ድርሻ' : 'Share of recorded traffic') . '</td></tr>';
-        $html .= '<tr><td>' . ($isAmharic ? 'ከፍተኛ የተጠቃሚዎች ሰዓት' : 'Peak Traffic Window') . '</td><td class="text-right">' . number_format($data['peakHourCount']) . '</td><td>—</td><td>' . $data['peakHourLabel'] . '</td></tr>';
-        $html .= '<tr><td>' . ($isAmharic ? 'ከፍተኛ ተጠቃሚ ቅርንጫፍ' : 'Busiest Branch Facility') . '</td><td class="text-right">—</td><td>—</td><td>' . htmlspecialchars($data['busiestBranchName']) . '</td></tr>';
-        $html .= '</table>';
-
-        // Section 2: Demographic Patron Matrix
-        $html .= '<h3>' . ($isAmharic ? '2. የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር' : '2. Patron Demographic Categorization') . '</h3>';
-        $html .= '<table>';
-        $html .= '<tr><th>' . ($isAmharic ? 'የተጠቃሚ ምድብ' : 'Patron Category') . '</th><th class="text-right">' . ($isAmharic ? 'ወንድ' : 'Male') . '</th><th class="text-right">' . ($isAmharic ? 'ሴት' : 'Female') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ድምር' : 'Subtotal') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</th></tr>';
-
-        $types = [
-            'student' => $isAmharic ? 'ተማሪዎች (ቅድመ-ምረቃና ድህረ-ምረቃ)' : 'Students (Undergraduate & Postgraduate)',
-            'teacher' => $isAmharic ? 'መምህራንና ተመራማሪዎች' : 'Faculty & Research Scholars',
-            'staff' => $isAmharic ? 'የአስተዳደርና ቴክኒክ ሠራተኞች' : 'Administrative & Technical Staff',
-        ];
-
-        foreach ($types as $key => $label) {
-            $row = $data['demographics'][$key];
-            $html .= '<tr>';
-            $html .= '<td>' . htmlspecialchars($label) . '</td>';
-            $html .= '<td class="text-right">' . number_format($row['male']) . '</td>';
-            $html .= '<td class="text-right">' . number_format($row['female']) . '</td>';
-            $html .= '<td class="text-right" style="font-weight:bold;">' . number_format($row['total']) . '</td>';
-            $html .= '<td class="text-right">' . $row['percent'] . '%</td>';
-            $html .= '</tr>';
+        // Section 1: KPI Summary Table (full or patron_types)
+        if ($scope === 'full' || $scope === 'patron_types') {
+            $html .= '<h3>' . ($isAmharic ? '1. ዋና ዋና የአፈጻጸም ጠቋሚዎች ማጠቃለያ' : '1. Key Performance Indicators (KPIs)') . '</h3>';
+            $html .= '<table>';
+            $html .= '<tr><th>' . ($isAmharic ? 'የመለኪያ መግለጫ' : 'Metric Indicator') . '</th><th class="text-right">' . ($isAmharic ? 'የተመዘገበ ቁጥር' : 'Recorded Value') . '</th><th>' . ($isAmharic ? 'የድርሻ መጠን' : 'Percentage / Proportion') . '</th><th>' . ($isAmharic ? 'ተጨማሪ የአሰራር ማስታወሻ' : 'Operational Note') . '</th></tr>';
+            $html .= '<tr><td>' . ($isAmharic ? 'ጠቅላላ የጎብኝዎች ብዛት' : 'Total Patron Foot Traffic') . '</td><td class="text-right" style="font-weight:bold;">' . number_format($data['totalCount']) . '</td><td>100.0%</td><td>' . ($isAmharic ? 'በተመረጠው የጊዜ ገደብ የገቡ ጠቅላላ ጎብኝዎች' : 'Aggregated campus gate check-ins') . '</td></tr>';
+            $html .= '<tr><td>' . ($isAmharic ? 'ወንድ ጎብኝዎች' : 'Male Patrons') . '</td><td class="text-right">' . number_format($data['maleCount']) . '</td><td>' . $data['malePercent'] . '%</td><td>' . ($isAmharic ? 'የወንዶች ተሳትፎ ድርሻ' : 'Share of recorded traffic') . '</td></tr>';
+            $html .= '<tr><td>' . ($isAmharic ? 'ሴት ጎብኝዎች' : 'Female Patrons') . '</td><td class="text-right">' . number_format($data['femaleCount']) . '</td><td>' . $data['femalePercent'] . '%</td><td>' . ($isAmharic ? 'የሴቶች ተሳትፎ ድርሻ' : 'Share of recorded traffic') . '</td></tr>';
+            $html .= '<tr><td>' . ($isAmharic ? 'ከፍተኛ የተጠቃሚዎች ሰዓት' : 'Peak Traffic Window') . '</td><td class="text-right">' . number_format($data['peakHourCount']) . '</td><td>—</td><td>' . $data['peakHourLabel'] . '</td></tr>';
+            $html .= '<tr><td>' . ($isAmharic ? 'ከፍተኛ ተጠቃሚ ቅርንጫፍ' : 'Busiest Branch Facility') . '</td><td class="text-right">—</td><td>—</td><td>' . htmlspecialchars($data['busiestBranchName']) . '</td></tr>';
+            $html .= '</table>';
         }
 
-        $html .= '<tr class="total-row">';
-        $html .= '<td>' . ($isAmharic ? 'አጠቃላይ ድምር' : 'Grand Total') . '</td>';
-        $html .= '<td class="text-right">' . number_format($data['maleCount']) . '</td>';
-        $html .= '<td class="text-right">' . number_format($data['femaleCount']) . '</td>';
-        $html .= '<td class="text-right">' . number_format($data['totalCount']) . '</td>';
-        $html .= '<td class="text-right">100.0%</td>';
-        $html .= '</tr>';
-        $html .= '</table>';
+        // Section 2: Demographic Patron Matrix (full or patron_types)
+        if ($scope === 'full' || $scope === 'patron_types') {
+            $html .= '<h3>' . ($isAmharic ? '2. የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር' : '2. Patron Demographic Categorization') . '</h3>';
+            $html .= '<table>';
+            $html .= '<tr><th>' . ($isAmharic ? 'የተጠቃሚ ምድብ' : 'Patron Category') . '</th><th class="text-right">' . ($isAmharic ? 'ወንድ' : 'Male') . '</th><th class="text-right">' . ($isAmharic ? 'ሴት' : 'Female') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ድምር' : 'Subtotal') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</th></tr>';
 
-        // Section 3: Branch Comparison
-        $html .= '<h3>' . ($isAmharic ? '3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር' : '3. Library Branch Facility Distribution') . '</h3>';
-        $html .= '<table>';
-        $html .= '<tr><th>' . ($isAmharic ? 'የቅርንጫፍ ስም' : 'Campus Branch') . '</th><th>' . ($isAmharic ? 'ኮድ' : 'Code') . '</th><th class="text-right">' . ($isAmharic ? 'ተማሪዎች' : 'Students') . '</th><th class="text-right">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</th><th class="text-right">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Traffic Share (%)') . '</th></tr>';
+            $types = [
+                'student' => $isAmharic ? 'ተማሪዎች (ቅድመ-ምረቃና ድህረ-ምረቃ)' : 'Students (Undergraduate & Postgraduate)',
+                'teacher' => $isAmharic ? 'መምህራንና ተመራማሪዎች' : 'Faculty & Research Scholars',
+                'staff' => $isAmharic ? 'የአስተዳደርና ቴክኒክ ሠራተኞች' : 'Administrative & Technical Staff',
+            ];
 
-        foreach ($data['branchComparison'] as $branch) {
-            $html .= '<tr>';
-            $html .= '<td>' . htmlspecialchars($branch['name']) . '</td>';
-            $html .= '<td>' . $branch['code'] . '</td>';
-            $html .= '<td class="text-right">' . number_format($branch['students']) . '</td>';
-            $html .= '<td class="text-right">' . number_format($branch['teachers'] ?? 0) . '</td>';
-            $html .= '<td class="text-right">' . number_format($branch['staff'] ?? 0) . '</td>';
-            $html .= '<td class="text-right" style="font-weight:bold;">' . number_format($branch['total']) . '</td>';
-            $html .= '<td class="text-right">' . $branch['percent'] . '%</td>';
+            foreach ($types as $key => $label) {
+                $row = $data['demographics'][$key];
+                $html .= '<tr>';
+                $html .= '<td>' . htmlspecialchars($label) . '</td>';
+                $html .= '<td class="text-right">' . number_format($row['male']) . '</td>';
+                $html .= '<td class="text-right">' . number_format($row['female']) . '</td>';
+                $html .= '<td class="text-right" style="font-weight:bold;">' . number_format($row['total']) . '</td>';
+                $html .= '<td class="text-right">' . $row['percent'] . '%</td>';
+                $html .= '</tr>';
+            }
+
+            $html .= '<tr class="total-row">';
+            $html .= '<td>' . ($isAmharic ? 'አጠቃላይ ድምር' : 'Grand Total') . '</td>';
+            $html .= '<td class="text-right">' . number_format($data['maleCount']) . '</td>';
+            $html .= '<td class="text-right">' . number_format($data['femaleCount']) . '</td>';
+            $html .= '<td class="text-right">' . number_format($data['totalCount']) . '</td>';
+            $html .= '<td class="text-right">100.0%</td>';
             $html .= '</tr>';
+            $html .= '</table>';
         }
-        $html .= '</table>';
 
-        // Section 4: Operational Shift Windows
-        $html .= '<h3>' . ($isAmharic ? '4. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት' : '4. Operational Shift Windows & Density') . '</h3>';
-        $html .= '<table>';
-        $html .= '<tr><th>' . ($isAmharic ? 'የፈረቃ ክፍለ-ጊዜ' : 'Shift Window') . '</th><th>' . ($isAmharic ? 'የሰዓት ገደብ' : 'Time Interval') . '</th><th class="text-right">' . ($isAmharic ? 'ተማሪዎች' : 'Students') . '</th><th class="text-right">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</th><th class="text-right">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</th></tr>';
+        // Section 3: Branch Comparison (full or branches)
+        if ($scope === 'full' || $scope === 'branches') {
+            $html .= '<h3>' . ($isAmharic ? '3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር' : '3. Library Branch Facility Distribution') . '</h3>';
+            $html .= '<table>';
+            $html .= '<tr><th>' . ($isAmharic ? 'የቅርንጫፍ ስም' : 'Campus Branch') . '</th><th>' . ($isAmharic ? 'ኮድ' : 'Code') . '</th><th class="text-right">' . ($isAmharic ? 'ተማሪዎች' : 'Students') . '</th><th class="text-right">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</th><th class="text-right">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Traffic Share (%)') . '</th></tr>';
 
-        foreach ($data['shiftWindows'] as $shift) {
-            $html .= '<tr>';
-            $html .= '<td>' . htmlspecialchars($shift['title']) . '</td>';
-            $html .= '<td>' . $shift['time_range'] . '</td>';
-            $html .= '<td class="text-right">' . number_format($shift['students']) . '</td>';
-            $html .= '<td class="text-right">' . number_format($shift['teachers'] ?? 0) . '</td>';
-            $html .= '<td class="text-right">' . number_format($shift['staff'] ?? 0) . '</td>';
-            $html .= '<td class="text-right" style="font-weight:bold;">' . number_format($shift['count']) . '</td>';
-            $html .= '<td class="text-right">' . $shift['percent'] . '%</td>';
-            $html .= '</tr>';
+            foreach ($data['branchComparison'] as $branch) {
+                $html .= '<tr>';
+                $html .= '<td>' . htmlspecialchars($branch['name']) . '</td>';
+                $html .= '<td>' . $branch['code'] . '</td>';
+                $html .= '<td class="text-right">' . number_format($branch['students']) . '</td>';
+                $html .= '<td class="text-right">' . number_format($branch['teachers'] ?? 0) . '</td>';
+                $html .= '<td class="text-right">' . number_format($branch['staff'] ?? 0) . '</td>';
+                $html .= '<td class="text-right" style="font-weight:bold;">' . number_format($branch['total']) . '</td>';
+                $html .= '<td class="text-right">' . $branch['percent'] . '%</td>';
+                $html .= '</tr>';
+            }
+            $html .= '</table>';
         }
-        $html .= '</table>';
 
-        // Section 5: Day-of-the-Week Operational Influx Profile
-        if (!empty($data['dayOfWeekAnalytics'])) {
+        // Section 4: Operational Shift Windows (full or day_of_week)
+        if ($scope === 'full' || $scope === 'day_of_week') {
+            $html .= '<h3>' . ($isAmharic ? '4. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት' : '4. Operational Shift Windows & Density') . '</h3>';
+            $html .= '<table>';
+            $html .= '<tr><th>' . ($isAmharic ? 'የፈረቃ ክፍለ-ጊዜ' : 'Shift Window') . '</th><th>' . ($isAmharic ? 'የሰዓት ገደብ' : 'Time Interval') . '</th><th class="text-right">' . ($isAmharic ? 'ተማሪዎች' : 'Students') . '</th><th class="text-right">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</th><th class="text-right">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</th></tr>';
+
+            foreach ($data['shiftWindows'] as $shift) {
+                $html .= '<tr>';
+                $html .= '<td>' . htmlspecialchars($shift['title']) . '</td>';
+                $html .= '<td>' . $shift['time_range'] . '</td>';
+                $html .= '<td class="text-right">' . number_format($shift['students']) . '</td>';
+                $html .= '<td class="text-right">' . number_format($shift['teachers'] ?? 0) . '</td>';
+                $html .= '<td class="text-right">' . number_format($shift['staff'] ?? 0) . '</td>';
+                $html .= '<td class="text-right" style="font-weight:bold;">' . number_format($shift['count']) . '</td>';
+                $html .= '<td class="text-right">' . $shift['percent'] . '%</td>';
+                $html .= '</tr>';
+            }
+            $html .= '</table>';
+        }
+
+        // Section 5: Day-of-the-Week Operational Influx Profile (full or day_of_week)
+        if (($scope === 'full' || $scope === 'day_of_week') && !empty($data['dayOfWeekAnalytics'])) {
             $html .= '<h3>' . ($isAmharic ? '5. የሳምንት ቀናት የጎብኝዎች ፍሰትና የጥግግት ትንተና' : '5. Day-of-the-Week Operational Foot-Traffic Influx') . '</h3>';
             $html .= '<table>';
             $html .= '<tr><th>' . ($isAmharic ? 'የሳምንቱ ዕለት' : 'Day of Week') . '</th><th class="text-right">' . ($isAmharic ? 'አማካይ በቀን' : 'Daily Average') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Visitors') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Weekly Share (%)') . '</th><th>' . ($isAmharic ? 'የፍሰት ደረጃ' : 'Surge Level') . '</th><th>' . ($isAmharic ? 'የአስተዳደር የቅድመ-ትንበያ ማስታወሻ' : 'Management Prediction Guidance') . '</th></tr>';
@@ -1436,8 +1657,8 @@ class AttendanceReportService
             $html .= '</table>';
         }
 
-        // Section 6: Intra-Month Day Recurring Occurrence & Weekly Cycle Matrix
-        if (!empty($data['intraMonthDayAnalytics'])) {
+        // Section 6: Intra-Month Day Recurring Occurrence & Weekly Cycle Matrix (full or intra_month)
+        if (($scope === 'full' || $scope === 'intra_month') && !empty($data['intraMonthDayAnalytics'])) {
             $intra = $data['intraMonthDayAnalytics'];
             $html .= '<h3>' . ($isAmharic ? '6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና' : '6. Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix') . '</h3>';
             $html .= '<p><b>' . ($isAmharic ? 'የትንበያ መረጃ፡ ' : 'Prediction Notice: ') . '</b>' . htmlspecialchars($intra['prediction']) . '</p>';
@@ -1471,8 +1692,8 @@ class AttendanceReportService
             $html .= '</table>';
         }
 
-        // Section 7: Longitudinal Month-over-Month & Year-over-Year Trajectory
-        if (!empty($data['monthlyAnalytics']) || !empty($data['yearlyAnalytics'])) {
+        // Section 7: Longitudinal Month-over-Month & Year-over-Year Trajectory (full only)
+        if ($scope === 'full' && (!empty($data['monthlyAnalytics']) || !empty($data['yearlyAnalytics']))) {
             $html .= '<h3>' . ($isAmharic ? '7. የወራትና የዓመታት ንጽጽር ትንተና' : '7. Longitudinal Month-over-Month & Year-over-Year Trajectory') . '</h3>';
 
             if (!empty($data['monthlyAnalytics'])) {
@@ -1509,22 +1730,6 @@ class AttendanceReportService
             }
         }
 
-        // Section 8: Attendant Duty Desk Activity Log
-        if (!empty($data['staffActivity'])) {
-            $html .= '<h3>' . ($isAmharic ? '8. የተረኛ ሠራተኞች የምዝገባ እንቅስቃሴ መዝገብ' : '8. Attendant Duty Desk Registry Log') . '</h3>';
-            $html .= '<table>';
-            $html .= '<tr><th>' . ($isAmharic ? 'የሠራተኛው ስም' : 'Staff Member') . '</th><th>' . ($isAmharic ? 'ቅርንጫፍ' : 'Branch Facility') . '</th><th class="text-right">' . ($isAmharic ? 'የምዝገባ ብዛት' : 'Log Entries') . '</th><th class="text-right">' . ($isAmharic ? 'የተስተናገዱ ጎብኝዎች' : 'Visitors Handled') . '</th></tr>';
-            foreach ($data['staffActivity'] as $staff) {
-                $html .= '<tr>';
-                $html .= '<td><b>' . htmlspecialchars($staff['name']) . '</b> (' . $staff['username'] . ')</td>';
-                $html .= '<td>' . htmlspecialchars($staff['branch']) . '</td>';
-                $html .= '<td class="text-right">' . number_format($staff['entries_count']) . '</td>';
-                $html .= '<td class="text-right" style="font-weight:bold;">' . number_format($staff['visitors_handled']) . '</td>';
-                $html .= '</tr>';
-            }
-            $html .= '</table>';
-        }
-
         // Formal Signature Block
         $html .= '<div style="margin-top: 40pt; page-break-inside: avoid;">';
         $html .= '<div class="sig-box" style="margin-right: 4%;">';
@@ -1544,57 +1749,72 @@ class AttendanceReportService
     }
 
     /**
-     * Generate Comprehensive Localized CSV.
+     * Generate Comprehensive Localized CSV based on scope.
      */
     public function generateCsv(array $data): string
     {
         $isAmharic = $data['isAmharic'];
+        $scope = $data['scope'] ?? 'full';
+
+        $scopeHeaders = [
+            'patron_types' => $isAmharic ? 'የወልድያ ዩኒቨርሲቲ ቤተ-መጻሕፍት የተጠቃሚዎች ምድብና የስነ-ሕዝብ አጠቃቀም ትንተና ሪፖርት' : 'WOLDIA UNIVERSITY LIBRARY PATRON DEMOGRAPHIC & USAGE COUNTER REPORT',
+            'branches' => $isAmharic ? 'የወልድያ ዩኒቨርሲቲ የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽርና የተጠቃሚዎች ፍሰት ኦዲት ሪፖርት' : 'WOLDIA UNIVERSITY LIBRARY BRANCH FACILITIES COMPARISON AUDIT',
+            'day_of_week' => $isAmharic ? 'የወልድያ ዩኒቨርሲቲ የሳምንት ቀናት የጎብኝዎች ፍሰትና የጥግግት ትንተና ሪፖርት' : 'WOLDIA UNIVERSITY DAY-OF-THE-WEEK FOOT-TRAFFIC INFLUX REPORT',
+            'intra_month' => $isAmharic ? 'የወልድያ ዩኒቨርሲቲ በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና ሪፖርት' : 'WOLDIA UNIVERSITY INTRA-MONTH WEEKLY CYCLES & RECURRING DAY OCCURRENCES',
+            'full' => $isAmharic ? 'የወልድያ ዩኒቨርሲቲ ቤተ-መጻሕፍት ይፋዊ የአጠቃቀምና የስነ-ሕዝብ ትንተና ሪፖርት' : 'WOLDIA UNIVERSITY OFFICIAL ACADEMIC LIBRARY ATTENDANCE & DEMOGRAPHIC ANALYTICS REPORT',
+        ];
+
         $f = fopen('php://memory', 'r+');
         fprintf($f, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
 
         // Executive Header Section
-        fputcsv($f, [$isAmharic ? 'የወልድያ ዩኒቨርሲቲ ቤተ-መጻሕፍት ይፋዊ የአጠቃቀምና የስነ-ሕዝብ ትንተና ሪፖርት' : 'WOLDIA UNIVERSITY OFFICIAL ACADEMIC LIBRARY ATTENDANCE & DEMOGRAPHIC ANALYTICS REPORT']);
+        fputcsv($f, [$scopeHeaders[$scope] ?? $scopeHeaders['full']]);
         fputcsv($f, [$isAmharic ? 'የሰነድ መለያ ቁጥር' : 'Reference ID', $data['refNumber']]);
         fputcsv($f, [$isAmharic ? 'የተዘጋጀበት ቀን' : 'Generated At', $data['generatedAt']['full'] . ' ' . $data['generatedAt']['time']]);
         fputcsv($f, [$isAmharic ? 'የሪፖርቱ ሽፋን ጊዜ' : 'Reporting Window', $data['dateFromStr']['date'] . ' - ' . $data['dateToStr']['date']]);
         fputcsv($f, [$isAmharic ? 'የቤተ-መጻሕፍት ቅርንጫፍ' : 'Branch Scope', $data['libraryName']]);
         fputcsv($f, [$isAmharic ? 'ያዘጋጀው ሠራተኛ' : 'Prepared By', $data['generatedBy']]);
+        fputcsv($f, [$isAmharic ? 'የኦዲት ወሰን' : 'Audit Scope', strtoupper($scope)]);
         fputcsv($f, []);
 
-        // Key KPIs
-        fputcsv($f, [$isAmharic ? '--- 1. ዋና ዋና ጠቋሚዎች ---' : '--- 1. KEY PERFORMANCE INDICATORS ---']);
-        fputcsv($f, [$isAmharic ? 'ጠቅላላ ጎብኝዎች' : 'Total Visitors', $data['totalCount']]);
-        fputcsv($f, [$isAmharic ? 'ወንድ ጎብኝዎች' : 'Male Visitors', $data['maleCount'], $data['malePercent'] . '%']);
-        fputcsv($f, [$isAmharic ? 'ሴት ጎብኝዎች' : 'Female Visitors', $data['femaleCount'], $data['femalePercent'] . '%']);
-        fputcsv($f, [$isAmharic ? 'ከፍተኛ የተጠቃሚዎች ሰዓት' : 'Peak Traffic Window', $data['peakHourLabel']]);
-        fputcsv($f, [$isAmharic ? 'ከፍተኛ ተጠቃሚ ቅርንጫፍ' : 'Busiest Branch', $data['busiestBranchName']]);
-        fputcsv($f, []);
-
-        // Demographic Breakdown
-        fputcsv($f, [$isAmharic ? '--- 2. የተጠቃሚዎች ስነ-ሕዝብ ስርጭት ---' : '--- 2. PATRON DEMOGRAPHIC BREAKDOWN ---']);
-        fputcsv($f, [
-            $isAmharic ? 'የተጠቃሚ ምድብ' : 'Patron Category',
-            $isAmharic ? 'ወንድ' : 'Male',
-            $isAmharic ? 'ሴት' : 'Female',
-            $isAmharic ? 'ጠቅላላ ድምር' : 'Subtotal',
-            $isAmharic ? 'ድርሻ (%)' : 'Share (%)',
-        ]);
-
-        $types = [
-            'student' => $isAmharic ? 'ተማሪዎች' : 'Students',
-            'teacher' => $isAmharic ? 'መምህራን' : 'Faculty',
-            'staff' => $isAmharic ? 'ሠራተኞች' : 'Staff',
-        ];
-
-        foreach ($types as $key => $label) {
-            $row = $data['demographics'][$key];
-            fputcsv($f, [$label, $row['male'], $row['female'], $row['total'], $row['percent'] . '%']);
+        // Key KPIs (for full or patron_types)
+        if ($scope === 'full' || $scope === 'patron_types') {
+            fputcsv($f, [$isAmharic ? '--- 1. ዋና ዋና ጠቋሚዎች ---' : '--- 1. KEY PERFORMANCE INDICATORS ---']);
+            fputcsv($f, [$isAmharic ? 'ጠቅላላ ጎብኝዎች' : 'Total Visitors', $data['totalCount']]);
+            fputcsv($f, [$isAmharic ? 'ወንድ ጎብኝዎች' : 'Male Visitors', $data['maleCount'], $data['malePercent'] . '%']);
+            fputcsv($f, [$isAmharic ? 'ሴት ጎብኝዎች' : 'Female Visitors', $data['femaleCount'], $data['femalePercent'] . '%']);
+            fputcsv($f, [$isAmharic ? 'ከፍተኛ የተጠቃሚዎች ሰዓት' : 'Peak Traffic Window', $data['peakHourLabel']]);
+            fputcsv($f, [$isAmharic ? 'ከፍተኛ ተጠቃሚ ቅርንጫፍ' : 'Busiest Branch', $data['busiestBranchName']]);
+            fputcsv($f, []);
         }
-        fputcsv($f, [$isAmharic ? 'አጠቃላይ ድምር' : 'Grand Total', $data['maleCount'], $data['femaleCount'], $data['totalCount'], '100%']);
-        fputcsv($f, []);
 
-        // Branch Comparison Section
-        if (!empty($data['branchComparison'])) {
+        // Demographic Breakdown (for full or patron_types)
+        if ($scope === 'full' || $scope === 'patron_types') {
+            fputcsv($f, [$isAmharic ? '--- 2. የተጠቃሚዎች ስነ-ሕዝብ ስርጭት ---' : '--- 2. PATRON DEMOGRAPHIC BREAKDOWN ---']);
+            fputcsv($f, [
+                $isAmharic ? 'የተጠቃሚ ምድብ' : 'Patron Category',
+                $isAmharic ? 'ወንድ' : 'Male',
+                $isAmharic ? 'ሴት' : 'Female',
+                $isAmharic ? 'ጠቅላላ ድምር' : 'Subtotal',
+                $isAmharic ? 'ድርሻ (%)' : 'Share (%)',
+            ]);
+
+            $types = [
+                'student' => $isAmharic ? 'ተማሪዎች' : 'Students',
+                'teacher' => $isAmharic ? 'መምህራን' : 'Faculty',
+                'staff' => $isAmharic ? 'ሠራተኞች' : 'Staff',
+            ];
+
+            foreach ($types as $key => $label) {
+                $row = $data['demographics'][$key];
+                fputcsv($f, [$label, $row['male'], $row['female'], $row['total'], $row['percent'] . '%']);
+            }
+            fputcsv($f, [$isAmharic ? 'አጠቃላይ ድምር' : 'Grand Total', $data['maleCount'], $data['femaleCount'], $data['totalCount'], '100%']);
+            fputcsv($f, []);
+        }
+
+        // Branch Comparison Section (for full or branches)
+        if (($scope === 'full' || $scope === 'branches') && !empty($data['branchComparison'])) {
             fputcsv($f, [$isAmharic ? '--- 3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር ---' : '--- 3. LIBRARY BRANCH FACILITY COMPARISON ---']);
             fputcsv($f, [
                 $isAmharic ? 'የቅርንጫፍ ስም' : 'Branch Facility',
@@ -1619,9 +1839,39 @@ class AttendanceReportService
             fputcsv($f, []);
         }
 
-        // Day of Week Section
-        if (!empty($data['dayOfWeekAnalytics'])) {
-            fputcsv($f, [$isAmharic ? '--- 4. የሳምንት ቀናት የጎብኝዎች ፍሰት ትንተና ---' : '--- 4. DAY-OF-THE-WEEK OPERATIONAL INFLUX ANALYSIS ---']);
+        // Shift Time Windows (for full or day_of_week)
+        if ($scope === 'full' || $scope === 'day_of_week') {
+            fputcsv($f, [$isAmharic ? '--- 4. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት ---' : '--- 4. OPERATIONAL SHIFT WINDOWS (MORNING / AFTERNOON / NIGHT) ---']);
+            fputcsv($f, [
+                $isAmharic ? 'የፈረቃ ክፍለ-ጊዜ' : 'Shift Window',
+                $isAmharic ? 'የሰዓት ገደብ' : 'Time Interval',
+                $isAmharic ? 'ተማሪዎች' : 'Students',
+                $isAmharic ? 'መምህራን' : 'Teachers',
+                $isAmharic ? 'ሠራተኞች' : 'Staff',
+                $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons',
+                $isAmharic ? 'ድርሻ (%)' : 'Share (%)',
+                $isAmharic ? 'ከፍተኛ የተጠቃሚዎች ሰዓት' : 'Peak Hour',
+                $isAmharic ? 'የጥግግት ደረጃ' : 'Congestion Index',
+            ]);
+            foreach ($data['shiftWindows'] as $shift) {
+                fputcsv($f, [
+                    $shift['title'],
+                    $shift['time_range'],
+                    $shift['students'],
+                    $shift['teachers'] ?? 0,
+                    $shift['staff'] ?? 0,
+                    $shift['count'],
+                    $shift['percent'] . '%',
+                    $shift['peak_hour'] ?? '—',
+                    $isAmharic ? ($shift['congestion_index_am'] ?? '—') : ($shift['congestion_index'] ?? '—'),
+                ]);
+            }
+            fputcsv($f, []);
+        }
+
+        // Day of Week Section (for full or day_of_week)
+        if (($scope === 'full' || $scope === 'day_of_week') && !empty($data['dayOfWeekAnalytics'])) {
+            fputcsv($f, [$isAmharic ? '--- 5. የሳምንት ቀናት የጎብኝዎች ፍሰት ትንተና ---' : '--- 5. DAY-OF-THE-WEEK OPERATIONAL INFLUX ANALYSIS ---']);
             fputcsv($f, [
                 $isAmharic ? 'የሳምንቱ ዕለት' : 'Day of Week',
                 $isAmharic ? 'አማካይ በቀን' : 'Daily Average',
@@ -1643,9 +1893,9 @@ class AttendanceReportService
             fputcsv($f, []);
         }
 
-        // Intra-Month Day Recurring Occurrence Matrix
-        if (!empty($data['intraMonthDayAnalytics'])) {
-            fputcsv($f, [$isAmharic ? '--- 5. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና ---' : '--- 5. INTRA-MONTH RECURRING DAY OCCURRENCE MATRIX ---']);
+        // Intra-Month Day Recurring Occurrence Matrix (for full or intra_month)
+        if (($scope === 'full' || $scope === 'intra_month') && !empty($data['intraMonthDayAnalytics'])) {
+            fputcsv($f, [$isAmharic ? '--- 6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና ---' : '--- 6. INTRA-MONTH RECURRING DAY OCCURRENCE MATRIX ---']);
             fputcsv($f, [$isAmharic ? 'የትንበያ ማስጠንቀቂያ' : 'Prediction Alert', $data['intraMonthDayAnalytics']['prediction']]);
             fputcsv($f, [
                 $isAmharic ? 'የወሩ ሳምንት' : 'Week in Month',
@@ -1666,9 +1916,9 @@ class AttendanceReportService
             fputcsv($f, []);
         }
 
-        // Monthly & Yearly Trends
-        if (!empty($data['monthlyAnalytics']) || !empty($data['yearlyAnalytics'])) {
-            fputcsv($f, [$isAmharic ? '--- 6. የወራትና የዓመታት ንጽጽር ትንተና ---' : '--- 6. MONTH-OVER-MONTH & YEAR-OVER-YEAR TRAJECTORY ---']);
+        // Monthly & Yearly Trends (for full only)
+        if ($scope === 'full' && (!empty($data['monthlyAnalytics']) || !empty($data['yearlyAnalytics']))) {
+            fputcsv($f, [$isAmharic ? '--- 7. የወራትና የዓመታት ንጽጽር ትንተና ---' : '--- 7. MONTH-OVER-MONTH & YEAR-OVER-YEAR TRAJECTORY ---']);
             if (!empty($data['monthlyAnalytics'])) {
                 fputcsv($f, [
                     $isAmharic ? 'የሂሳብ ወር' : 'Month',
@@ -1712,74 +1962,6 @@ class AttendanceReportService
                 }
             }
             fputcsv($f, []);
-        }
-
-        // Shift Time Windows
-        fputcsv($f, [$isAmharic ? '--- 7. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት ---' : '--- 7. OPERATIONAL SHIFT WINDOWS (MORNING / AFTERNOON / NIGHT) ---']);
-        fputcsv($f, [
-            $isAmharic ? 'የፈረቃ ክፍለ-ጊዜ' : 'Shift Window',
-            $isAmharic ? 'የሰዓት ገደብ' : 'Time Interval',
-            $isAmharic ? 'ተማሪዎች' : 'Students',
-            $isAmharic ? 'መምህራን' : 'Teachers',
-            $isAmharic ? 'ሠራተኞች' : 'Staff',
-            $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons',
-            $isAmharic ? 'ድርሻ (%)' : 'Share (%)',
-            $isAmharic ? 'ከፍተኛ የተጠቃሚዎች ሰዓት' : 'Peak Hour',
-            $isAmharic ? 'የጥግግት ደረጃ' : 'Congestion Index',
-        ]);
-        foreach ($data['shiftWindows'] as $shift) {
-            fputcsv($f, [
-                $shift['title'],
-                $shift['time_range'],
-                $shift['students'],
-                $shift['teachers'] ?? 0,
-                $shift['staff'] ?? 0,
-                $shift['count'],
-                $shift['percent'] . '%',
-                $shift['peak_hour'] ?? '—',
-                $isAmharic ? ($shift['congestion_index_am'] ?? '—') : ($shift['congestion_index'] ?? '—'),
-            ]);
-        }
-        fputcsv($f, []);
-
-        // Granular Records
-        fputcsv($f, [$isAmharic ? '--- 8. የቀጥታ ምዝገባዎች ዝርዝር መዝገብ ---' : '--- 8. DETAILED ENTRIES REGISTRY ---']);
-        fputcsv($f, [
-            $isAmharic ? 'የመዝገብ መለያ' : 'Log ID',
-            $isAmharic ? 'የቤተ-መጻሕፍት ቅርንጫፍ' : 'Library Branch',
-            $isAmharic ? 'የተጠቃሚ ዓይነት' : 'Patron Type',
-            $isAmharic ? 'ጾታ' : 'Gender',
-            $isAmharic ? 'ብዛት' : 'Count',
-            $isAmharic ? 'የተመዘገበበት ሰዓት' : 'Time',
-            $isAmharic ? 'ቀን' : 'Date',
-            $isAmharic ? 'መዝጋቢ ሠራተኛ' : 'Logged By Staff',
-        ]);
-
-        foreach ($data['attendances'] as $log) {
-            $dt = EthiopianDateService::formatDT($log->entry_at, $isAmharic);
-            $branchName = $isAmharic ? ($log->library?->name_am ?? $log->library?->name ?? 'ጠቅላላ') : ($log->library?->name ?? 'General');
-            $pType = match ($log->user_type) {
-                'student' => $isAmharic ? 'ተማሪ' : 'Student',
-                'teacher' => $isAmharic ? 'መምህር' : 'Faculty',
-                'staff' => $isAmharic ? 'ሰራተኛ' : 'Staff',
-                default => ucfirst($log->user_type),
-            };
-            $gLabel = match ($log->gender) {
-                'male' => $isAmharic ? 'ወንድ' : 'Male',
-                'female' => $isAmharic ? 'ሴት' : 'Female',
-                default => ucfirst($log->gender),
-            };
-
-            fputcsv($f, [
-                $log->slug,
-                $branchName,
-                $pType,
-                $gLabel,
-                $log->visitor_count,
-                $dt['time'],
-                $dt['date'],
-                $log->staff?->name ?? 'System',
-            ]);
         }
 
         rewind($f);

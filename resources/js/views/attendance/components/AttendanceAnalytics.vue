@@ -278,8 +278,81 @@ const kpis = computed(() => {
       </div>
     </div>
 
-    <!-- Executive Context & Formal Audit Narrative Banner -->
-    <div v-if="narrativeDescription" class="bg-card-bg border-l-4 border-l-brand-blue border border-card-border rounded-md p-4 shadow-2xs space-y-1.5">
+    <!-- Skeleton Loading State -->
+    <div v-if="statsLoading" class="space-y-6 animate-pulse">
+      <!-- Executive narrative skeleton -->
+      <div class="bg-card-bg border border-card-border rounded-md p-5 space-y-3">
+        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
+        <div class="h-3 bg-slate-200 dark:bg-slate-700/60 rounded w-full"></div>
+        <div class="h-3 bg-slate-200 dark:bg-slate-700/60 rounded w-5/6"></div>
+      </div>
+
+      <!-- 6 KPI Skeletons -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div v-for="i in 6" :key="i" class="bg-card-bg border border-card-border rounded-md p-4 space-y-2">
+          <div class="h-2.5 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+          <div class="h-7 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+          <div class="h-2 bg-slate-200 dark:bg-slate-700/50 rounded w-1/3"></div>
+        </div>
+      </div>
+
+      <!-- 2-Col Demographics & Branch Skeletons -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="bg-card-bg border border-card-border rounded-md p-5 space-y-4">
+          <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+          <div class="h-3 bg-slate-200 dark:bg-slate-700/60 rounded w-full"></div>
+          <div class="space-y-2 pt-2">
+            <div v-for="i in 4" :key="i" class="h-7 bg-slate-200 dark:bg-slate-700/40 rounded"></div>
+          </div>
+        </div>
+        <div class="bg-card-bg border border-card-border rounded-md p-5 space-y-4">
+          <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+          <div class="space-y-2 pt-2">
+            <div v-for="i in 4" :key="i" class="h-7 bg-slate-200 dark:bg-slate-700/40 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Day of Week Chart Skeleton -->
+      <div class="bg-card-bg border border-card-border rounded-md p-5 space-y-4">
+        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div v-for="i in 7" :key="i" class="p-3.5 rounded-md border border-card-border bg-main-bg/40 space-y-3">
+            <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+            <div class="h-6 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+            <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+            <div class="h-2 bg-slate-200 dark:bg-slate-700/40 rounded w-2/3"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Intra-month & Monthly Trajectory Skeletons -->
+      <div class="bg-card-bg border border-card-border rounded-md p-5 space-y-4">
+        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div class="lg:col-span-5 space-y-2">
+            <div v-for="i in 4" :key="i" class="h-8 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+          </div>
+          <div class="lg:col-span-7 grid grid-cols-4 gap-2">
+            <div v-for="i in 4" :key="i" class="h-20 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shift Windows & Density Curve Skeleton -->
+      <div class="bg-card-bg border border-card-border rounded-md p-5 space-y-4">
+        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div v-for="i in 3" :key="i" class="h-24 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+        </div>
+        <div class="h-24 bg-slate-200 dark:bg-slate-700/40 rounded w-full mt-2"></div>
+      </div>
+    </div>
+
+    <!-- Active Loaded Analytics State -->
+    <div v-else class="space-y-6">
+      <!-- Executive Context & Formal Audit Narrative Banner -->
+      <div v-if="narrativeDescription" class="bg-card-bg border-l-4 border-l-brand-blue border border-card-border rounded-md p-4 shadow-2xs space-y-1.5">
       <div class="flex items-center justify-between text-xs font-bold text-brand-blue uppercase tracking-wider">
         <span class="flex items-center gap-1.5">
           <ShieldCheck class="w-4 h-4 text-brand-blue" />
@@ -426,7 +499,8 @@ const kpis = computed(() => {
               <tr class="border-b border-card-border text-[10px] uppercase text-main-text/50 font-bold">
                 <th class="py-2">{{ langStore.t('libraries.branch', 'Branch') }}</th>
                 <th class="py-2 text-center">{{ langStore.localizeType('student') }}</th>
-                <th class="py-2 text-center">{{ langStore.t('attendance.faculty_staff', 'Faculty') }}</th>
+                <th class="py-2 text-center">{{ langStore.localizeType('teacher') }}</th>
+                <th class="py-2 text-center">{{ langStore.localizeType('staff') }}</th>
                 <th class="py-2 text-right">{{ langStore.t('attendance.total_label', 'Total') }}</th>
                 <th class="py-2 text-right">{{ langStore.t('attendance.traffic_share', 'Share') }}</th>
               </tr>
@@ -442,12 +516,13 @@ const kpis = computed(() => {
                   </div>
                 </td>
                 <td class="py-2.5 text-center font-mono">{{ branch.students }}</td>
-                <td class="py-2.5 text-center font-mono">{{ branch.faculty_staff }}</td>
+                <td class="py-2.5 text-center font-mono">{{ branch.teachers ?? 0 }}</td>
+                <td class="py-2.5 text-center font-mono">{{ branch.staff ?? 0 }}</td>
                 <td class="py-2.5 text-right font-bold text-brand-blue dark:text-brand-yellow font-mono">{{ branch.total }}</td>
                 <td class="py-2.5 text-right font-mono font-semibold text-main-text/70">{{ branch.percent }}%</td>
               </tr>
               <tr v-if="branchComparisonList.length === 0">
-                <td colspan="5" class="py-4 text-center text-xs text-main-text/40">
+                <td colspan="6" class="py-4 text-center text-xs text-main-text/40">
                   {{ langStore.t('common.no_data', 'No branch facility records available.') }}
                 </td>
               </tr>
@@ -532,6 +607,13 @@ const kpis = computed(() => {
             <div class="flex items-center justify-between text-[9px] font-mono text-main-text/50">
               <span>{{ day.percentage }}%</span>
               <span>M:{{ day.morning_share }}% N:{{ day.night_share }}%</span>
+            </div>
+
+            <!-- Patron Type Segmentation -->
+            <div class="flex items-center justify-between text-[9px] font-mono pt-1 border-t border-card-border/40">
+              <span class="text-emerald-600 dark:text-emerald-400 font-semibold" title="Students">S: {{ day.students }}</span>
+              <span class="text-blue-600 dark:text-blue-400 font-semibold" title="Faculty/Teachers">T: {{ day.teachers ?? 0 }}</span>
+              <span class="text-purple-600 dark:text-purple-400 font-semibold" title="Staff">St: {{ day.staff ?? 0 }}</span>
             </div>
           </div>
         </div>
@@ -655,6 +737,11 @@ const kpis = computed(() => {
                   :style="{ width: `${occ.percentage}%` }"
                 ></div>
               </div>
+              <div class="flex items-center justify-between text-[8px] font-mono text-main-text/60 pt-0.5 border-t border-card-border/40">
+                <span class="text-emerald-600 font-medium">S: {{ occ.students ?? 0 }}</span>
+                <span class="text-blue-600 font-medium">T: {{ occ.teachers ?? 0 }}</span>
+                <span class="text-purple-600 font-medium">St: {{ occ.staff ?? 0 }}</span>
+              </div>
             </div>
           </div>
 
@@ -730,8 +817,13 @@ const kpis = computed(() => {
                 ></div>
               </div>
 
-              <div class="flex items-center justify-between text-[10px] text-main-text/60 font-mono">
+              <div class="flex items-center justify-between text-[10px] text-main-text/60 font-mono flex-wrap gap-1">
                 <span>{{ langStore.t('attendance.operating_days', 'Days') }}: {{ m.operating_days }} · {{ langStore.t('attendance.daily_average', 'Daily Avg') }}: {{ m.daily_average }}</span>
+                <span class="flex items-center gap-1.5 font-semibold">
+                  <span class="text-emerald-600 dark:text-emerald-400">S:{{ m.students }}</span>
+                  <span class="text-blue-600 dark:text-blue-400">T:{{ m.teachers ?? 0 }}</span>
+                  <span class="text-purple-600 dark:text-purple-400">St:{{ m.staff ?? 0 }}</span>
+                </span>
                 <span>{{ langStore.t('attendance.peak_day', 'Peak Day') }}: <strong>{{ m.peak_weekday }}</strong></span>
               </div>
             </div>
@@ -832,8 +924,12 @@ const kpis = computed(() => {
             <div class="bg-amber-500 h-full rounded-full transition-all duration-500" :style="{ width: `${shiftTimeData.windows.morning.percent}%` }"></div>
           </div>
           <div class="flex items-center justify-between text-[10px] text-main-text/60">
-            <span>{{ langStore.localizeType('student') }}: {{ shiftTimeData.windows.morning.students }} · {{ langStore.t('attendance.faculty', 'Faculty') }}: {{ shiftTimeData.windows.morning.faculty }}</span>
-            <span class="font-bold text-main-text/80">{{ shiftTimeData.windows.morning.peak }}</span>
+            <span>
+              {{ langStore.localizeType('student') }}: {{ shiftTimeData.windows.morning.students }} · 
+              {{ langStore.localizeType('teacher') }}: {{ shiftTimeData.windows.morning.teachers ?? 0 }} · 
+              {{ langStore.localizeType('staff') }}: {{ shiftTimeData.windows.morning.staff ?? 0 }}
+            </span>
+            <span class="font-bold text-main-text/80">{{ shiftTimeData.windows.morning.peak_hour || shiftTimeData.windows.morning.peak }}</span>
           </div>
         </div>
 
@@ -865,8 +961,12 @@ const kpis = computed(() => {
             <div class="bg-blue-600 h-full rounded-full transition-all duration-500" :style="{ width: `${shiftTimeData.windows.afternoon.percent}%` }"></div>
           </div>
           <div class="flex items-center justify-between text-[10px] text-main-text/60">
-            <span>{{ langStore.localizeType('student') }}: {{ shiftTimeData.windows.afternoon.students }} · {{ langStore.t('attendance.faculty', 'Faculty') }}: {{ shiftTimeData.windows.afternoon.faculty }}</span>
-            <span class="font-bold text-main-text/80">{{ shiftTimeData.windows.afternoon.peak }}</span>
+            <span>
+              {{ langStore.localizeType('student') }}: {{ shiftTimeData.windows.afternoon.students }} · 
+              {{ langStore.localizeType('teacher') }}: {{ shiftTimeData.windows.afternoon.teachers ?? 0 }} · 
+              {{ langStore.localizeType('staff') }}: {{ shiftTimeData.windows.afternoon.staff ?? 0 }}
+            </span>
+            <span class="font-bold text-main-text/80">{{ shiftTimeData.windows.afternoon.peak_hour || shiftTimeData.windows.afternoon.peak }}</span>
           </div>
         </div>
 
@@ -898,8 +998,12 @@ const kpis = computed(() => {
             <div class="bg-indigo-600 h-full rounded-full transition-all duration-500" :style="{ width: `${shiftTimeData.windows.night.percent}%` }"></div>
           </div>
           <div class="flex items-center justify-between text-[10px] text-main-text/60">
-            <span>{{ langStore.localizeType('student') }}: {{ shiftTimeData.windows.night.students }} · {{ langStore.t('attendance.faculty', 'Faculty') }}: {{ shiftTimeData.windows.night.faculty }}</span>
-            <span class="font-bold text-main-text/80">{{ shiftTimeData.windows.night.peak }}</span>
+            <span>
+              {{ langStore.localizeType('student') }}: {{ shiftTimeData.windows.night.students }} · 
+              {{ langStore.localizeType('teacher') }}: {{ shiftTimeData.windows.night.teachers ?? 0 }} · 
+              {{ langStore.localizeType('staff') }}: {{ shiftTimeData.windows.night.staff ?? 0 }}
+            </span>
+            <span class="font-bold text-main-text/80">{{ shiftTimeData.windows.night.peak_hour || shiftTimeData.windows.night.peak }}</span>
           </div>
         </div>
       </div>
@@ -917,13 +1021,13 @@ const kpis = computed(() => {
           </span>
         </div>
 
-        <!-- Density Histogram Bars -->
+            <!-- Density Histogram Bars -->
         <div class="grid grid-cols-8 sm:grid-cols-16 gap-1.5 items-end pt-4 pb-1">
           <div
             v-for="h in hourlyCurveList"
             :key="h.hour"
             class="flex flex-col items-center gap-1.5 group cursor-pointer"
-            :title="`${h.hour}: ${h.count} patrons (${h.percent}%)`"
+            :title="`${h.display_label || h.label || (h.hour + ':00')}: ${h.count} patrons (${h.percent}%)`"
           >
             <!-- Vertical Column -->
             <div class="w-full bg-slate-200 dark:bg-slate-700/60 rounded-t h-20 flex items-end overflow-hidden">
@@ -938,7 +1042,7 @@ const kpis = computed(() => {
               class="text-[9px] font-mono truncate"
               :class="h.is_peak ? 'font-bold text-rose-600 dark:text-rose-400' : 'text-main-text/50'"
             >
-              {{ h.hour.split(':')[0] }}h
+              {{ (h.label || String(h.hour)).split(':')[0] }}h
             </span>
           </div>
         </div>
@@ -1103,6 +1207,7 @@ const kpis = computed(() => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>

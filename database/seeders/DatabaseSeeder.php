@@ -332,7 +332,9 @@ class DatabaseSeeder extends Seeder
         );
         $attendantGeneral->syncRoles(['Attendant']);
 
-        // 7. Seed Attendance Records for Today and Past Days
+        // 7. Seed Attendance Records for Today and Past Historical Days
+        LibraryAttendance::query()->forceDelete();
+
         $staffMembers = array_merge(
             array_slice($technoAttendants, 0, 4),
             array_slice($socialAttendants, 0, 4),
@@ -340,99 +342,161 @@ class DatabaseSeeder extends Seeder
             [$attendantGeneral, $superAdminUser]
         );
         $libraries = [$technoLibrary, $socialLibrary, $naturalLibrary];
-        $userTypes = ['student', 'teacher', 'staff'];
-        $genders = ['male', 'female'];
-
         $today = Carbon::today();
-        for ($i = 0; $i < 24; $i++) {
-            $lib = $libraries[$i % count($libraries)];
-            $staff = $staffMembers[$i % count($staffMembers)];
-            $type = $userTypes[$i % 3];
-            $gender = $genders[$i % 2];
-            $count = rand(1, 8);
 
-            $minutesAgo = ($i === 0) ? 1 : ($i * 12 + 5);
-            $entryTime = (clone $today)->addHours(8)->addMinutes($minutesAgo);
+        $todayRows = [];
+        // Distribution weights: students ~68%, teachers ~20%, staff ~12%
+        $patronPool = [
+            'student', 'student', 'student', 'student', 'student', 'student', 'student',
+            'teacher', 'teacher',
+            'staff',
+        ];
+        $genderPool = ['male', 'female', 'male', 'female'];
 
-            LibraryAttendance::create([
-                'library_id' => $lib->id,
-                'user_type' => $type,
-                'gender' => $gender,
-                'visitor_count' => $count,
-                'staff_id' => $staff->id,
-                'entry_at' => $entryTime,
-            ]);
+        // Morning Shift (08:00 - 12:00)
+        $morningTimes = [
+            [8, 15], [8, 30], [8, 45], [9, 10], [9, 30], [9, 50], [10, 15], [10, 40], [11, 0], [11, 25], [11, 50]
+        ];
+        foreach ($morningTimes as $idx => [$h, $m]) {
+            foreach ($libraries as $lIdx => $lib) {
+                $uType = $patronPool[($idx + $lIdx * 3) % count($patronPool)];
+                $count = ($uType === 'student') ? rand(2, 6) : rand(1, 2);
+                $entryDt = (clone $today)->setHour($h)->setMinute($m)->setSecond(rand(0, 59));
+                $todayRows[] = [
+                    'slug' => (string) \Illuminate\Support\Str::uuid(),
+                    'library_id' => $lib->id,
+                    'user_type' => $uType,
+                    'gender' => $genderPool[($idx + $lIdx) % count($genderPool)],
+                    'visitor_count' => $count,
+                    'staff_id' => $staffMembers[($idx + $lIdx) % count($staffMembers)]->id,
+                    'entry_at' => $entryDt,
+                    'created_at' => $entryDt,
+                    'updated_at' => $entryDt,
+                ];
+            }
+        }
+
+        // Afternoon Shift (12:00 - 18:00) - Peak volume
+        $afternoonTimes = [
+            [12, 15], [12, 45], [13, 10], [13, 35], [14, 0], [14, 20], [14, 45], [15, 10], [15, 30], [15, 55], [16, 20], [16, 50], [17, 15], [17, 45]
+        ];
+        foreach ($afternoonTimes as $idx => [$h, $m]) {
+            foreach ($libraries as $lIdx => $lib) {
+                $uType = $patronPool[($idx * 2 + $lIdx) % count($patronPool)];
+                $count = ($uType === 'student') ? rand(3, 8) : rand(1, 3);
+                $entryDt = (clone $today)->setHour($h)->setMinute($m)->setSecond(rand(0, 59));
+                $todayRows[] = [
+                    'slug' => (string) \Illuminate\Support\Str::uuid(),
+                    'library_id' => $lib->id,
+                    'user_type' => $uType,
+                    'gender' => $genderPool[($idx + $lIdx + 1) % count($genderPool)],
+                    'visitor_count' => $count,
+                    'staff_id' => $staffMembers[($idx * 2 + $lIdx) % count($staffMembers)]->id,
+                    'entry_at' => $entryDt,
+                    'created_at' => $entryDt,
+                    'updated_at' => $entryDt,
+                ];
+            }
+        }
+
+        // Night Shift (18:00 - 23:00)
+        $nightTimes = [
+            [18, 15], [18, 45], [19, 15], [19, 45], [20, 15], [20, 45], [21, 15], [21, 45], [22, 10], [22, 40]
+        ];
+        foreach ($nightTimes as $idx => [$h, $m]) {
+            foreach ($libraries as $lIdx => $lib) {
+                $uType = $patronPool[($idx + $lIdx) % count($patronPool)];
+                $count = ($uType === 'student') ? rand(2, 5) : 1;
+                $entryDt = (clone $today)->setHour($h)->setMinute($m)->setSecond(rand(0, 59));
+                $todayRows[] = [
+                    'slug' => (string) \Illuminate\Support\Str::uuid(),
+                    'library_id' => $lib->id,
+                    'user_type' => $uType,
+                    'gender' => $genderPool[($idx + $lIdx) % count($genderPool)],
+                    'visitor_count' => $count,
+                    'staff_id' => $staffMembers[($idx + $lIdx + 2) % count($staffMembers)]->id,
+                    'entry_at' => $entryDt,
+                    'created_at' => $entryDt,
+                    'updated_at' => $entryDt,
+                ];
+            }
+        }
+
+        foreach (array_chunk($todayRows, 100) as $chunk) {
+            LibraryAttendance::insert($chunk);
         }
 
         // 7.5. Seed Realistic Longitudinal Historical Attendance Data for Multi-Month, Multi-Year, and Day Analytics
-        if (LibraryAttendance::whereYear('entry_at', 2025)->count() === 0) {
-            $historicalRows = [];
-            $sampleMonths = [
-                ['year' => 2025, 'month' => 10],
-                ['year' => 2025, 'month' => 11],
-                ['year' => 2025, 'month' => 12],
-                ['year' => 2026, 'month' => 1],
-                ['year' => 2026, 'month' => 2],
-                ['year' => 2026, 'month' => 3],
-                ['year' => 2026, 'month' => 4],
-                ['year' => 2026, 'month' => 5],
-                ['year' => 2026, 'month' => 9],
-                ['year' => 2026, 'month' => 10],
-                ['year' => 2026, 'month' => 11],
-            ];
+        $historicalRows = [];
+        $sampleMonths = [
+            ['year' => 2025, 'month' => 9],
+            ['year' => 2025, 'month' => 10],
+            ['year' => 2025, 'month' => 11],
+            ['year' => 2025, 'month' => 12],
+            ['year' => 2026, 'month' => 1],
+            ['year' => 2026, 'month' => 2],
+            ['year' => 2026, 'month' => 3],
+            ['year' => 2026, 'month' => 4],
+            ['year' => 2026, 'month' => 5],
+            ['year' => 2026, 'month' => 6],
+            ['year' => 2026, 'month' => 9],
+            ['year' => 2026, 'month' => 10],
+            ['year' => 2026, 'month' => 11],
+        ];
 
-            foreach ($sampleMonths as $mInfo) {
-                $y = $mInfo['year'];
-                $m = $mInfo['month'];
-                $daysInMonth = Carbon::create($y, $m, 1)->daysInMonth;
+        foreach ($sampleMonths as $mInfo) {
+            $y = $mInfo['year'];
+            $m = $mInfo['month'];
+            $maxDay = ($y === 2026 && $m === 11) ? 18 : Carbon::create($y, $m, 1)->daysInMonth;
 
-                for ($d = 1; $d <= min(28, $daysInMonth); $d += 2) {
-                    $cDate = Carbon::create($y, $m, $d);
-                    $dayOfWeek = $cDate->dayOfWeekIso; // 1 (Mon) to 7 (Sun)
-                    $weekOccurrence = (int) ceil($d / 7); // 1st, 2nd, 3rd, 4th
+            for ($d = 1; $d <= min(28, $maxDay); $d += 2) {
+                $cDate = Carbon::create($y, $m, $d);
+                $dayOfWeek = $cDate->dayOfWeekIso; // 1 (Mon) to 7 (Sun)
+                $weekOccurrence = (int) ceil($d / 7); // 1st, 2nd, 3rd, 4th
 
-                    $multiplier = 1.0;
-                    if ($dayOfWeek === 1 || $dayOfWeek === 2) $multiplier += 0.45;
-                    if ($weekOccurrence === 2) $multiplier += 0.35;
-                    if ($dayOfWeek >= 6) $multiplier -= 0.4;
+                // Operational foot-traffic modeling: 2nd Monday & 3rd Tuesday surge
+                $multiplier = 1.0;
+                if ($dayOfWeek === 1 || $dayOfWeek === 2) $multiplier += 0.40;
+                if ($dayOfWeek === 1 && $weekOccurrence === 2) $multiplier += 0.35; // 2nd Monday surge
+                if ($dayOfWeek === 2 && $weekOccurrence === 3) $multiplier += 0.30; // 3rd Tuesday surge
+                if ($dayOfWeek >= 6) $multiplier -= 0.35; // Weekend lower volume
 
-                    $mCount = (int) round(rand(2, 6) * $multiplier);
-                    $aCount = (int) round(rand(3, 8) * $multiplier);
-                    $nCount = (int) round(rand(1, 4) * $multiplier);
+                $mCount = (int) max(1, round(rand(2, 6) * $multiplier));
+                $aCount = (int) max(2, round(rand(4, 9) * $multiplier));
+                $nCount = (int) max(1, round(rand(1, 4) * $multiplier));
 
-                    $hourEntries = [
-                        [9, 15, $mCount, 'morning'],
-                        [10, 45, $mCount + 1, 'morning'],
-                        [14, 20, $aCount + 2, 'afternoon'],
-                        [16, 10, $aCount, 'afternoon'],
-                        [19, 30, $nCount, 'night'],
+                $hourEntries = [
+                    [9, 15, $mCount, 'morning'],
+                    [10, 45, $mCount + 1, 'morning'],
+                    [14, 20, $aCount + 2, 'afternoon'],
+                    [16, 10, $aCount, 'afternoon'],
+                    [19, 30, $nCount, 'night'],
+                ];
+
+                foreach ($hourEntries as $hEntry) {
+                    $lib = $libraries[($d + $hEntry[0]) % count($libraries)];
+                    $staff = $staffMembers[($d + $hEntry[0]) % count($staffMembers)];
+                    $uType = $patronPool[($d + $hEntry[0] + $hEntry[1]) % count($patronPool)];
+                    $g = $genderPool[($d + $hEntry[1]) % count($genderPool)];
+                    $entryDt = Carbon::create($y, $m, $d, $hEntry[0], $hEntry[1], 0);
+
+                    $historicalRows[] = [
+                        'slug' => (string) \Illuminate\Support\Str::uuid(),
+                        'library_id' => $lib->id,
+                        'user_type' => $uType,
+                        'gender' => $g,
+                        'visitor_count' => max(1, $hEntry[2]),
+                        'staff_id' => $staff->id,
+                        'entry_at' => $entryDt,
+                        'created_at' => $entryDt,
+                        'updated_at' => $entryDt,
                     ];
-
-                    foreach ($hourEntries as $hInfo) {
-                        $lib = $libraries[($d + $hInfo[0]) % count($libraries)];
-                        $staff = $staffMembers[($d + $hInfo[0]) % count($staffMembers)];
-                        $uType = $userTypes[($d + $hInfo[0]) % 3];
-                        $g = $genders[($d + $hInfo[1]) % 2];
-                        $entryDt = Carbon::create($y, $m, $d, $hInfo[0], $hInfo[1], 0);
-
-                        $historicalRows[] = [
-                            'slug' => (string) \Illuminate\Support\Str::uuid(),
-                            'library_id' => $lib->id,
-                            'user_type' => $uType,
-                            'gender' => $g,
-                            'visitor_count' => max(1, $hInfo[2]),
-                            'staff_id' => $staff->id,
-                            'entry_at' => $entryDt,
-                            'created_at' => $entryDt,
-                            'updated_at' => $entryDt,
-                        ];
-                    }
                 }
             }
+        }
 
-            foreach (array_chunk($historicalRows, 150) as $chunk) {
-                LibraryAttendance::insert($chunk);
-            }
+        foreach (array_chunk($historicalRows, 150) as $chunk) {
+            LibraryAttendance::insert($chunk);
         }
 
         // 8. Seed Default Shifts (Day & Night) with Ethiopian Local Time

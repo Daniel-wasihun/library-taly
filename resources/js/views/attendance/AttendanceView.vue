@@ -104,25 +104,28 @@ const libraryOptions = computed(() => {
 
 const dailyStats = computed(() => {
   const statsFromStore = attendanceStore.stats;
+  const kpis = statsFromStore?.kpis;
   const dist = statsFromStore?.library_distribution || [];
 
   const stats = {
     male: statsFromStore?.total_male ?? 0,
     female: statsFromStore?.total_female ?? 0,
     total: statsFromStore?.total_users ?? 0,
-    student: 0,
-    teacher: 0,
-    staff: 0,
+    student: kpis?.student ?? 0,
+    teacher: kpis?.teacher ?? 0,
+    staff: kpis?.staff ?? 0,
   };
 
-  dist.forEach((d: any) => {
-    const count = parseInt(String(d.count || 0), 10) || 0;
-    const type = d.user_type?.toLowerCase();
+  if (stats.student === 0 && stats.teacher === 0 && stats.staff === 0 && dist.length > 0) {
+    dist.forEach((d: any) => {
+      const count = parseInt(String(d.count || 0), 10) || 0;
+      const type = d.user_type?.toLowerCase();
 
-    if (type === 'student') stats.student += count;
-    else if (type === 'teacher') stats.teacher += count;
-    else if (type === 'staff') stats.staff += count;
-  });
+      if (type === 'student') stats.student += count;
+      else if (type === 'teacher') stats.teacher += count;
+      else if (type === 'staff') stats.staff += count;
+    });
+  }
 
   return stats;
 });
@@ -384,7 +387,7 @@ watch(activeTab, (newTab) => {
 
     <!-- Active Tab 2: Analytics & Reporting -->
     <AttendanceAnalytics
-      v-else
+      v-else-if="activeTab === 'analytics' && authStore.canManageReporting"
       v-model:dateRange="dateRange"
       :dailyStats="dailyStats"
       :distributionReport="distributionReport"
@@ -397,6 +400,15 @@ watch(activeTab, (newTab) => {
       @export="handleExport"
       @print="handlePrint('current')"
     />
+
+    <div
+      v-else-if="activeTab === 'analytics' && !authStore.canManageReporting"
+      class="p-8 text-center text-main-text/60 bg-white dark:bg-dark-card border border-border rounded-xl"
+    >
+      <p class="text-sm font-medium">
+        {{ langStore.t('common.unauthorized', 'You do not have permission to view reporting and analytics.') }}
+      </p>
+    </div>
 
     <!-- Missing Library Selection Modal -->
     <Modal

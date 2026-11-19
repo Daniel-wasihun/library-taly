@@ -509,12 +509,13 @@
         <table class="formal-table">
             <thead>
                 <tr>
-                    <th style="width: 32%;">{{ $isAmharic ? 'የቅርንጫፍ ስም' : 'Campus Branch' }}</th>
-                    <th style="width: 10%;">{{ $isAmharic ? 'ኮድ' : 'Code' }}</th>
-                    <th class="text-right" style="width: 14%;">{{ $isAmharic ? 'ተማሪዎች' : 'Students' }}</th>
-                    <th class="text-right" style="width: 14%;">{{ $isAmharic ? 'መምህራን/ሰራተኛ' : 'Faculty/Staff' }}</th>
-                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
-                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'የድርሻ መጠን (%)' : 'Traffic Share (%)' }}</th>
+                    <th style="width: 25%;">{{ $isAmharic ? 'የቅርንጫፍ ስም' : 'Campus Branch' }}</th>
+                    <th style="width: 9%;">{{ $isAmharic ? 'ኮድ' : 'Code' }}</th>
+                    <th class="text-right" style="width: 13%;">{{ $isAmharic ? 'ተማሪዎች' : 'Students' }}</th>
+                    <th class="text-right" style="width: 13%;">{{ $isAmharic ? 'መምህራን' : 'Teachers' }}</th>
+                    <th class="text-right" style="width: 13%;">{{ $isAmharic ? 'ሠራተኞች' : 'Staff' }}</th>
+                    <th class="text-right" style="width: 14%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
+                    <th class="text-right" style="width: 13%;">{{ $isAmharic ? 'የድርሻ መጠን (%)' : 'Traffic Share (%)' }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -523,13 +524,14 @@
                         <td><b>{{ $branch['name'] }}</b></td>
                         <td><span style="font-family: monospace; font-weight: bold;">{{ $branch['code'] }}</span></td>
                         <td class="text-right">{{ number_format($branch['students']) }}</td>
-                        <td class="text-right">{{ number_format($branch['faculty_staff']) }}</td>
+                        <td class="text-right">{{ number_format($branch['teachers'] ?? 0) }}</td>
+                        <td class="text-right">{{ number_format($branch['staff'] ?? 0) }}</td>
                         <td class="text-right" style="font-weight: 700;">{{ number_format($branch['total']) }}</td>
                         <td class="text-right">{{ $branch['percent'] }}%</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center" style="padding: 10px; color: #6b7280;">{{ $isAmharic ? 'መረጃ አልተገኘም' : 'No branch data recorded' }}</td>
+                        <td colspan="7" class="text-center" style="padding: 10px; color: #6b7280;">{{ $isAmharic ? 'መረጃ አልተገኘም' : 'No branch data recorded' }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -542,12 +544,14 @@
         <table class="formal-table">
             <thead>
                 <tr>
-                    <th style="width: 25%;">{{ $isAmharic ? 'የፈረቃ ክፍለ-ጊዜ' : 'Shift Window' }}</th>
-                    <th style="width: 25%;">{{ $isAmharic ? 'የሰዓት ገደብ' : 'Time Interval' }}</th>
-                    <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'ተማሪዎች' : 'Students' }}</th>
-                    <th class="text-right" style="width: 13%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
-                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ድርሻ (%)' : 'Share (%)' }}</th>
-                    <th style="width: 15%;">{{ $isAmharic ? 'የጥግግት ደረጃ' : 'Congestion' }}</th>
+                    <th style="width: 20%;">{{ $isAmharic ? 'የፈረቃ ክፍለ-ጊዜ' : 'Shift Window' }}</th>
+                    <th style="width: 18%;">{{ $isAmharic ? 'የሰዓት ገደብ' : 'Time Interval' }}</th>
+                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ተማሪዎች' : 'Students' }}</th>
+                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'መምህራን' : 'Teachers' }}</th>
+                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ሠራተኞች' : 'Staff' }}</th>
+                    <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
+                    <th class="text-right" style="width: 9%;">{{ $isAmharic ? 'ድርሻ (%)' : 'Share (%)' }}</th>
+                    <th style="width: 11%;">{{ $isAmharic ? 'የጥግግት ደረጃ' : 'Congestion' }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -556,6 +560,8 @@
                         <td><b>{{ $shift['title'] }}</b></td>
                         <td style="font-family: monospace;">{{ $shift['time_range'] }}</td>
                         <td class="text-right">{{ number_format($shift['students']) }}</td>
+                        <td class="text-right">{{ number_format($shift['teachers'] ?? 0) }}</td>
+                        <td class="text-right">{{ number_format($shift['staff'] ?? 0) }}</td>
                         <td class="text-right" style="font-weight: 700;">{{ number_format($shift['count']) }}</td>
                         <td class="text-right">{{ $shift['percent'] }}%</td>
                         <td>{{ $isAmharic ? ($shift['congestion_index_am'] ?? '—') : ($shift['congestion_index'] ?? '—') }}</td>
@@ -665,11 +671,14 @@
         <table class="formal-table">
             <thead>
                 <tr>
-                    <th style="width: 25%;">{{ $isAmharic ? 'የሂሳብ ወር' : 'Academic Month' }}</th>
-                    <th class="text-right" style="width: 18%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Visitors' }}</th>
-                    <th class="text-right" style="width: 18%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Average' }}</th>
-                    <th class="text-right" style="width: 18%;">{{ $isAmharic ? 'የወር እድገት (MoM)' : 'Monthly Growth' }}</th>
-                    <th style="width: 21%;">{{ $isAmharic ? 'ከፍተኛ ተጠቃሚ ዕለት' : 'Peak Weekday' }}</th>
+                    <th style="width: 20%;">{{ $isAmharic ? 'የሂሳብ ወር' : 'Academic Month' }}</th>
+                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ጠቅላላ' : 'Total' }}</th>
+                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ተማሪ' : 'Students' }}</th>
+                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'መምህር' : 'Teachers' }}</th>
+                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ሠራተኛ' : 'Staff' }}</th>
+                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'አማካይ/ቀን' : 'Avg/Day' }}</th>
+                    <th class="text-right" style="width: 13%;">{{ $isAmharic ? 'እድገት (MoM)' : 'Growth (MoM)' }}</th>
+                    <th style="width: 17%;">{{ $isAmharic ? 'ከፍተኛ ዕለት' : 'Peak Weekday' }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -677,6 +686,9 @@
                     <tr>
                         <td><b>{{ $mInfo['display_name'] }}</b> {{ $mInfo['is_peak_month'] ? '★' : '' }}</td>
                         <td class="text-right" style="font-weight: 700;">{{ number_format($mInfo['total']) }}</td>
+                        <td class="text-right">{{ number_format($mInfo['students'] ?? 0) }}</td>
+                        <td class="text-right">{{ number_format($mInfo['teachers'] ?? 0) }}</td>
+                        <td class="text-right">{{ number_format($mInfo['staff'] ?? 0) }}</td>
                         <td class="text-right">{{ number_format($mInfo['daily_avg']) }}</td>
                         <td class="text-right" style="font-weight: 700; color: {{ str_starts_with($mInfo['growth_rate'], '+') ? '#16a34a' : '#475569' }};">{{ $mInfo['growth_rate'] }}</td>
                         <td>{{ $mInfo['peak_day'] }}</td>

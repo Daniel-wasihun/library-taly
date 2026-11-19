@@ -220,8 +220,14 @@ class AttendanceController extends Controller
                 'total' => $reportData['totalCount'],
                 'male' => $reportData['maleCount'],
                 'female' => $reportData['femaleCount'],
+                'student' => $reportData['demographics']['student']['total'] ?? 0,
+                'teacher' => $reportData['demographics']['teacher']['total'] ?? 0,
+                'staff' => $reportData['demographics']['staff']['total'] ?? 0,
                 'male_percent' => $reportData['malePercent'],
                 'female_percent' => $reportData['femalePercent'],
+                'student_percent' => $reportData['demographics']['student']['percent'] ?? 0.0,
+                'teacher_percent' => $reportData['demographics']['teacher']['percent'] ?? 0.0,
+                'staff_percent' => $reportData['demographics']['staff']['percent'] ?? 0.0,
                 'peak_hour' => $reportData['peakHourLabel'],
                 'peak_hour_count' => $reportData['peakHourCount'],
                 'busiest_branch' => $reportData['busiestBranchName'],
@@ -479,7 +485,7 @@ class AttendanceController extends Controller
             ]);
         }
 
-        if ($format === 'doc' || $format === 'word') {
+        if ($format === 'doc' || $format === 'docx' || $format === 'word') {
             $content = $this->reportService->generateWordDoc($reportData);
             return response($content, 200, [
                 'Content-Type' => 'application/msword; charset=UTF-8',

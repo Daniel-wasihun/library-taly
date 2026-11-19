@@ -28,8 +28,9 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-// Printable official report (supports token query parameter or bearer header)
+// Printable and downloadable official reports (supports token query parameter or bearer header)
 Route::get('/physical/attendance/report/print', [AttendanceController::class, 'printReport']);
+Route::get('/physical/attendance/report/download', [AttendanceController::class, 'downloadReport']);
 
 /*
 |--------------------------------------------------------------------------
@@ -90,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/log', [AttendanceController::class, 'logEntry']);
         Route::get('/stats', [AttendanceController::class, 'stats']);
         Route::get('/export', [AttendanceController::class, 'export']);
+        Route::get('/report/download', [AttendanceController::class, 'downloadReport']);
         Route::patch('/{slug}/count', [AttendanceController::class, 'updateCount']);
         Route::delete('/{slug}', [AttendanceController::class, 'destroy']);
     });

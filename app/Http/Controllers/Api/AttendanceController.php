@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\LibraryAttendance;
 use App\Models\Library;
+use App\Models\User;
+use App\Services\AttendanceReportService;
 use App\Services\EthiopianDateService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +18,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceController extends Controller
 {
+    public function __construct(
+        protected AttendanceReportService $reportService
+    ) {}
     /**
      * List recent attendance entries with filtering and branch isolation.
      */
@@ -195,6 +200,9 @@ class AttendanceController extends Controller
             ->orderBy('date', 'asc')
             ->get();
 
+        // Compile multi-perspective analytical dimensions
+        $reportData = $this->reportService->compileReportData($user, $request->all(), $request->query('lang', 'en'));
+
         return response()->json([
             'total_users' => $totalCount,
             'total_male' => $totalMale,
@@ -207,13 +215,31 @@ class AttendanceController extends Controller
                 'from' => $dateFrom->toDateString(),
                 'to' => $dateTo->toDateString(),
             ],
+            // Multidimensional Analytical Dimensions
+            'kpis' => [
+                'total' => $reportData['totalCount'],
+                'male' => $reportData['maleCount'],
+                'female' => $reportData['femaleCount'],
+                'male_percent' => $reportData['malePercent'],
+                'female_percent' => $reportData['femalePercent'],
+                'peak_hour' => $reportData['peakHourLabel'],
+                'peak_hour_count' => $reportData['peakHourCount'],
+                'busiest_branch' => $reportData['busiestBranchName'],
+                'dominant_patron' => $reportData['dominantPatronLabel'],
+            ],
+            'demographics' => $reportData['demographics'],
+            'branch_comparison' => $reportData['branchComparison'],
+            'shift_windows' => $reportData['shiftWindows'],
+            'staff_activity' => $reportData['staffActivity'],
+            'hourly_distribution' => $reportData['hourlyDistribution'],
+            'description' => $reportData['description'],
         ]);
     }
 
     /**
-     * Export attendance data as CSV.
+     * Export attendance data as CSV or specified formal document format.
      */
-    public function export(Request $request): StreamedResponse|JsonResponse
+    public function export(Request $request): Response|StreamedResponse|JsonResponse
     {
         $user = $request->user();
 
@@ -222,6 +248,11 @@ class AttendanceController extends Controller
             return response()->json([
                 'message' => 'Unauthorized: Library attendance viewing or reporting permission is required to export reports.',
             ], 403);
+        }
+
+        $format = $request->query('format');
+        if ($format && in_array(strtolower($format), ['xlsx', 'excel', 'doc', 'word', 'pdf'])) {
+            return $this->downloadReport($request);
         }
 
         $isAmharic = $request->query('lang') === 'am';
@@ -398,7 +429,83 @@ class AttendanceController extends Controller
      */
     public function printReport(Request $request): Response
     {
-        // Support Sanctum user or fallback to query parameter token for direct browser windows/iframes
+        $user = $this->resolveReportUser($request);
+
+        if (!$user->canManageReportingAndAnalytics() && !$user->hasPermissionTo('attendance.view') && !$user->hasPermissionTo('attendance.record')) {
+            abort(403, 'Unauthorized: Library management or attendance viewing permission is required to print reports.');
+        }
+
+        $lang = $request->query('lang', 'en');
+        $reportData = $this->reportService->compileReportData($user, $request->all(), $lang);
+
+        $html = view('reports.attendance_print', $reportData)->render();
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * Download multi-format official reports (Excel .xlsx, Word .doc, CSV, PDF HTML).
+     */
+    public function downloadReport(Request $request): Response|StreamedResponse|JsonResponse
+    {
+        $user = $this->resolveReportUser($request);
+
+        if (!$user->canManageReportingAndAnalytics() && !$user->hasPermissionTo('attendance.view') && !$user->hasPermissionTo('attendance.record')) {
+            return response()->json([
+                'message' => 'Unauthorized: Library attendance viewing or reporting permission is required to download reports.',
+            ], 403);
+        }
+
+        $format = strtolower($request->query('format', 'xlsx'));
+        $lang = $request->query('lang', 'en');
+        $reportData = $this->reportService->compileReportData($user, $request->all(), $lang);
+
+        $timestamp = now()->format('Y_m_d_His');
+
+        if ($format === 'xlsx' || $format === 'excel') {
+            $content = $this->reportService->generateExcelXml($reportData);
+            return response($content, 200, [
+                'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="AAU_Library_Report_' . $timestamp . '.xlsx"',
+                'Pragma' => 'no-cache',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            ]);
+        }
+
+        if ($format === 'doc' || $format === 'word') {
+            $content = $this->reportService->generateWordDoc($reportData);
+            return response($content, 200, [
+                'Content-Type' => 'application/msword; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="AAU_Library_Report_' . $timestamp . '.doc"',
+                'Pragma' => 'no-cache',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            ]);
+        }
+
+        if ($format === 'csv') {
+            $content = $this->reportService->generateCsv($reportData);
+            return response($content, 200, [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="AAU_Attendance_Report_' . $timestamp . '.csv"',
+                'Pragma' => 'no-cache',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            ]);
+        }
+
+        // Default or PDF view
+        $html = view('reports.attendance_print', $reportData)->render();
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * Resolve authenticated user from Sanctum or query token.
+     */
+    protected function resolveReportUser(Request $request): User
+    {
         $user = $request->user();
         if (!$user && $request->filled('token')) {
             $token = PersonalAccessToken::findToken($request->query('token'));
@@ -411,83 +518,6 @@ class AttendanceController extends Controller
             abort(401, 'Unauthenticated');
         }
 
-        if (!$user->canManageReportingAndAnalytics() && !$user->hasPermissionTo('attendance.view') && !$user->hasPermissionTo('attendance.record')) {
-            abort(403, 'Unauthorized: Library management or attendance viewing permission is required to print reports.');
-        }
-
-        $isAmharic = $request->query('lang') === 'am';
-
-        $query = LibraryAttendance::with(['library', 'staff']);
-
-        if (!$user->canManageAllLibraries()) {
-            $query->where('library_id', $user->library_id);
-            $selectedLibrary = $user->library;
-        } elseif ($request->filled('library_id')) {
-            $query->where('library_id', $request->library_id);
-            $selectedLibrary = Library::find($request->library_id);
-        } else {
-            $selectedLibrary = null;
-        }
-
-        $dateFromStr = $request->query('date_from', Carbon::today()->toDateString());
-        $dateToStr = $request->query('date_to', Carbon::today()->toDateString());
-
-        $dateFrom = Carbon::parse($dateFromStr)->startOfDay();
-        $dateTo = Carbon::parse($dateToStr)->endOfDay();
-
-        $query->whereBetween('entry_at', [$dateFrom, $dateTo]);
-
-        $attendances = (clone $query)->orderBy('entry_at', 'desc')->get();
-
-        $totalCount = (int) $attendances->sum('visitor_count');
-        $maleCount = (int) $attendances->where('gender', 'male')->sum('visitor_count');
-        $femaleCount = (int) $attendances->where('gender', 'female')->sum('visitor_count');
-
-        $malePercent = $totalCount > 0 ? round(($maleCount / $totalCount) * 100) : 0;
-        $femalePercent = $totalCount > 0 ? round(($femaleCount / $totalCount) * 100) : 0;
-
-        $demographics = [
-            'student' => ['male' => 0, 'female' => 0, 'total' => 0],
-            'teacher' => ['male' => 0, 'female' => 0, 'total' => 0],
-            'staff' => ['male' => 0, 'female' => 0, 'total' => 0],
-        ];
-
-        foreach ($attendances as $log) {
-            $type = strtolower($log->user_type);
-            $gender = strtolower($log->gender);
-            if (isset($demographics[$type])) {
-                $demographics[$type][$gender] += $log->visitor_count;
-                $demographics[$type]['total'] += $log->visitor_count;
-            }
-        }
-
-        $fromFormatted = EthiopianDateService::formatDT($dateFrom, $isAmharic);
-        $toFormatted = EthiopianDateService::formatDT($dateTo, $isAmharic);
-        $generatedAt = EthiopianDateService::formatDT(now(), $isAmharic);
-
-        $libraryName = $selectedLibrary
-            ? ($isAmharic ? ($selectedLibrary->name_am ?? $selectedLibrary->name) : $selectedLibrary->name)
-            : ($isAmharic ? 'ሁሉም የግቢ ቅርንጫፎች' : 'All Campus Library Branches');
-
-        $html = view('reports.attendance_print', [
-            'isAmharic' => $isAmharic,
-            'attendances' => $attendances,
-            'totalCount' => $totalCount,
-            'maleCount' => $maleCount,
-            'femaleCount' => $femaleCount,
-            'malePercent' => $malePercent,
-            'femalePercent' => $femalePercent,
-            'demographics' => $demographics,
-            'libraryName' => $libraryName,
-            'dateFromStr' => $fromFormatted,
-            'dateToStr' => $toFormatted,
-            'isSingleDay' => $dateFromStr === $dateToStr,
-            'generatedAt' => $generatedAt,
-            'generatedBy' => $user->name,
-        ])->render();
-
-        return response($html, 200, [
-            'Content-Type' => 'text/html; charset=UTF-8',
-        ]);
+        return $user;
     }
 }

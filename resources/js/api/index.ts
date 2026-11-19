@@ -182,6 +182,12 @@ export const attendanceApi = {
             responseType: 'blob',
         }),
 
+    downloadReport: (params?: any) =>
+        api.get('/physical/attendance/report/download', {
+            params,
+            responseType: 'blob',
+        }),
+
     updateCount: (slug: string, count: number) =>
         api.patch(`/physical/attendance/${slug}/count`, { count }),
 

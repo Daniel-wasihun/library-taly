@@ -427,8 +427,8 @@ class DutyScheduleEnforcementTest extends TestCase
 
         $responsePrint->assertStatus(200)
             ->assertHeader('Content-Type', 'text/html; charset=UTF-8')
-            ->assertSee('Official Library Attendance Report')
-            ->assertSee('Demographic Patron Distribution');
+            ->assertSee('Official Library Attendance and Demographic Analytics Report')
+            ->assertSee('Patron Demographic Categorization');
 
         // 2. Official Amharic HTML report generation
         $responsePrintAm = $this->actingAs($admin)
@@ -436,8 +436,9 @@ class DutyScheduleEnforcementTest extends TestCase
 
         $responsePrintAm->assertStatus(200)
             ->assertHeader('Content-Type', 'text/html; charset=UTF-8')
-            ->assertSee('የቤተ-መጻሕፍት አጠቃቀም ይፋዊ ሪፖርት')
-            ->assertSee('1. የተጠቃሚዎች ስርጭት ትንተና')
+            ->assertSee('የቤተ-መጻሕፍት አጠቃቀም እና የስነ-ሕዝብ ትንተና ይፋዊ ሪፖርት')
+            ->assertSee('1. ዋና ዋና የአፈጻጸም ጠቋሚዎች (KPIs)')
+            ->assertSee('2. የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር')
             ->assertDontSee('(Print)')
             ->assertDontSee('(12hr)');
 
@@ -447,5 +448,35 @@ class DutyScheduleEnforcementTest extends TestCase
 
         $responseExport->assertStatus(200)
             ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        // 4. Multi-format downloadable reports (xlsx, doc, csv, pdf)
+        $responseXlsx = $this->actingAs($admin)
+            ->get('/api/physical/attendance/report/download?format=xlsx&lang=en');
+        $responseXlsx->assertStatus(200)
+            ->assertHeader('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
+            ->assertSee('Workbook')
+            ->assertSee('Worksheet');
+
+        $responseDoc = $this->actingAs($admin)
+            ->get('/api/physical/attendance/report/download?format=doc&lang=en');
+        $responseDoc->assertStatus(200)
+            ->assertHeader('Content-Type', 'application/msword; charset=UTF-8')
+            ->assertSee('html')
+            ->assertSee('ADDIS ABABA UNIVERSITY')
+            ->assertSee('Directorate of Academic Library');
+
+        $responseCsv = $this->actingAs($admin)
+            ->get('/api/physical/attendance/report/download?format=csv&lang=en');
+        $responseCsv->assertStatus(200)
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8')
+            ->assertSee('Total Visitors');
+
+        // Amharic download test
+        $responseAmDoc = $this->actingAs($admin)
+            ->get('/api/physical/attendance/report/download?format=doc&lang=am');
+        $responseAmDoc->assertStatus(200)
+            ->assertHeader('Content-Type', 'application/msword; charset=UTF-8')
+            ->assertSee('የቤተ-መጻሕፍት አጠቃቀም እና የስነ-ሕዝብ ትንተና ይፋዊ ሪፖርት')
+            ->assertSee('አዲስ አበባ ዩኒቨርሲቲ');
     }
 }

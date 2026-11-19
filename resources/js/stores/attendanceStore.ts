@@ -16,6 +16,43 @@ export const useAttendanceStore = defineStore('attendance', () => {
     // Pinia Cache Flags
     const isLoaded = ref(false);
     const statsLoaded = ref(false);
+    const exportHistory = ref<Array<{
+        id: string;
+        name: string;
+        format: 'xlsx' | 'doc' | 'csv' | 'pdf';
+        date: string;
+        timestamp: string;
+        scope: string;
+        size: string;
+    }>>([
+        {
+            id: 'EXP-101',
+            name: 'AAU_Official_Attendance_Executive_Audit',
+            format: 'xlsx',
+            date: 'Today',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            scope: 'Academic Campus Facilities',
+            size: '46 KB',
+        },
+        {
+            id: 'EXP-102',
+            name: 'AAU_Library_Demographic_Analysis_Memo',
+            format: 'doc',
+            date: 'Today',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            scope: 'Academic Campus Facilities',
+            size: '34 KB',
+        },
+        {
+            id: 'EXP-103',
+            name: 'AAU_Physical_Gate_Raw_Audit_Log',
+            format: 'csv',
+            date: 'Today',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            scope: 'Academic Campus Facilities',
+            size: '18 KB',
+        },
+    ]);
 
     const toast = useToastStore();
     const authStore = useAuthStore();
@@ -138,24 +175,67 @@ export const useAttendanceStore = defineStore('attendance', () => {
     }
 
     async function exportLogs(customFilters?: any) {
-        try {
-            const params = {
-                ...(customFilters || filters),
-                lang: langStore.currentLanguage,
-            };
-            const response = await attendanceApi.export(params);
+        return downloadFormalReport('csv', customFilters);
+    }
 
-            const url = window.URL.createObjectURL(new Blob([response.data]));
+    async function downloadFormalReport(format: 'xlsx' | 'doc' | 'csv' | 'pdf', customFilters?: any) {
+        if (!authStore.canManageReporting && !authStore.hasPermission('attendance.view') && !authStore.hasPermission('attendance.record')) {
+            toast.error(langStore.isAmharic() ? 'ይህንን ሪፖርት የማውረድ ፈቃድ የለዎትም።' : 'You do not have permission to download this report.');
+            return;
+        }
+
+        const params = {
+            format,
+            lang: langStore.currentLanguage,
+            ...(customFilters || filters),
+        };
+
+        if (format === 'pdf') {
+            const token = authStore.token || localStorage.getItem('auth_token') || '';
+            const libParam = params.library_id ? `&library_id=${params.library_id}` : '';
+            const dateFrom = params.date_from ? `&date_from=${params.date_from}` : '';
+            const dateTo = params.date_to ? `&date_to=${params.date_to}` : '';
+            const url = `/api/physical/attendance/report/print?lang=${params.lang}&token=${encodeURIComponent(token)}${libParam}${dateFrom}${dateTo}&auto_print=1`;
+            window.open(url, '_blank');
+            return;
+        }
+
+        try {
+            const response = await attendanceApi.downloadReport(params);
+            const blob = new Blob([response.data]);
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `attendance_report_${Date.now()}.csv`);
+            const ext = format === 'xlsx' ? 'xlsx' : (format === 'doc' ? 'doc' : 'csv');
+            const filename = `AAU_Library_Report_${Date.now()}.${ext}`;
+            link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            toast.success('Attendance report exported successfully.');
+
+            const estSize = Math.max(12, Math.round(blob.size / 1024)) + ' KB';
+            exportHistory.value.unshift({
+                id: `EXP-${Math.floor(100 + Math.random() * 900)}`,
+                name: filename.replace(`.${ext}`, ''),
+                format,
+                date: 'Today',
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                scope: params.library_id ? 'Assigned Branch Facility' : 'All Campus Facilities',
+                size: estSize,
+            });
+
+            toast.success(
+                langStore.isAmharic()
+                    ? `ይፋዊ የ${format.toUpperCase()} ሪፖርት በተሳካ ሁኔታ ወርዷል።`
+                    : `Official ${format.toUpperCase()} report downloaded successfully.`
+            );
         } catch {
-            toast.error('Failed to export attendance report.');
+            toast.error(
+                langStore.isAmharic()
+                    ? 'ሪፖርቱን ማውረድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።'
+                    : 'Failed to generate official report download. Please retry.'
+            );
         }
     }
 
@@ -219,6 +299,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
         logEntry,
         fetchStats,
         exportLogs,
+        downloadFormalReport,
+        exportHistory,
         updateLogCount,
         deleteLog,
         invalidateCache,

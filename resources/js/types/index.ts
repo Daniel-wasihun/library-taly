@@ -103,6 +103,49 @@ export interface AttendanceStats {
     library_distribution: any[];
     trends: { date: string; count: number }[];
     period?: { from: string; to: string };
+    kpis?: {
+        total: number;
+        male: number;
+        female: number;
+        male_percent: number;
+        female_percent: number;
+        peak_hour: string;
+        peak_hour_count: number;
+        busiest_branch: string;
+        dominant_patron: string;
+    };
+    demographics?: Record<string, { male: number; female: number; total: number; percent: number }>;
+    branch_comparison?: Array<{
+        id: number;
+        code: string;
+        name: string;
+        location: string;
+        total: number;
+        male: number;
+        female: number;
+        students: number;
+        faculty_staff: number;
+        percent: number;
+    }>;
+    shift_windows?: Record<string, {
+        code: string;
+        title: string;
+        time_range: string;
+        count: number;
+        students: number;
+        faculty: number;
+        percent: number;
+    }>;
+    staff_activity?: Array<{
+        staff_id: number;
+        name: string;
+        username: string;
+        branch: string;
+        entries_count: number;
+        visitors_handled: number;
+    }>;
+    hourly_distribution?: Record<number, number>;
+    description?: string;
 }
 
 export interface DashboardStats {

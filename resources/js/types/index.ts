@@ -145,6 +145,107 @@ export interface AttendanceStats {
         visitors_handled: number;
     }>;
     hourly_distribution?: Record<number, number>;
+    day_of_week_analytics?: Array<{
+        day_index: number;
+        day_name: string;
+        day_name_am: string;
+        display_name: string;
+        total: number;
+        distinct_days: number;
+        daily_average: number;
+        percentage: number;
+        morning: number;
+        afternoon: number;
+        night: number;
+        students: number;
+        faculty: number;
+        is_peak: boolean;
+        surge_level: string;
+        surge_level_am: string;
+        prediction: string;
+        prediction_am: string;
+    }>;
+    intra_month_analytics?: {
+        peak_occurrence: string;
+        prediction: string;
+        occurrences_by_day: Array<{
+            day_index: number;
+            day_name: string;
+            day_name_am: string;
+            display_name: string;
+            occurrences: Array<{
+                occurrence: number;
+                label: string;
+                label_am: string;
+                total: number;
+                count: number;
+                average: number;
+                surge_badge: string;
+                surge_badge_am: string;
+                is_peak: boolean;
+            }>;
+        }>;
+        weekly_cycles: Array<{
+            week_num: number;
+            label: string;
+            label_am: string;
+            total: number;
+            days_count: number;
+            daily_average: number;
+            percent: number;
+            is_peak_week: boolean;
+            prediction: string;
+            prediction_am: string;
+        }>;
+    };
+    monthly_analytics?: Array<{
+        month_key: string;
+        name_en: string;
+        name_am: string;
+        display_name: string;
+        total: number;
+        daily_avg: number;
+        students: number;
+        faculty: number;
+        growth_rate: string;
+        growth_direction: 'up' | 'down' | 'steady';
+        peak_day: string;
+        is_peak_month: boolean;
+    }>;
+    yearly_analytics?: Array<{
+        year: number;
+        eth_year: number;
+        display_year: string;
+        total: number;
+        operating_days: number;
+        daily_avg: number;
+        growth_rate: string;
+    }>;
+    shift_time_analytics?: {
+        windows: Record<string, {
+            code: string;
+            title: string;
+            time_range: string;
+            count: number;
+            students: number;
+            faculty: number;
+            percent: number;
+            peak_hour?: string;
+            congestion_index?: string;
+            congestion_index_am?: string;
+        }>;
+        hourly_curve: Array<{
+            hour: number;
+            label: string;
+            label_am: string;
+            display_label: string;
+            count: number;
+            percent: number;
+            height_percent: number;
+            shift: 'morning' | 'afternoon' | 'night';
+            is_peak: boolean;
+        }>;
+    };
     description?: string;
 }
 

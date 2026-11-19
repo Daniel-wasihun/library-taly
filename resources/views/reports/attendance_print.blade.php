@@ -542,11 +542,12 @@
         <table class="formal-table">
             <thead>
                 <tr>
-                    <th style="width: 30%;">{{ $isAmharic ? 'የፈረቃ ክፍለ-ጊዜ' : 'Shift Window' }}</th>
+                    <th style="width: 25%;">{{ $isAmharic ? 'የፈረቃ ክፍለ-ጊዜ' : 'Shift Window' }}</th>
                     <th style="width: 25%;">{{ $isAmharic ? 'የሰዓት ገደብ' : 'Time Interval' }}</th>
-                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'ተማሪዎች' : 'Students' }}</th>
-                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
-                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'የድርሻ መጠን (%)' : 'Share (%)' }}</th>
+                    <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'ተማሪዎች' : 'Students' }}</th>
+                    <th class="text-right" style="width: 13%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
+                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ድርሻ (%)' : 'Share (%)' }}</th>
+                    <th style="width: 15%;">{{ $isAmharic ? 'የጥግግት ደረጃ' : 'Congestion' }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -557,14 +558,161 @@
                         <td class="text-right">{{ number_format($shift['students']) }}</td>
                         <td class="text-right" style="font-weight: 700;">{{ number_format($shift['count']) }}</td>
                         <td class="text-right">{{ $shift['percent'] }}%</td>
+                        <td>{{ $isAmharic ? ($shift['congestion_index_am'] ?? '—') : ($shift['congestion_index'] ?? '—') }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
 
-        <!-- Section 5: Duty Staff Attendant Audit Trail Table -->
+        <!-- Section 5: Day-of-Week Operational Foot-Traffic Analysis Table -->
+        @if(!empty($dayOfWeekAnalytics))
         <div class="section-header">
-            <span>{{ $isAmharic ? '5. የተረኛ ሠራተኞች የምዝገባ እንቅስቃሴ' : '5. Attendant Duty Desk Registry Log' }}</span>
+            <span>{{ $isAmharic ? '5. ሰኞ – እሑድ የሳምንት ቀናት የጎብኝዎች ፍሰት ትንተና' : '5. Day-of-the-Week Operational Foot-Traffic Analysis' }}</span>
+            <span style="font-weight: 500; font-size: 9px; color: #64748b;">{{ $isAmharic ? 'የሳምንታዊ ጥግግትና ትንበያ' : 'Weekly Influx Profile' }}</span>
+        </div>
+        <table class="formal-table">
+            <thead>
+                <tr>
+                    <th style="width: 16%;">{{ $isAmharic ? 'የሳምንቱ ዕለት' : 'Day of Week' }}</th>
+                    <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Avg' }}</th>
+                    <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
+                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ድርሻ (%)' : 'Share (%)' }}</th>
+                    <th style="width: 18%;">{{ $isAmharic ? 'የፈረቃ ክፍፍል (ጠ/ቀ/ማ)' : 'Morn / Aft / Night' }}</th>
+                    <th style="width: 14%;">{{ $isAmharic ? 'የፍሰት ደረጃ' : 'Surge Level' }}</th>
+                    <th style="width: 18%;">{{ $isAmharic ? 'የአስተዳደር ትንበያ' : 'Management Prediction' }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($dayOfWeekAnalytics as $dow)
+                    <tr>
+                        <td><b>{{ $dow['display_name'] }}</b> {{ $dow['is_peak'] ? '★' : '' }}</td>
+                        <td class="text-right" style="font-weight: 700; color: #0b529c;">{{ number_format($dow['daily_average']) }}</td>
+                        <td class="text-right">{{ number_format($dow['total']) }}</td>
+                        <td class="text-right">{{ $dow['percentage'] }}%</td>
+                        <td style="font-family: monospace; font-size: 9px;">{{ $dow['morning'] }} / {{ $dow['afternoon'] }} / {{ $dow['night'] }}</td>
+                        <td><span style="font-weight: 700; color: {{ $dow['is_peak'] ? '#dc2626' : '#2563eb' }};">{{ $isAmharic ? $dow['surge_level_am'] : $dow['surge_level'] }}</span></td>
+                        <td style="font-size: 9px;">{{ $isAmharic ? $dow['prediction_am'] : $dow['prediction'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
+
+        <!-- Section 6: Intra-Month Day Recurring Occurrence & Weekly Cycle Matrix -->
+        @if(!empty($intraMonthDayAnalytics))
+        <div class="section-header">
+            <span>{{ $isAmharic ? '6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና' : '6. Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix' }}</span>
+        </div>
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 6px 10px; margin-bottom: 8px; font-size: 10px; color: #166534; border-radius: 3px;">
+            <b>{{ $isAmharic ? 'የአስተዳደር የቅድመ-ትንበያ ማስጠንቀቂያ፡ ' : 'Management Influx Prediction: ' }}</b>
+            {{ $intraMonthDayAnalytics['prediction'] }}
+        </div>
+        <table class="formal-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">{{ $isAmharic ? 'የወሩ ሳምንታዊ ክፍለ-ጊዜ' : 'Weekly Cycle in Month' }}</th>
+                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Patrons' }}</th>
+                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Average' }}</th>
+                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'የወሩ ድርሻ (%)' : 'Monthly Share (%)' }}</th>
+                    <th style="width: 30%;">{{ $isAmharic ? 'የአሰራርና የጥናት ሁኔታ' : 'Operational Status' }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($intraMonthDayAnalytics['weekly_cycles'] as $wCycle)
+                    <tr>
+                        <td><b>{{ $isAmharic ? $wCycle['label_am'] : $wCycle['label'] }}</b> {{ $wCycle['is_peak_week'] ? '★' : '' }}</td>
+                        <td class="text-right" style="font-weight: 700;">{{ number_format($wCycle['total']) }}</td>
+                        <td class="text-right">{{ number_format($wCycle['daily_average']) }}</td>
+                        <td class="text-right">{{ $wCycle['percent'] }}%</td>
+                        <td>{{ $isAmharic ? $wCycle['prediction_am'] : $wCycle['prediction'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        <table class="formal-table" style="margin-top: 6px;">
+            <thead>
+                <tr>
+                    <th style="width: 20%;">{{ $isAmharic ? 'የሳምንት ዕለት' : 'Day of Week' }}</th>
+                    <th style="width: 20%;">{{ $isAmharic ? '1ኛ ድግግሞሽ (ቀናት 1–7)' : '1st Occurrence (Days 1–7)' }}</th>
+                    <th style="width: 20%;">{{ $isAmharic ? '2ኛ ድግግሞሽ (ቀናት 8–14)' : '2nd Occurrence (Days 8–14)' }}</th>
+                    <th style="width: 20%;">{{ $isAmharic ? '3ኛ ድግግሞሽ (ቀናት 15–21)' : '3rd Occurrence (Days 15–21)' }}</th>
+                    <th style="width: 20%;">{{ $isAmharic ? '4ኛ ድግግሞሽ (ቀናት 22–28)' : '4th Occurrence (Days 22–28)' }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($intraMonthDayAnalytics['occurrences_by_day'] as $occDay)
+                    <tr>
+                        <td><b>{{ $occDay['display_name'] }}</b></td>
+                        @foreach($occDay['occurrences'] as $oc)
+                            <td>
+                                <b>{{ number_format($oc['average']) }}</b>
+                                <span style="font-size: 8.5px; color: {{ $oc['is_peak'] ? '#dc2626' : '#475569' }};">({{ $isAmharic ? $oc['surge_badge_am'] : $oc['surge_badge'] }})</span>
+                            </td>
+                        @endforeach
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
+
+        <!-- Section 7: Longitudinal Month-over-Month & Year-over-Year Trajectory Table -->
+        @if(!empty($monthlyAnalytics) || !empty($yearlyAnalytics))
+        <div class="section-header">
+            <span>{{ $isAmharic ? '7. የወራትና የዓመታት ንጽጽር ትንተና' : '7. Longitudinal Month-over-Month & Year-over-Year Trajectory' }}</span>
+        </div>
+        @if(!empty($monthlyAnalytics))
+        <table class="formal-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">{{ $isAmharic ? 'የሂሳብ ወር' : 'Academic Month' }}</th>
+                    <th class="text-right" style="width: 18%;">{{ $isAmharic ? 'ጠቅላላ ጎብኝ' : 'Total Visitors' }}</th>
+                    <th class="text-right" style="width: 18%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Average' }}</th>
+                    <th class="text-right" style="width: 18%;">{{ $isAmharic ? 'የወር እድገት (MoM)' : 'Monthly Growth' }}</th>
+                    <th style="width: 21%;">{{ $isAmharic ? 'ከፍተኛ ተጠቃሚ ዕለት' : 'Peak Weekday' }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($monthlyAnalytics as $mInfo)
+                    <tr>
+                        <td><b>{{ $mInfo['display_name'] }}</b> {{ $mInfo['is_peak_month'] ? '★' : '' }}</td>
+                        <td class="text-right" style="font-weight: 700;">{{ number_format($mInfo['total']) }}</td>
+                        <td class="text-right">{{ number_format($mInfo['daily_avg']) }}</td>
+                        <td class="text-right" style="font-weight: 700; color: {{ str_starts_with($mInfo['growth_rate'], '+') ? '#16a34a' : '#475569' }};">{{ $mInfo['growth_rate'] }}</td>
+                        <td>{{ $mInfo['peak_day'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
+
+        @if(!empty($yearlyAnalytics))
+        <table class="formal-table" style="margin-top: 6px;">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">{{ $isAmharic ? 'የአካዳሚክ ዓመት' : 'Academic Year' }}</th>
+                    <th class="text-right" style="width: 25%;">{{ $isAmharic ? 'ጠቅላላ የዓመት ጎብኝ' : 'Annual Total Visitors' }}</th>
+                    <th class="text-right" style="width: 25%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Average' }}</th>
+                    <th class="text-right" style="width: 25%;">{{ $isAmharic ? 'የዓመት እድገት (YoY)' : 'Yearly Growth Rate' }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($yearlyAnalytics as $yInfo)
+                    <tr>
+                        <td><b>{{ $yInfo['display_year'] }}</b></td>
+                        <td class="text-right" style="font-weight: 700;">{{ number_format($yInfo['total']) }}</td>
+                        <td class="text-right">{{ number_format($yInfo['daily_avg']) }}</td>
+                        <td class="text-right" style="font-weight: 700; color: {{ str_starts_with($yInfo['growth_rate'], '+') ? '#16a34a' : '#475569' }};">{{ $yInfo['growth_rate'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
+        @endif
+
+        <!-- Section 8: Duty Staff Attendant Audit Trail Table -->
+        <div class="section-header">
+            <span>{{ $isAmharic ? '8. የተረኛ ሠራተኞች የምዝገባ እንቅስቃሴ' : '8. Attendant Duty Desk Registry Log' }}</span>
         </div>
         <table class="formal-table">
             <thead>
@@ -591,9 +739,9 @@
             </tbody>
         </table>
 
-        <!-- Section 6: Granular Recorded Entries Table (Sample Audit Trail) -->
+        <!-- Section 9: Granular Recorded Entries Table (Sample Audit Trail) -->
         <div class="section-header">
-            <span>{{ $isAmharic ? '6. የቀጥታ ምዝገባዎች ዝርዝር መዝገብ' : '6. Granular Entry Audit Trail' }}</span>
+            <span>{{ $isAmharic ? '9. የቀጥታ ምዝገባዎች ዝርዝር መዝገብ' : '9. Granular Entry Audit Trail' }}</span>
             <span style="font-weight: 500; font-size: 9px; color: #64748b;">{{ $isAmharic ? 'የመጨረሻዎቹ መዝገቦች' : 'Recent Registry' }}</span>
         </div>
         <table class="formal-table">

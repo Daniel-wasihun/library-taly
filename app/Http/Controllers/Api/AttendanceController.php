@@ -232,6 +232,11 @@ class AttendanceController extends Controller
             'shift_windows' => $reportData['shiftWindows'],
             'staff_activity' => $reportData['staffActivity'],
             'hourly_distribution' => $reportData['hourlyDistribution'],
+            'day_of_week_analytics' => $reportData['dayOfWeekAnalytics'],
+            'intra_month_analytics' => $reportData['intraMonthDayAnalytics'],
+            'monthly_analytics' => $reportData['monthlyAnalytics'],
+            'yearly_analytics' => $reportData['yearlyAnalytics'],
+            'shift_time_analytics' => $reportData['shiftTimeAnalytics'],
             'description' => $reportData['description'],
         ]);
     }

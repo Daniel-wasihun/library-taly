@@ -364,6 +364,77 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
+        // 7.5. Seed Realistic Longitudinal Historical Attendance Data for Multi-Month, Multi-Year, and Day Analytics
+        if (LibraryAttendance::whereYear('entry_at', 2025)->count() === 0) {
+            $historicalRows = [];
+            $sampleMonths = [
+                ['year' => 2025, 'month' => 10],
+                ['year' => 2025, 'month' => 11],
+                ['year' => 2025, 'month' => 12],
+                ['year' => 2026, 'month' => 1],
+                ['year' => 2026, 'month' => 2],
+                ['year' => 2026, 'month' => 3],
+                ['year' => 2026, 'month' => 4],
+                ['year' => 2026, 'month' => 5],
+                ['year' => 2026, 'month' => 9],
+                ['year' => 2026, 'month' => 10],
+                ['year' => 2026, 'month' => 11],
+            ];
+
+            foreach ($sampleMonths as $mInfo) {
+                $y = $mInfo['year'];
+                $m = $mInfo['month'];
+                $daysInMonth = Carbon::create($y, $m, 1)->daysInMonth;
+
+                for ($d = 1; $d <= min(28, $daysInMonth); $d += 2) {
+                    $cDate = Carbon::create($y, $m, $d);
+                    $dayOfWeek = $cDate->dayOfWeekIso; // 1 (Mon) to 7 (Sun)
+                    $weekOccurrence = (int) ceil($d / 7); // 1st, 2nd, 3rd, 4th
+
+                    $multiplier = 1.0;
+                    if ($dayOfWeek === 1 || $dayOfWeek === 2) $multiplier += 0.45;
+                    if ($weekOccurrence === 2) $multiplier += 0.35;
+                    if ($dayOfWeek >= 6) $multiplier -= 0.4;
+
+                    $mCount = (int) round(rand(2, 6) * $multiplier);
+                    $aCount = (int) round(rand(3, 8) * $multiplier);
+                    $nCount = (int) round(rand(1, 4) * $multiplier);
+
+                    $hourEntries = [
+                        [9, 15, $mCount, 'morning'],
+                        [10, 45, $mCount + 1, 'morning'],
+                        [14, 20, $aCount + 2, 'afternoon'],
+                        [16, 10, $aCount, 'afternoon'],
+                        [19, 30, $nCount, 'night'],
+                    ];
+
+                    foreach ($hourEntries as $hInfo) {
+                        $lib = $libraries[($d + $hInfo[0]) % count($libraries)];
+                        $staff = $staffMembers[($d + $hInfo[0]) % count($staffMembers)];
+                        $uType = $userTypes[($d + $hInfo[0]) % 3];
+                        $g = $genders[($d + $hInfo[1]) % 2];
+                        $entryDt = Carbon::create($y, $m, $d, $hInfo[0], $hInfo[1], 0);
+
+                        $historicalRows[] = [
+                            'slug' => (string) \Illuminate\Support\Str::uuid(),
+                            'library_id' => $lib->id,
+                            'user_type' => $uType,
+                            'gender' => $g,
+                            'visitor_count' => max(1, $hInfo[2]),
+                            'staff_id' => $staff->id,
+                            'entry_at' => $entryDt,
+                            'created_at' => $entryDt,
+                            'updated_at' => $entryDt,
+                        ];
+                    }
+                }
+            }
+
+            foreach (array_chunk($historicalRows, 150) as $chunk) {
+                LibraryAttendance::insert($chunk);
+            }
+        }
+
         // 8. Seed Default Shifts (Day & Night) with Ethiopian Local Time
         $dayShift = Shift::updateOrCreate(
             ['code' => 'day'],

@@ -16,6 +16,11 @@ class ShiftController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || (!$user->hasPermissionTo('schedules.view') && !$user->hasPermissionTo('libraries.view'))) {
+            return response()->json(['message' => 'Unauthorized: Permission to view shifts required.'], 403);
+        }
+
         $shifts = Shift::orderBy('start_time', 'asc')->get();
 
         return response()->json([
@@ -30,8 +35,8 @@ class ShiftController extends Controller
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to define shifts.'], 403);
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to manage shifts required.'], 403);
         }
 
         $validated = $request->validate([
@@ -84,8 +89,8 @@ class ShiftController extends Controller
     public function update(Request $request, Shift $shift): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to edit shifts.'], 403);
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to update shifts required.'], 403);
         }
 
         $validated = $request->validate([
@@ -133,8 +138,8 @@ class ShiftController extends Controller
     public function destroy(Request $request, Shift $shift): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to delete shifts.'], 403);
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to delete shifts required.'], 403);
         }
 
         if ($shift->schedules()->exists()) {

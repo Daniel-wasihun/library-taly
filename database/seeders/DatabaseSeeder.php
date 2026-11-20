@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
         DB::table('permissions')->delete();
         DB::table('roles')->delete();
 
-        // 2. Exact Permission List (CRUD on user, library, and physical attendance)
+        // 2. Exact Permission List (All system modules)
         $permissions = [
             // Dashboard
             'dashboard.view',
@@ -45,12 +45,28 @@ class DatabaseSeeder extends Seeder
             'users.update',
             'users.delete',
 
+            // Role Management CRUD
+            'roles.view',
+            'roles.create',
+            'roles.update',
+            'roles.delete',
+
             // Library Branch Management CRUD + Branch Management
             'libraries.view',
             'libraries.create',
             'libraries.update',
             'libraries.delete',
             'libraries.manage',
+
+            // Academic Year Calendar Management
+            'academic_years.view',
+            'academic_years.create',
+            'academic_years.update',
+            'academic_years.delete',
+
+            // Duty Schedules & Shift Matrix
+            'schedules.view',
+            'schedules.manage',
 
             // Physical Attendance Management
             'attendance.view',
@@ -61,18 +77,18 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($permissions as $perm) {
-            Permission::create(['name' => $perm]);
+            Permission::firstOrCreate(['name' => $perm]);
         }
 
         // 3. Exact 5 Roles
-        $superAdminRole = Role::create(['name' => 'Super Admin']);
-        $adminRole = Role::create(['name' => 'Admin']);
-        $managerRole = Role::create(['name' => 'Manager']);
-        $librarianRole = Role::create(['name' => 'Librarian']);
-        $attendantRole = Role::create(['name' => 'Attendant']);
+        $superAdminRole = Role::firstOrCreate(['name' => 'Super Admin']);
+        $adminRole = Role::firstOrCreate(['name' => 'Admin']);
+        $managerRole = Role::firstOrCreate(['name' => 'Manager']);
+        $librarianRole = Role::firstOrCreate(['name' => 'Librarian']);
+        $attendantRole = Role::firstOrCreate(['name' => 'Attendant']);
 
         // 4. Assign Permissions to Roles
-        // Super Admin & Admin: Full CRUD on users, libraries, and attendance
+        // Super Admin & Admin: Full CRUD on all modules
         $superAdminRole->syncPermissions(Permission::all());
         $adminRole->syncPermissions(Permission::all());
 
@@ -80,8 +96,14 @@ class DatabaseSeeder extends Seeder
         $managerRole->syncPermissions([
             'dashboard.view',
             'users.view',
+            'roles.view',
             'libraries.view',
             'libraries.manage',
+            'academic_years.view',
+            'academic_years.create',
+            'academic_years.update',
+            'schedules.view',
+            'schedules.manage',
             'attendance.view',
             'attendance.analytics',
         ]);
@@ -89,12 +111,15 @@ class DatabaseSeeder extends Seeder
         // Librarian: View library and record attendance
         $librarianRole->syncPermissions([
             'libraries.view',
+            'academic_years.view',
+            'schedules.view',
             'attendance.view',
             'attendance.record',
         ]);
 
-        // Attendant: Record attendance, and 2-minute update/delete
+        // Attendant: Record attendance, and update/delete within policy window
         $attendantRole->syncPermissions([
+            'schedules.view',
             'attendance.view',
             'attendance.record',
             'attendance.update',

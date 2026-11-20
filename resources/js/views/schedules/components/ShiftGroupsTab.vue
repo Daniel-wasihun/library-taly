@@ -327,7 +327,7 @@ const form = reactive<{
 });
 
 const canManageGroups = computed(() => {
-  return authStore.isAdmin || authStore.canManageLibrary;
+  return authStore.canManageSchedules;
 });
 
 const availableStaffList = computed(() => {

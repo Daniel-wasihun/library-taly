@@ -17,10 +17,10 @@ class RolePermissionController extends Controller
     public function roles(Request $request): JsonResponse
     {
         $currentUser = $request->user();
-        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin', 'Head Librarian'])) {
+        if (!$currentUser || !$currentUser->hasPermissionTo('roles.view')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized: Access to roles and permissions matrix is restricted to authorized administrators.',
+                'message' => 'Unauthorized: Permission to view roles and permissions matrix is required.',
             ], 403);
         }
 
@@ -52,10 +52,10 @@ class RolePermissionController extends Controller
     public function storeRole(Request $request): JsonResponse
     {
         $currentUser = $request->user();
-        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin'])) {
+        if (!$currentUser || !$currentUser->hasPermissionTo('roles.create')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized: Only system administrators can create roles.',
+                'message' => 'Unauthorized: Permission to create roles is required.',
             ], 403);
         }
 
@@ -89,10 +89,10 @@ class RolePermissionController extends Controller
     public function updateRole(Request $request, Role $role): JsonResponse
     {
         $currentUser = $request->user();
-        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin'])) {
+        if (!$currentUser || !$currentUser->hasPermissionTo('roles.update')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized: Only system administrators can update roles.',
+                'message' => 'Unauthorized: Permission to update roles is required.',
             ], 403);
         }
 
@@ -134,10 +134,10 @@ class RolePermissionController extends Controller
     public function destroyRole(Request $request, Role $role): JsonResponse
     {
         $currentUser = $request->user();
-        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin'])) {
+        if (!$currentUser || !$currentUser->hasPermissionTo('roles.delete')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized: Only system administrators can delete roles.',
+                'message' => 'Unauthorized: Permission to delete roles is required.',
             ], 403);
         }
 

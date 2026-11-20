@@ -27,6 +27,10 @@ class AttendanceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
+        if (!$user || (!$user->hasPermissionTo('attendance.view') && !$user->hasPermissionTo('attendance.record'))) {
+            return response()->json(['message' => 'Unauthorized: Permission required to view attendance.'], 403);
+        }
+
         $query = LibraryAttendance::query()->with(['library', 'staff']);
 
         // Enforce branch-level isolation for users who cannot manage all branches
@@ -360,6 +364,10 @@ class AttendanceController extends Controller
         $attendance = LibraryAttendance::where('slug', $slug)->firstOrFail();
         $user = $request->user();
 
+        if (!$user || !$user->hasPermissionTo('attendance.update')) {
+            return response()->json(['message' => 'Unauthorized: Permission to update attendance record required.'], 403);
+        }
+
         if (!$user->canManageAllLibraries() && (int) $attendance->library_id !== (int) $user->library_id) {
             return response()->json(['message' => 'Unauthorized to update attendance for this branch.'], 403);
         }
@@ -404,6 +412,10 @@ class AttendanceController extends Controller
     {
         $attendance = LibraryAttendance::where('slug', $slug)->firstOrFail();
         $user = $request->user();
+
+        if (!$user || !$user->hasPermissionTo('attendance.delete')) {
+            return response()->json(['message' => 'Unauthorized: Permission to delete attendance record required.'], 403);
+        }
 
         if (!$user->canManageAllLibraries() && (int) $attendance->library_id !== (int) $user->library_id) {
             return response()->json(['message' => 'Unauthorized to delete attendance for this branch.'], 403);

@@ -27,6 +27,11 @@ class GroupShiftScheduleController extends Controller
      */
     public function matrix(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || !$user->hasPermissionTo('schedules.view')) {
+            return response()->json(['message' => 'Unauthorized: Permission to view schedule matrix required.'], 403);
+        }
+
         $currentEc = EthiopianCalendarService::getCurrentEthiopianDate();
 
         $selectedYear = (int)($request->query('ethiopian_year') ?: $currentEc['year']);
@@ -123,8 +128,8 @@ class GroupShiftScheduleController extends Controller
     public function autoGenerate(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to auto-generate shift schedules.'], 403);
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to manage schedules required.'], 403);
         }
 
         $validated = $request->validate([
@@ -157,6 +162,11 @@ class GroupShiftScheduleController extends Controller
      */
     public function checkOverlap(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || !$user->hasPermissionTo('schedules.view')) {
+            return response()->json(['message' => 'Unauthorized: Permission to view schedules required.'], 403);
+        }
+
         $libraryId = $request->query('library_id') ? (int)$request->query('library_id') : null;
         $result = $this->autoScheduler->detectStaffOverlapInBranch($libraryId);
         return response()->json($result);
@@ -167,6 +177,11 @@ class GroupShiftScheduleController extends Controller
      */
     public function holidays(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || !$user->hasPermissionTo('schedules.view')) {
+            return response()->json(['message' => 'Unauthorized: Permission to view holidays required.'], 403);
+        }
+
         $year = (int)($request->query('ethiopian_year') ?: 2019);
         $month = (int)($request->query('ethiopian_month') ?: 1);
         $libraryId = $request->query('library_id') ? (int)$request->query('library_id') : null;
@@ -189,8 +204,8 @@ class GroupShiftScheduleController extends Controller
     public function storeHoliday(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to add holidays.'], 403);
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to manage holidays required.'], 403);
         }
 
         $validated = $request->validate([
@@ -231,8 +246,8 @@ class GroupShiftScheduleController extends Controller
     public function destroyHoliday(Request $request, EthiopianHoliday $holiday): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to remove holidays.'], 403);
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to manage holidays required.'], 403);
         }
 
         $day = $holiday->ethiopian_day;
@@ -252,8 +267,8 @@ class GroupShiftScheduleController extends Controller
     public function assign(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to schedule shifts.'], 403);
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to schedule shifts required.'], 403);
         }
 
         $validated = $request->validate([
@@ -484,6 +499,11 @@ class GroupShiftScheduleController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || !$user->hasPermissionTo('schedules.view')) {
+            return response()->json(['message' => 'Unauthorized: Permission to view schedules required.'], 403);
+        }
+
         $year = $request->query('ethiopian_year');
         $month = $request->query('ethiopian_month');
         $groupId = $request->query('shift_group_id');

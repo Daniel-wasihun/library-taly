@@ -10,7 +10,7 @@
     >
       <!-- Brand Logo & Title -->
       <router-link
-        to="/dashboard"
+        :to="authStore.canViewDashboard ? '/dashboard' : (authStore.canViewAttendance ? '/attendance' : (authStore.canViewLibraries ? '/libraries' : '/my-turns'))"
         class="flex items-center gap-2.5 min-w-0 cursor-pointer group"
         :title="langStore.t('app.name', 'UniLibrary Portal')"
       >
@@ -150,7 +150,7 @@
       </div>
 
       <!-- Group 2: Library Operations -->
-      <div class="space-y-1">
+      <div v-if="authStore.canViewAttendance" class="space-y-1">
         <div
           v-if="!isCollapsed"
           class="px-2.5 text-[9.5px] font-bold text-main-text/40 uppercase tracking-wider mb-1"
@@ -161,7 +161,6 @@
 
         <!-- Attendance Counter (Semantic & Short) -->
         <router-link
-          v-if="authStore.isAdmin || authStore.hasPermission('attendance.record') || authStore.hasPermission('attendance.view') || authStore.hasRole(['Super Admin', 'Admin', 'Manager', 'Librarian', 'Attendant'])"
           to="/attendance"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[
@@ -185,7 +184,7 @@
       </div>
 
       <!-- Group 3: Administration & Security (Strict Permissions) -->
-      <div v-if="authStore.isAdmin || authStore.canManageLibrary" class="space-y-1">
+      <div v-if="authStore.canViewUsers || authStore.canViewRoles || authStore.canViewSchedules" class="space-y-1">
         <div
           v-if="!isCollapsed"
           class="px-2.5 text-[9.5px] font-bold text-main-text/40 uppercase tracking-wider mb-1"
@@ -196,7 +195,7 @@
 
         <!-- Users Management -->
         <router-link
-          v-if="authStore.isAdmin || authStore.hasPermission('users.view')"
+          v-if="authStore.canViewUsers"
           to="/users"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[
@@ -220,7 +219,7 @@
 
         <!-- Roles & Permissions -->
         <router-link
-          v-if="authStore.isAdmin || authStore.hasPermission('roles.view')"
+          v-if="authStore.canViewRoles"
           to="/roles"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[
@@ -244,7 +243,7 @@
 
         <!-- Duty Shift Schedules -->
         <router-link
-          v-if="authStore.isAdmin || authStore.canManageLibrary"
+          v-if="authStore.canViewSchedules"
           to="/schedules"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[

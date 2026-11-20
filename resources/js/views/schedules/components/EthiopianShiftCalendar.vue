@@ -827,7 +827,7 @@ const isBranchScoped = computed(() => {
 });
 
 const canManageSchedule = computed(() => {
-  return authStore.isAdmin || authStore.canManageLibrary;
+  return authStore.canManageSchedules;
 });
 
 // Unified shift groups belong to all branches by default

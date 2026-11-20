@@ -207,6 +207,7 @@ watch(
  * Attendants are strictly disabled after 2 minutes from entry_at.
  */
 const canModifyEntry = (entryAt: string) => {
+  if (!authStore.hasPermission('attendance.update')) return false;
   if (authStore.isAdmin || authStore.isSuperAdmin) return true;
   if (!entryAt) return false;
   const entryMs = new Date(entryAt).getTime();
@@ -214,10 +215,22 @@ const canModifyEntry = (entryAt: string) => {
   return diffMinutes <= 2;
 };
 
-const canDeleteEntry = (entryAt: string) => canModifyEntry(entryAt);
+const canDeleteEntry = (entryAt: string) => {
+  if (!authStore.hasPermission('attendance.delete')) return false;
+  if (authStore.isAdmin || authStore.isSuperAdmin) return true;
+  if (!entryAt) return false;
+  const entryMs = new Date(entryAt).getTime();
+  const diffMinutes = Math.abs(currentTime.value - entryMs) / 60000;
+  return diffMinutes <= 2;
+};
 const canUpdateEntry = (entryAt: string) => canModifyEntry(entryAt);
 
 const handleLog = async (gender: 'male' | 'female', count = 1) => {
+  if (!authStore.hasPermission('attendance.record')) {
+    toast.error('Permission required: Only authorized staff with attendance.record permission can record attendance.');
+    return;
+  }
+
   if (!selectedLibrary.value) {
     showNoLibraryModal.value = true;
     return;

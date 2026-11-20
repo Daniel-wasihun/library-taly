@@ -8,6 +8,21 @@ function getLandingRoute(authStore: any) {
     if (authStore.hasPermission('attendance.record') || authStore.hasPermission('attendance.view')) {
         return { name: 'Attendance' };
     }
+    if (authStore.hasPermission('libraries.view')) {
+        return { name: 'Libraries' };
+    }
+    if (authStore.hasPermission('academic_years.view')) {
+        return { name: 'AcademicYears' };
+    }
+    if (authStore.hasPermission('schedules.view')) {
+        return { name: 'Schedules' };
+    }
+    if (authStore.hasPermission('users.view')) {
+        return { name: 'Users' };
+    }
+    if (authStore.hasPermission('roles.view')) {
+        return { name: 'Roles' };
+    }
     return { name: 'MyTurns' };
 }
 
@@ -43,40 +58,40 @@ const routes: RouteRecordRaw[] = [
                 meta: { title: 'Library Branches', icon: 'Landmark', permission: 'libraries.view' },
             },
             {
-                path: 'users',
-                name: 'Users',
-                component: () => import('@/views/users/UsersView.vue'),
-                meta: { title: 'User Management', icon: 'Users', roles: ['Super Admin', 'Head Librarian', 'Manager'] },
-            },
-            {
-                path: 'roles',
-                name: 'Roles',
-                component: () => import('@/views/roles/RolesView.vue'),
-                meta: { title: 'Roles & RBAC Matrix', icon: 'ShieldCheck', roles: ['Super Admin', 'Head Librarian'] },
-            },
-            {
-                path: 'schedules',
-                name: 'Schedules',
-                component: () => import('@/views/schedules/SchedulesView.vue'),
-                meta: { title: 'Duty Schedules', icon: 'CalendarDays', roles: ['Super Admin', 'Admin', 'Manager', 'Head Librarian'] },
-            },
-            {
                 path: 'academic-years',
                 name: 'AcademicYears',
                 component: () => import('@/views/academic-years/AcademicYearsView.vue'),
-                meta: { title: 'Academic Years', icon: 'CalendarRange', roles: ['Super Admin', 'Admin', 'Manager', 'Head Librarian'] },
+                meta: { title: 'Academic Years', icon: 'CalendarRange', permission: 'academic_years.view' },
             },
             {
                 path: 'my-turns',
                 name: 'MyTurns',
                 component: () => import('@/views/schedules/MyTurnsView.vue'),
-                meta: { title: 'My Duty Turns', icon: 'Clock' },
+                meta: { title: 'My Duty Turns', icon: 'Clock', requiresAuth: true },
             },
             {
                 path: 'attendance',
                 name: 'Attendance',
                 component: () => import('@/views/attendance/AttendanceView.vue'),
-                meta: { title: 'Physical Attendance / Usage Counter', icon: 'Activity' },
+                meta: { title: 'Physical Attendance / Usage Counter', icon: 'Activity', permissions: ['attendance.view', 'attendance.record'] },
+            },
+            {
+                path: 'schedules',
+                name: 'Schedules',
+                component: () => import('@/views/schedules/SchedulesView.vue'),
+                meta: { title: 'Duty Schedules', icon: 'CalendarDays', permission: 'schedules.view' },
+            },
+            {
+                path: 'users',
+                name: 'Users',
+                component: () => import('@/views/users/UsersView.vue'),
+                meta: { title: 'User Management', icon: 'Users', permission: 'users.view' },
+            },
+            {
+                path: 'roles',
+                name: 'Roles',
+                component: () => import('@/views/roles/RolesView.vue'),
+                meta: { title: 'Roles & RBAC Matrix', icon: 'ShieldCheck', permission: 'roles.view' },
             },
         ],
     },
@@ -135,42 +150,26 @@ router.beforeEach(async (to) => {
         return getLandingRoute(authStore);
     }
 
-    // Dashboard authorization guard
+    // 1. Strict Dashboard authorization guard: only users with dashboard.view permission can access
     if (to.name === 'Dashboard' && !authStore.canViewDashboard) {
         return getLandingRoute(authStore);
     }
 
-    // Libraries authorization guard
-    if (to.name === 'Libraries' && !authStore.canViewLibraries) {
+    // 2. Strict single permission guard
+    if (to.meta.permission && !authStore.hasPermission(to.meta.permission as string)) {
         return getLandingRoute(authStore);
     }
 
-    // Attendance authorization guard
-    if (to.name === 'Attendance') {
-        const canAccess =
-            authStore.isSuperAdmin ||
-            authStore.isAdmin ||
-            authStore.hasPermission('attendance.record') ||
-            authStore.hasPermission('attendance.view') ||
-            authStore.hasRole(['Super Admin', 'Admin', 'Manager', 'Librarian', 'Attendant']);
-        if (!canAccess) {
+    // 3. Strict multi-permission guard (any permitted)
+    if (to.meta.permissions && Array.isArray(to.meta.permissions)) {
+        const hasAny = (to.meta.permissions as string[]).some((p) => authStore.hasPermission(p));
+        if (!hasAny) {
             return getLandingRoute(authStore);
         }
     }
 
-    // Role guard
+    // 4. Role guard fallback
     if (to.meta.roles && !authStore.hasRole(to.meta.roles as string[])) {
-        return getLandingRoute(authStore);
-    }
-
-    // Permission guard
-    if (to.meta.permission && !authStore.hasPermission(to.meta.permission as string)) {
-        if (to.name === 'Dashboard' && authStore.canViewDashboard) {
-            return true;
-        }
-        if (to.name === 'Libraries' && authStore.canViewLibraries) {
-            return true;
-        }
         return getLandingRoute(authStore);
     }
 

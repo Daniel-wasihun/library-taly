@@ -24,7 +24,7 @@ class UserController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->hasAdminPrivilege() && !$user->hasRole(['Super Admin', 'Admin', 'Manager']) && !$user->can('users.view')) {
+        if (!$user || !$user->hasPermissionTo('users.view')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized: Permission required to view user accounts.',
@@ -112,7 +112,7 @@ class UserController extends Controller
     public function store(Request $request): JsonResponse
     {
         $currentUser = $request->user();
-        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin']) && !$currentUser->can('users.create')) {
+        if (!$currentUser || !$currentUser->hasPermissionTo('users.create')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized: Permission required to create user accounts.',
@@ -164,7 +164,7 @@ class UserController extends Controller
     public function show(Request $request, User $user): JsonResponse
     {
         $currentUser = $request->user();
-        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin', 'Manager']) && !$currentUser->can('users.view')) {
+        if (!$currentUser || !$currentUser->hasPermissionTo('users.view')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized: Permission required to view user details.',
@@ -190,7 +190,7 @@ class UserController extends Controller
     public function update(Request $request, User $user): JsonResponse
     {
         $currentUser = $request->user();
-        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin']) && !$currentUser->can('users.update')) {
+        if (!$currentUser || !$currentUser->hasPermissionTo('users.update')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized: Permission required to update user accounts.',
@@ -251,7 +251,7 @@ class UserController extends Controller
     public function destroy(Request $request, User $user): JsonResponse
     {
         $currentUser = $request->user();
-        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin']) && !$currentUser->can('users.delete')) {
+        if (!$currentUser || !$currentUser->hasPermissionTo('users.delete')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized: Permission required to delete user accounts.',
@@ -288,10 +288,10 @@ class UserController extends Controller
     public function overridePermissions(Request $request, User $user): JsonResponse
     {
         $currentUser = $request->user();
-        if (!$currentUser->hasAdminPrivilege() && !$currentUser->hasRole(['Super Admin', 'Admin'])) {
+        if (!$currentUser || !$currentUser->hasPermissionTo('users.update')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized: Only Super Admin and Admin can override permissions.',
+                'message' => 'Unauthorized: Permission required to override user permissions.',
             ], 403);
         }
 

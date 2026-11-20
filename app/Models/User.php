@@ -101,13 +101,12 @@ class User extends Authenticatable
 
     /**
      * Determine if user can view the overview dashboard.
+     * Enforces strict dashboard.view permission requirement.
      */
     public function canViewDashboard(): bool
     {
         return $this->isSuperAdmin()
-            || $this->hasAdminPrivilege()
-            || $this->hasRole(['Super Admin', 'Admin', 'Manager'])
-            || $this->can('dashboard.view');
+            || $this->hasPermissionTo('dashboard.view');
     }
 
     /**
@@ -116,10 +115,8 @@ class User extends Authenticatable
     public function canViewLibraryList(): bool
     {
         return $this->isSuperAdmin()
-            || $this->hasAdminPrivilege()
-            || $this->hasRole(['Super Admin', 'Admin', 'Manager'])
-            || $this->can('libraries.view')
-            || $this->can('libraries.manage');
+            || $this->hasPermissionTo('libraries.view')
+            || $this->hasPermissionTo('libraries.manage');
     }
 
     /**
@@ -128,9 +125,8 @@ class User extends Authenticatable
     public function canCreateLibrary(): bool
     {
         return $this->isSuperAdmin()
-            || $this->hasAdminPrivilege()
-            || $this->can('libraries.create')
-            || $this->can('libraries.manage');
+            || $this->hasPermissionTo('libraries.create')
+            || $this->hasPermissionTo('libraries.manage');
     }
 
     /**
@@ -139,9 +135,8 @@ class User extends Authenticatable
     public function canUpdateLibrary(): bool
     {
         return $this->isSuperAdmin()
-            || $this->hasAdminPrivilege()
-            || $this->can('libraries.update')
-            || $this->can('libraries.manage');
+            || $this->hasPermissionTo('libraries.update')
+            || $this->hasPermissionTo('libraries.manage');
     }
 
     /**
@@ -150,21 +145,18 @@ class User extends Authenticatable
     public function canDeleteLibrary(): bool
     {
         return $this->isSuperAdmin()
-            || $this->hasAdminPrivilege()
-            || $this->can('libraries.delete')
-            || $this->can('libraries.manage');
+            || $this->hasPermissionTo('libraries.delete')
+            || $this->hasPermissionTo('libraries.manage');
     }
 
     /**
      * Determine if user can access reporting and analytics.
-     * Permitted only for users with library management permission or attendance analytics.
      */
     public function canManageReportingAndAnalytics(): bool
     {
-        return $this->hasAdminPrivilege()
-            || $this->hasRole('Manager')
-            || $this->can('libraries.manage')
-            || $this->can('attendance.analytics');
+        return $this->isSuperAdmin()
+            || $this->hasPermissionTo('attendance.analytics')
+            || $this->hasPermissionTo('libraries.manage');
     }
 
     /**
@@ -173,11 +165,8 @@ class User extends Authenticatable
     public function canViewAcademicYears(): bool
     {
         return $this->isSuperAdmin()
-            || $this->hasAdminPrivilege()
-            || $this->hasRole(['Super Admin', 'Admin', 'Manager', 'Librarian'])
-            || $this->can('libraries.view')
-            || $this->can('attendance.view')
-            || $this->can('attendance.analytics');
+            || $this->hasPermissionTo('academic_years.view')
+            || $this->hasPermissionTo('libraries.view');
     }
 
     /**
@@ -186,10 +175,94 @@ class User extends Authenticatable
     public function canManageAcademicYears(): bool
     {
         return $this->isSuperAdmin()
-            || $this->hasAdminPrivilege()
-            || $this->hasRole(['Super Admin', 'Admin', 'Manager'])
-            || $this->can('libraries.manage')
-            || $this->can('attendance.analytics');
+            || $this->hasPermissionTo('academic_years.create')
+            || $this->hasPermissionTo('academic_years.update')
+            || $this->hasPermissionTo('academic_years.delete')
+            || $this->hasPermissionTo('libraries.manage');
+    }
+
+    /**
+     * Determine if user can view user accounts.
+     */
+    public function canViewUsers(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasPermissionTo('users.view');
+    }
+
+    /**
+     * Determine if user can create user accounts.
+     */
+    public function canCreateUsers(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasPermissionTo('users.create');
+    }
+
+    /**
+     * Determine if user can update user accounts.
+     */
+    public function canUpdateUsers(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasPermissionTo('users.update');
+    }
+
+    /**
+     * Determine if user can delete user accounts.
+     */
+    public function canDeleteUsers(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasPermissionTo('users.delete');
+    }
+
+    /**
+     * Determine if user can view roles and permissions.
+     */
+    public function canViewRoles(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasPermissionTo('roles.view');
+    }
+
+    /**
+     * Determine if user can manage roles (create, update, delete).
+     */
+    public function canManageRoles(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasPermissionTo('roles.create')
+            || $this->hasPermissionTo('roles.update')
+            || $this->hasPermissionTo('roles.delete');
+    }
+
+    /**
+     * Determine if user can view duty schedules.
+     */
+    public function canViewSchedules(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasPermissionTo('schedules.view');
+    }
+
+    /**
+     * Determine if user can manage duty schedules.
+     */
+    public function canManageSchedules(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasPermissionTo('schedules.manage');
+    }
+
+    /**
+     * Determine if user can view physical attendance records.
+     */
+    public function canViewAttendance(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasPermissionTo('attendance.view')
+            || $this->hasPermissionTo('attendance.record');
     }
 
     /**

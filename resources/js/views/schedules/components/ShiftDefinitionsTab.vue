@@ -486,7 +486,7 @@ const ethEnd = reactive({
 });
 
 const canManageShifts = computed(() => {
-  return authStore.isAdmin || authStore.canManageLibrary;
+  return authStore.canManageSchedules;
 });
 
 /**

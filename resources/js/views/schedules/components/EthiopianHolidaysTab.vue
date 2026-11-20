@@ -387,7 +387,7 @@ const form = reactive({
 });
 
 const canManageHolidays = computed(() => {
-  return authStore.isAdmin || authStore.canManageLibrary;
+  return authStore.canManageSchedules;
 });
 
 const formDaysCount = computed(() => {

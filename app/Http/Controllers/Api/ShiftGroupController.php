@@ -19,6 +19,11 @@ class ShiftGroupController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || (!$user->hasPermissionTo('schedules.view') && !$user->hasPermissionTo('libraries.view'))) {
+            return response()->json(['message' => 'Unauthorized: Permission to view shift groups required.'], 403);
+        }
+
         $libraryId = $request->query('library_id');
 
         $query = ShiftGroup::with([
@@ -51,8 +56,8 @@ class ShiftGroupController extends Controller
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to create shift groups.'], 403);
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to create shift groups required.'], 403);
         }
 
         $validated = $request->validate([
@@ -100,8 +105,8 @@ class ShiftGroupController extends Controller
     public function update(Request $request, ShiftGroup $shiftGroup): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to update shift groups.'], 403);
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to update shift groups required.'], 403);
         }
 
         $validated = $request->validate([
@@ -150,8 +155,8 @@ class ShiftGroupController extends Controller
     public function destroy(Request $request, ShiftGroup $shiftGroup): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageLibrary()) {
-            return response()->json(['message' => 'Unauthorized to delete shift groups.'], 403);
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to delete shift groups required.'], 403);
         }
 
         if ($shiftGroup->schedules()->exists()) {
@@ -175,6 +180,10 @@ class ShiftGroupController extends Controller
      */
     public function eligibleStaff(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to view eligible staff required.'], 403);
+        }
         $currentGroupId = $request->query('current_group_id') ? (int)$request->query('current_group_id') : null;
 
         $users = User::role(['Attendant', 'Librarian', 'Manager'])

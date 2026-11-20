@@ -21,6 +21,11 @@ class DutyScheduleController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || !$user->hasPermissionTo('schedules.view')) {
+            return response()->json(['message' => 'Unauthorized: Permission to view schedules required.'], 403);
+        }
+
         $userId = $request->query('user_id');
         $date = $request->query('date');
         $task = $request->query('task_key');
@@ -84,6 +89,11 @@ class DutyScheduleController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to assign duty schedules required.'], 403);
+        }
+
         $validated = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
             'task_key' => ['required', 'string', 'in:' . implode(',', array_keys(DutyScheduleService::TASKS))],
@@ -115,8 +125,13 @@ class DutyScheduleController extends Controller
     /**
      * Delete/Cancel a duty shift.
      */
-    public function destroy(DutySchedule $schedule): JsonResponse
+    public function destroy(Request $request, DutySchedule $schedule): JsonResponse
     {
+        $user = $request->user();
+        if (!$user || !$user->hasPermissionTo('schedules.manage')) {
+            return response()->json(['message' => 'Unauthorized: Permission to delete duty schedules required.'], 403);
+        }
+
         $userId = $schedule->user_id;
         $schedule->delete();
 

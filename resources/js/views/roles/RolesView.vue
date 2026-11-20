@@ -43,6 +43,7 @@
           {{ langStore.t('common.refresh', 'Refresh') }}
         </Button>
         <Button
+          v-if="authStore.canManageRoles || authStore.hasPermission('roles.create')"
           variant="primary"
           size="sm"
           :icon="Plus"
@@ -122,6 +123,7 @@
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">
                   <button
+                    v-if="authStore.canManageRoles || authStore.hasPermission('roles.update')"
                     type="button"
                     class="table-action-btn text-brand-blue hover:bg-brand-blue/10 transition cursor-pointer"
                     title="Edit Role"
@@ -130,7 +132,7 @@
                     <Pencil class="w-4 h-4 stroke-[2.2]" />
                   </button>
                   <button
-                    v-if="role.name !== 'Super Admin'"
+                    v-if="role.name !== 'Super Admin' && (authStore.canManageRoles || authStore.hasPermission('roles.delete'))"
                     type="button"
                     class="table-action-btn text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
                     title="Delete Role"
@@ -178,11 +180,17 @@
           </div>
 
           <div class="flex items-center justify-end gap-2 pt-4 border-t border-card-border mt-3">
-            <Button variant="secondary" size="sm" :icon="Pencil" @click="openEditModal(role)">
+            <Button
+              v-if="authStore.canManageRoles || authStore.hasPermission('roles.update')"
+              variant="secondary"
+              size="sm"
+              :icon="Pencil"
+              @click="openEditModal(role)"
+            >
               Edit
             </Button>
             <Button
-              v-if="role.name !== 'Super Admin'"
+              v-if="role.name !== 'Super Admin' && (authStore.canManageRoles || authStore.hasPermission('roles.delete'))"
               variant="danger"
               size="sm"
               :icon="Trash2"

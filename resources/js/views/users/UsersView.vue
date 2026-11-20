@@ -22,6 +22,7 @@
           {{ langStore.t('common.refresh', 'Refresh') }}
         </Button>
         <Button
+          v-if="authStore.canManageUsers || authStore.hasPermission('users.create')"
           variant="primary"
           size="sm"
           :icon="Plus"
@@ -187,6 +188,7 @@
         <div class="flex items-center justify-end gap-1">
           <!-- Direct Permission Overrides Button -->
           <button
+            v-if="authStore.canManageUsers || authStore.hasPermission('users.update')"
             type="button"
             class="table-action-btn text-purple-600 hover:bg-purple-500/10 transition cursor-pointer"
             title="Direct Permission Overrides"
@@ -197,6 +199,7 @@
 
           <!-- Edit User Button -->
           <button
+            v-if="authStore.canManageUsers || authStore.hasPermission('users.update')"
             type="button"
             class="table-action-btn text-brand-blue hover:bg-brand-blue/10 transition cursor-pointer"
             :title="langStore.t('common.edit', 'Edit User')"
@@ -207,6 +210,7 @@
 
           <!-- Delete User Button -->
           <button
+            v-if="authStore.canManageUsers || authStore.hasPermission('users.delete')"
             type="button"
             class="table-action-btn text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
             :title="langStore.t('common.delete', 'Delete User')"

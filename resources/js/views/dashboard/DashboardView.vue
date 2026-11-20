@@ -22,7 +22,7 @@
       <!-- Quick Action Navigation Hub -->
       <div class="flex items-center gap-2 flex-wrap">
         <router-link
-          v-if="authStore.canLogAttendance || authStore.isAdmin"
+          v-if="authStore.canRecordAttendance"
           to="/attendance"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-brand-blue text-white hover:bg-blue-900 shadow-2xs transition active:scale-95 cursor-pointer"
         >
@@ -31,7 +31,7 @@
         </router-link>
 
         <router-link
-          v-if="authStore.canManageReporting"
+          v-if="authStore.canManageAttendanceAnalytics"
           to="/attendance"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold border border-card-border bg-card-bg hover:bg-nav-accent/10 hover:border-nav-accent text-main-text shadow-2xs transition active:scale-95 cursor-pointer"
         >

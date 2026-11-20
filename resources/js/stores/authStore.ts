@@ -45,6 +45,24 @@ export const useAuthStore = defineStore(
         const canCreateLibrary = computed(() => isSuperAdmin.value || isAdmin.value || Boolean((user.value as any)?.can_create_library) || hasPermission('libraries.create') || hasPermission('libraries.manage'));
         const canUpdateLibrary = computed(() => isSuperAdmin.value || isAdmin.value || Boolean((user.value as any)?.can_update_library) || hasPermission('libraries.update') || hasPermission('libraries.manage'));
         const canDeleteLibrary = computed(() => isSuperAdmin.value || isAdmin.value || Boolean((user.value as any)?.can_delete_library) || hasPermission('libraries.delete') || hasPermission('libraries.manage'));
+        const canViewAcademicYears = computed(() => {
+            return isSuperAdmin.value ||
+                   isAdmin.value ||
+                   canViewLibraries.value ||
+                   canManageReporting.value ||
+                   hasRole(['Super Admin', 'Admin', 'Manager', 'Librarian']) ||
+                   hasPermission('libraries.view') ||
+                   hasPermission('attendance.view');
+        });
+        const canManageAcademicYears = computed(() => {
+            return isSuperAdmin.value ||
+                   isAdmin.value ||
+                   canManageLibrary.value ||
+                   canManageReporting.value ||
+                   hasRole(['Super Admin', 'Admin', 'Manager']) ||
+                   hasPermission('libraries.manage') ||
+                   hasPermission('attendance.analytics');
+        });
         const userRoles = computed(() => user.value?.roles ?? []);
         const isOnDutyToday = computed(() => isSuperAdmin.value || (user.value?.duty_status?.has_active_shift_today ?? false));
         const canCirculateBooks = computed(() => isSuperAdmin.value || (user.value?.duty_status?.circulation_authorized_today ?? false));
@@ -124,6 +142,8 @@ export const useAuthStore = defineStore(
             canCreateLibrary,
             canUpdateLibrary,
             canDeleteLibrary,
+            canViewAcademicYears,
+            canManageAcademicYears,
             userRoles,
             isOnDutyToday,
             canCirculateBooks,

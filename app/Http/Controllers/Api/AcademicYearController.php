@@ -21,6 +21,10 @@ class AcademicYearController extends Controller
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
+        if (!$user->canViewAcademicYears()) {
+            return response()->json(['message' => 'Unauthorized: Permission to view academic calendar required.'], 403);
+        }
+
         $years = AcademicYear::query()
             ->orderBy('start_date', 'desc')
             ->get();
@@ -37,7 +41,7 @@ class AcademicYearController extends Controller
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageReportingAndAnalytics() && !$user->canManageLibrary()) {
+        if (!$user->canManageAcademicYears()) {
             return response()->json(['message' => 'Unauthorized: Academic calendar management permission required.'], 403);
         }
 
@@ -72,8 +76,13 @@ class AcademicYearController extends Controller
     /**
      * Display the specified academic year.
      */
-    public function show(AcademicYear $academicYear): JsonResponse
+    public function show(Request $request, AcademicYear $academicYear): JsonResponse
     {
+        $user = $request->user();
+        if ($user && !$user->canViewAcademicYears()) {
+            return response()->json(['message' => 'Unauthorized: Permission to view academic calendar required.'], 403);
+        }
+
         return response()->json([
             'data' => $academicYear,
         ]);
@@ -85,7 +94,7 @@ class AcademicYearController extends Controller
     public function update(Request $request, AcademicYear $academicYear): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageReportingAndAnalytics() && !$user->canManageLibrary()) {
+        if (!$user->canManageAcademicYears()) {
             return response()->json(['message' => 'Unauthorized: Academic calendar management permission required.'], 403);
         }
 
@@ -118,7 +127,7 @@ class AcademicYearController extends Controller
     public function destroy(Request $request, AcademicYear $academicYear): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageReportingAndAnalytics() && !$user->canManageLibrary()) {
+        if (!$user->canManageAcademicYears()) {
             return response()->json(['message' => 'Unauthorized: Academic calendar management permission required.'], 403);
         }
 
@@ -149,7 +158,7 @@ class AcademicYearController extends Controller
     public function setCurrent(Request $request, AcademicYear $academicYear): JsonResponse
     {
         $user = $request->user();
-        if (!$user->canManageReportingAndAnalytics() && !$user->canManageLibrary()) {
+        if (!$user->canManageAcademicYears()) {
             return response()->json(['message' => 'Unauthorized: Academic calendar management permission required.'], 403);
         }
 

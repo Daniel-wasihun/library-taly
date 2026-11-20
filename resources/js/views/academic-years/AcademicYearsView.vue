@@ -44,8 +44,8 @@
       :search-placeholder="langStore.isAmharic() ? 'በስም ወይም በመለያ ኮድ ፈልግ...' : 'Search academic years by name or code...'"
       :total="academicYears.length"
       :per-page="15"
-      empty-title="No academic years registered"
-      empty-desc="Register an academic year to manage attendance sessions and reporting intervals."
+      :empty-title="langStore.isAmharic() ? 'ምንም የተመዘገበ የአካዳሚክ ዓመት አልተገኘም' : 'No academic years registered'"
+      :empty-desc="langStore.isAmharic() ? 'የተጠቃሚዎች ቆጣሪና ሪፖርቶችን ለማቀናጀት አዲስ የአካዳሚክ ዓመት ይመዝግቡ።' : 'Register an academic year to manage attendance sessions and reporting intervals.'"
     >
       <!-- Year Identity Column -->
       <template #name="{ item }">
@@ -67,14 +67,17 @@
         </div>
       </template>
 
-      <!-- Calendar Date Span Column -->
+      <!-- Calendar Date Span Column with Professional Ethiopian/Gregorian Localization -->
       <template #date_span="{ item }">
-        <div v-if="item" class="space-y-0.5 text-xs font-mono">
-          <div class="flex items-center gap-1.5 text-main-text">
+        <div v-if="item" class="space-y-1 text-xs">
+          <div class="flex items-center gap-1.5 font-bold text-main-text">
             <Calendar class="w-3.5 h-3.5 text-brand-blue shrink-0" />
-            <span class="font-semibold">{{ formatDate(item.start_date) }}</span>
+            <span>{{ formatItemDate(item.start_date).primary }}</span>
             <span class="text-main-text/40">→</span>
-            <span class="font-semibold">{{ formatDate(item.end_date) }}</span>
+            <span>{{ formatItemDate(item.end_date).primary }}</span>
+          </div>
+          <div class="text-[10.5px] font-mono text-main-text/50 pl-5">
+            ({{ formatItemDate(item.start_date).secondary }} → {{ formatItemDate(item.end_date).secondary }})
           </div>
         </div>
       </template>
@@ -84,7 +87,7 @@
         <div v-if="item">
           <span
             v-if="item.is_current"
-            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs"
           >
             <CheckCircle2 class="w-3.5 h-3.5" />
             {{ langStore.isAmharic() ? 'ንቁ የአካዳሚክ ዓመት' : 'Current Active Year' }}
@@ -93,7 +96,7 @@
             v-else
             class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium text-main-text/50 bg-main-bg/50 border border-card-border"
           >
-            {{ langStore.isAmharic() ? 'ያለፈ / ተዘግቷል' : 'Archived' }}
+            {{ langStore.isAmharic() ? 'ያለፈ / የተዘጋ' : 'Archived' }}
           </span>
         </div>
       </template>
@@ -105,12 +108,12 @@
             v-if="!item.is_current"
             variant="secondary"
             size="sm"
-            class="!px-2 !py-1 text-[11px] !h-7 text-brand-blue hover:text-brand-blue hover:bg-brand-blue/10"
+            class="!px-2.5 !py-1 text-[11px] !h-7 text-brand-blue hover:text-brand-blue hover:bg-brand-blue/10"
             :loading="activatingId === item.id"
             @click="handleSetCurrent(item)"
             :title="langStore.isAmharic() ? 'እንደ ንቁ ዓመት ሰይም' : 'Set as Current Active Year'"
           >
-            <Star class="w-3.5 h-3.5 mr-1" />
+            <Star class="w-3.5 h-3.5 mr-1 text-amber-500 fill-amber-500/30" />
             {{ langStore.isAmharic() ? 'ንቁ አድርግ' : 'Set Active' }}
           </Button>
 
@@ -138,7 +141,7 @@
     <!-- Create/Edit Modal Dialog -->
     <Modal
       :isOpen="isModalOpen"
-      :title="isEditing ? (langStore.isAmharic() ? 'የአካዳሚክ ዓመት አስተካክል' : 'Edit Academic Year') : (langStore.isAmharic() ? 'አዲስ የአካዳሚክ ዓመት መዝግብ' : 'Add Academic Year')"
+      :title="isEditing ? (langStore.isAmharic() ? 'የአካዳሚክ ዓመት መረጃ አስተካክል' : 'Edit Academic Year') : (langStore.isAmharic() ? 'አዲስ የአካዳሚክ ዓመት መዝግብ' : 'Add Academic Year')"
       @close="closeModal"
     >
       <form @submit.prevent="handleSubmit" class="space-y-4">
@@ -150,7 +153,7 @@
             v-model="form.name"
             type="text"
             required
-            placeholder="e.g. 2019 E.C. (2026/2027)"
+            :placeholder="langStore.isAmharic() ? 'ለምሳሌ፡ 2019 ዓ.ም (2026/2027)' : 'e.g. 2019 E.C. (2026/2027)'"
             class="w-full h-9 px-3 text-xs rounded-md bg-main-bg border border-card-border text-main-text focus:outline-none focus:ring-1 focus:ring-brand-blue"
           />
         </div>
@@ -163,7 +166,7 @@
             v-model="form.code"
             type="text"
             required
-            placeholder="e.g. AY-2019"
+            :placeholder="langStore.isAmharic() ? 'ለምሳሌ፡ AY-2019' : 'e.g. AY-2019'"
             class="w-full h-9 px-3 text-xs font-mono rounded-md bg-main-bg border border-card-border text-main-text focus:outline-none focus:ring-1 focus:ring-brand-blue uppercase"
           />
         </div>
@@ -177,8 +180,13 @@
               v-model="form.start_date"
               type="date"
               required
-              class="w-full h-9 px-3 text-xs rounded-md bg-main-bg border border-card-border text-main-text focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              class="w-full h-9 px-3 text-xs rounded-md bg-main-bg border border-card-border text-main-text focus:outline-none focus:ring-1 focus:ring-brand-blue font-mono"
             />
+            <!-- Real-time Ethiopian Calendar Conversion Feedback -->
+            <div v-if="form.start_date" class="mt-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <span>{{ langStore.isAmharic() ? 'የኢትዮጵያ ዘመን፡' : 'Ethiopian:' }}</span>
+              <span class="font-bold font-mono">{{ formatDT(form.start_date, true).full }}</span>
+            </div>
           </div>
 
           <div>
@@ -189,19 +197,24 @@
               v-model="form.end_date"
               type="date"
               required
-              class="w-full h-9 px-3 text-xs rounded-md bg-main-bg border border-card-border text-main-text focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              class="w-full h-9 px-3 text-xs rounded-md bg-main-bg border border-card-border text-main-text focus:outline-none focus:ring-1 focus:ring-brand-blue font-mono"
             />
+            <!-- Real-time Ethiopian Calendar Conversion Feedback -->
+            <div v-if="form.end_date" class="mt-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <span>{{ langStore.isAmharic() ? 'የኢትዮጵያ ዘመን፡' : 'Ethiopian:' }}</span>
+              <span class="font-bold font-mono">{{ formatDT(form.end_date, true).full }}</span>
+            </div>
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
-            {{ langStore.isAmharic() ? 'ዝርዝር ማብራሪያ' : 'Description / Notes' }}
+            {{ langStore.isAmharic() ? 'ዝርዝር ማብራሪያና ማስታወሻ' : 'Description / Notes' }}
           </label>
           <textarea
             v-model="form.description"
             rows="2"
-            placeholder="Optional notes regarding this academic session..."
+            :placeholder="langStore.isAmharic() ? 'ስለዚህ የትምህርት ዘመን ተጨማሪ ማስታወሻ (አማራጭ)...' : 'Optional notes regarding this academic session...'"
             class="w-full px-3 py-2 text-xs rounded-md bg-main-bg border border-card-border text-main-text focus:outline-none focus:ring-1 focus:ring-brand-blue"
           ></textarea>
         </div>
@@ -214,7 +227,7 @@
             class="w-4 h-4 rounded text-brand-blue focus:ring-brand-blue/30 border-card-border cursor-pointer"
           />
           <label for="is_current" class="text-xs font-medium text-main-text cursor-pointer select-none">
-            {{ langStore.isAmharic() ? 'ይህ የአካዳሚክ ዓመት አሁን ንቁ ይሁን' : 'Set as current active academic session' }}
+            {{ langStore.isAmharic() ? 'ይህን የአካዳሚክ ዓመት አሁን ንቁ ይሁን' : 'Set as current active academic session' }}
           </label>
         </div>
 
@@ -233,7 +246,7 @@
             size="sm"
             :loading="submitting"
           >
-            {{ isEditing ? langStore.t('common.save', 'Save Changes') : (langStore.isAmharic() ? 'መዝግብ' : 'Register Year') }}
+            {{ isEditing ? (langStore.isAmharic() ? 'ለውጦችን መዝግብ' : 'Save Changes') : (langStore.isAmharic() ? 'ዓመቱን መዝግብ' : 'Register Year') }}
           </Button>
         </div>
       </form>
@@ -242,12 +255,12 @@
     <!-- Delete Confirmation Modal -->
     <Modal
       :isOpen="isDeleteModalOpen"
-      :title="langStore.isAmharic() ? 'የአካዳሚክ ዓመት ማረጋገጫ' : 'Confirm Delete Academic Year'"
+      :title="langStore.isAmharic() ? 'የአካዳሚክ ዓመት ስረዛ ማረጋገጫ' : 'Confirm Delete Academic Year'"
       @close="isDeleteModalOpen = false"
     >
       <div class="space-y-4">
-        <p class="text-xs text-main-text">
-          {{ langStore.isAmharic() ? 'እርግጠኛ ነዎት ይህን የአካዳሚክ ዓመት መሰረዝ ይፈልጋሉ?' : 'Are you sure you want to permanently delete this academic year session?' }}
+        <p class="text-xs text-main-text leading-relaxed">
+          {{ langStore.isAmharic() ? 'እርግጠኛ ነዎት ይህን የአካዳሚክ ዓመት መሰረዝ ይፈልጋሉ? ይህ እርምጃ ሊቀለበስ አይችልም።' : 'Are you sure you want to permanently delete this academic year session? This action cannot be undone.' }}
         </p>
         <div v-if="targetItem" class="p-3 rounded bg-rose-500/10 border border-rose-500/20 text-xs font-semibold text-rose-600 dark:text-rose-400">
           {{ targetItem.name }} ({{ targetItem.code }})
@@ -297,6 +310,7 @@ import { useLanguageStore } from '@/stores/languageStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { academicYearsApi } from '@/api';
+import { formatDT } from '@/utils/ethiopianDate';
 import type { AcademicYear } from '@/types';
 
 const langStore = useLanguageStore();
@@ -304,7 +318,7 @@ const authStore = useAuthStore();
 const toast = useToastStore();
 
 const canManage = computed(() => {
-  return authStore.isAdmin || authStore.canManageLibrary;
+  return authStore.canManageAcademicYears;
 });
 
 const academicYears = ref<AcademicYear[]>([]);
@@ -312,12 +326,29 @@ const loading = ref(false);
 const searchQuery = ref('');
 const activatingId = ref<number | null>(null);
 
-const columns = [
-  { key: 'name', label: 'Academic Session / Code', sortable: true },
-  { key: 'date_span', label: 'Date Interval (Start – End)', sortable: true },
-  { key: 'status', label: 'Status', sortable: false },
-  { key: 'actions', label: '', sortable: false, class: 'text-right' },
-];
+const columns = computed(() => [
+  {
+    key: 'name',
+    label: langStore.isAmharic() ? 'የአካዳሚክ ዓመት / መለያ ኮድ' : 'Academic Session / Code',
+    sortable: true,
+  },
+  {
+    key: 'date_span',
+    label: langStore.isAmharic() ? 'የቀን ወሰን (የኢትዮጵያ / እ.ኤ.አ)' : 'Date Interval (Start – End)',
+    sortable: true,
+  },
+  {
+    key: 'status',
+    label: langStore.isAmharic() ? 'ሁኔታ' : 'Status',
+    sortable: false,
+  },
+  {
+    key: 'actions',
+    label: langStore.isAmharic() ? 'ተግባራት' : 'Actions',
+    sortable: false,
+    class: 'text-right',
+  },
+]);
 
 const loadData = async () => {
   loading.value = true;
@@ -327,7 +358,7 @@ const loadData = async () => {
       academicYears.value = res.data.data;
     }
   } catch (err: any) {
-    toast.error(err.response?.data?.message || 'Failed to load academic years');
+    toast.error(err.response?.data?.message || (langStore.isAmharic() ? 'የአካዳሚክ ዓመታትን መጫን አልተቻለም' : 'Failed to load academic years'));
   } finally {
     loading.value = false;
   }
@@ -340,6 +371,26 @@ onMounted(() => {
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
   return dateStr.split('T')[0];
+};
+
+const formatItemDate = (dateStr: string) => {
+  if (!dateStr) return { primary: '—', secondary: '—' };
+  const clean = dateStr.split('T')[0];
+  const am = formatDT(clean, true);
+  const en = formatDT(clean, false);
+
+  if (langStore.isAmharic()) {
+    return {
+      primary: am.date + ' ዓ.ም',
+      secondary: en.date,
+      full: am.full,
+    };
+  }
+  return {
+    primary: en.date,
+    secondary: am.date + ' E.C.',
+    full: en.full,
+  };
 };
 
 // Modal State
@@ -396,15 +447,15 @@ const handleSubmit = async () => {
   try {
     if (isEditing.value && editId.value) {
       const res = await academicYearsApi.update(editId.value, form.value);
-      toast.success(res.data?.message || 'Academic year updated successfully');
+      toast.success(res.data?.message || (langStore.isAmharic() ? 'የአካዳሚክ ዓመቱ መረጃ ተሻሽሏል' : 'Academic year updated successfully'));
     } else {
       const res = await academicYearsApi.create(form.value);
-      toast.success(res.data?.message || 'Academic year registered successfully');
+      toast.success(res.data?.message || (langStore.isAmharic() ? 'የአካዳሚክ ዓመቱ በተሳካ ሁኔታ ተመዝግቧል' : 'Academic year registered successfully'));
     }
     closeModal();
     await loadData();
   } catch (err: any) {
-    toast.error(err.response?.data?.message || 'Failed to save academic year');
+    toast.error(err.response?.data?.message || (langStore.isAmharic() ? 'የአካዳሚክ ዓመቱን ማስቀመጥ አልተቻለም' : 'Failed to save academic year'));
   } finally {
     submitting.value = false;
   }
@@ -414,10 +465,10 @@ const handleSetCurrent = async (item: AcademicYear) => {
   activatingId.value = item.id;
   try {
     const res = await academicYearsApi.setCurrent(item.id);
-    toast.success(res.data?.message || `Academic year '${item.name}' is now active`);
+    toast.success(res.data?.message || (langStore.isAmharic() ? `'${item.name}' አሁን ንቁ የአካዳሚክ ዓመት ሆኗል` : `Academic year '${item.name}' is now active`));
     await loadData();
   } catch (err: any) {
-    toast.error(err.response?.data?.message || 'Failed to activate academic year');
+    toast.error(err.response?.data?.message || (langStore.isAmharic() ? 'የአካዳሚክ ዓመቱን ማንቃት አልተቻለም' : 'Failed to activate academic year'));
   } finally {
     activatingId.value = null;
   }
@@ -438,12 +489,12 @@ const handleDelete = async () => {
   deleting.value = true;
   try {
     const res = await academicYearsApi.destroy(targetItem.value.id);
-    toast.success(res.data?.message || 'Academic year deleted successfully');
+    toast.success(res.data?.message || (langStore.isAmharic() ? 'የአካዳሚክ ዓመቱ ተሰርዟል' : 'Academic year deleted successfully'));
     isDeleteModalOpen.value = false;
     targetItem.value = null;
     await loadData();
   } catch (err: any) {
-    toast.error(err.response?.data?.message || 'Failed to delete academic year');
+    toast.error(err.response?.data?.message || (langStore.isAmharic() ? 'የአካዳሚክ ዓመቱን መሰረዝ አልተቻለም' : 'Failed to delete academic year'));
   } finally {
     deleting.value = false;
   }

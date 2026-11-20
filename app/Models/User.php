@@ -168,6 +168,31 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine if user can view academic years.
+     */
+    public function canViewAcademicYears(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasAdminPrivilege()
+            || $this->hasRole(['Super Admin', 'Admin', 'Manager', 'Librarian'])
+            || $this->can('libraries.view')
+            || $this->can('attendance.view')
+            || $this->can('attendance.analytics');
+    }
+
+    /**
+     * Determine if user can manage academic years.
+     */
+    public function canManageAcademicYears(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasAdminPrivilege()
+            || $this->hasRole(['Super Admin', 'Admin', 'Manager'])
+            || $this->can('libraries.manage')
+            || $this->can('attendance.analytics');
+    }
+
+    /**
      * Check if user can perform operations at a target library branch.
      */
     public function canAccessLibrary(?int $targetLibraryId): bool

@@ -315,7 +315,7 @@ const handleResetToday = () => {
           >
             <option value="">{{ langStore.isAmharic() ? '— አካዳሚክ ዓመት ይምረጡ —' : '— Select Academic Year —' }}</option>
             <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">
-              {{ ay.name }} ({{ ay.code }}) {{ ay.is_current ? (langStore.isAmharic() ? '★ ንቁ' : '★ Current') : '' }}
+              {{ ay.name }} ({{ ay.code }}) [{{ langStore.isAmharic() ? `${formatDT(ay.start_date, true).date} – ${formatDT(ay.end_date, true).date} ዓ.ም` : `${formatDT(ay.start_date, false).date} – ${formatDT(ay.end_date, false).date}` }}] {{ ay.is_current ? (langStore.isAmharic() ? '★ ንቁ' : '★ Current') : '' }}
             </option>
           </select>
         </div>
@@ -1053,7 +1053,13 @@ const handleResetToday = () => {
                 <div>
                   <div class="text-base font-bold text-main-text">{{ yr.display_year || yr.name || (yr.year + ' G.C.') }}</div>
                   <div v-if="yr.code" class="text-[10px] font-mono text-main-text/50">
-                    {{ yr.code }} · {{ yr.start_date }} – {{ yr.end_date }}
+                    {{ yr.code }} · 
+                    <span v-if="langStore.isAmharic()">
+                      {{ formatDT(yr.start_date, true).date }} – {{ formatDT(yr.end_date, true).date }} ዓ.ም
+                    </span>
+                    <span v-else>
+                      {{ formatDT(yr.start_date, false).date }} – {{ formatDT(yr.end_date, false).date }}
+                    </span>
                     <span v-if="yr.is_current" class="text-emerald-600 dark:text-emerald-400 font-bold ml-1">({{ langStore.isAmharic() ? 'ንቁ' : 'Current' }})</span>
                   </div>
                   <div v-else-if="langStore.isAmharic()" class="text-[10px] font-mono text-main-text/50">({{ yr.year }} እ.ኤ.አ)</div>

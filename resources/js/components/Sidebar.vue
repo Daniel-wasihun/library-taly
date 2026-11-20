@@ -241,6 +241,30 @@
             class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-nav-accent rounded-r-full"
           ></div>
         </router-link>
+
+        <!-- Academic Years (Academic Calendar CRUD) -->
+        <router-link
+          v-if="authStore.isAdmin || authStore.canManageLibrary"
+          to="/academic-years"
+          class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
+          :class="[
+            isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2 text-[11.5px]',
+            isActive('/academic-years')
+              ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
+              : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'
+          ]"
+          :title="langStore.t('nav.academic_years', 'Academic Years')"
+        >
+          <CalendarRange
+            class="w-4 h-4 shrink-0 transition-colors"
+            :class="isActive('/academic-years') ? 'text-nav-accent' : 'text-main-text/50 group-hover:text-nav-accent'"
+          />
+          <span v-if="!isCollapsed" class="truncate font-semibold">{{ langStore.t('nav.academic_years', 'Academic Years') }}</span>
+          <div
+            v-if="isActive('/academic-years')"
+            class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-nav-accent rounded-r-full"
+          ></div>
+        </router-link>
       </div>
     </nav>
 
@@ -270,6 +294,7 @@ import {
   Users,
   ShieldCheck,
   CalendarDays,
+  CalendarRange,
   Landmark,
   PanelLeftClose,
   PanelLeftOpen,

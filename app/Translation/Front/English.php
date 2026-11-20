@@ -56,7 +56,8 @@ class English
             'nav.roles' => 'Roles & RBAC Matrix',
             'nav.schedules' => 'Duty Shift Schedules',
             'nav.my_turns' => 'My Duty Turns',
-            'nav.attendance' => 'Physical Attendance / Usage Counter',
+            'nav.attendance' => 'Attendance',
+            'nav.academic_years' => 'Academic Years',
             'nav.libraries' => 'Library Branches',
 
             // Physical Attendance & Usage Counter (LMS Pattern)

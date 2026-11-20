@@ -56,7 +56,8 @@ class Amharic
             'nav.roles' => 'ሚናዎችና ፈቃዶች',
             'nav.schedules' => 'የተረኛ ፈረቃዎች መርሃ-ግብር',
             'nav.my_turns' => 'የእኔ ተረኛ ፈረቃ',
-            'nav.attendance' => 'የአካላዊ ተጠቃሚዎች ቆጣሪ / ምዝገባ',
+            'nav.attendance' => 'አጠቃቀም',
+            'nav.academic_years' => 'የአካዳሚክ ዓመታት',
             'nav.libraries' => 'የቤተ-መጻሕፍት ቅርንጫፎች',
 
             // Physical Attendance & Usage Counter (LMS Pattern)

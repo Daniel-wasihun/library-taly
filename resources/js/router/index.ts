@@ -61,6 +61,12 @@ const routes: RouteRecordRaw[] = [
                 meta: { title: 'Duty Schedules', icon: 'CalendarDays', roles: ['Super Admin', 'Admin', 'Manager', 'Head Librarian'] },
             },
             {
+                path: 'academic-years',
+                name: 'AcademicYears',
+                component: () => import('@/views/academic-years/AcademicYearsView.vue'),
+                meta: { title: 'Academic Years', icon: 'CalendarRange', roles: ['Super Admin', 'Admin', 'Manager', 'Head Librarian'] },
+            },
+            {
                 path: 'my-turns',
                 name: 'MyTurns',
                 component: () => import('@/views/schedules/MyTurnsView.vue'),

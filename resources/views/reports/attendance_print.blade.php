@@ -23,24 +23,35 @@
         ],
     ];
     $pageTitle = $isAmharic ? ($scopeTitles[$scope]['am'] ?? $scopeTitles['full']['am']) : ($scopeTitles[$scope]['en'] ?? $scopeTitles['full']['en']);
+    $fontRegular = public_path('fonts/NotoSansEthiopic-Regular.ttf');
+    $fontBold = public_path('fonts/NotoSansEthiopic-Bold.ttf');
+    if (!file_exists($fontRegular)) {
+        $fontRegular = '/usr/share/fonts/truetype/noto/NotoSansEthiopic-Regular.ttf';
+    }
+    if (!file_exists($fontBold)) {
+        $fontBold = '/usr/share/fonts/truetype/noto/NotoSansEthiopic-Bold.ttf';
+    }
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $isAmharic ? 'am' : 'en' }}">
 <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta charset="UTF-8">
-    <title>{{ $pageTitle }} — {{ $libraryName }}</title>
+    <title>{{ $pageTitle }} - {{ $libraryName }}</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;600;700&display=swap');
+
         @font-face {
-            font-family: 'Noto Sans Ethiopic';
+            font-family: 'NotoSansEthiopic';
             font-style: normal;
             font-weight: normal;
-            src: url('/usr/share/fonts/truetype/noto/NotoSansEthiopic-Regular.ttf') format('truetype');
+            src: url('{{ $fontRegular }}') format('truetype');
         }
         @font-face {
-            font-family: 'Noto Sans Ethiopic';
+            font-family: 'NotoSansEthiopic';
             font-style: normal;
             font-weight: bold;
-            src: url('/usr/share/fonts/truetype/noto/NotoSansEthiopic-Bold.ttf') format('truetype');
+            src: url('{{ $fontBold }}') format('truetype');
         }
 
         @media print {
@@ -63,7 +74,7 @@
         }
 
         body {
-            font-family: "Noto Sans Ethiopic", "Nyala", "DejaVu Sans", Arial, sans-serif;
+            font-family: "NotoSansEthiopic", "Nyala", "Abyssinica SIL", "Segoe UI Historic", "DejaVu Sans", Arial, sans-serif;
             color: #111827;
             background: #f8fafc;
             margin: 0;
@@ -117,7 +128,7 @@
         .inst-title {
             margin: 0;
             font-size: 15px;
-            font-weight: 800;
+            font-weight: bold;
             color: #0b529c;
             text-transform: uppercase;
             letter-spacing: -0.2px;
@@ -127,14 +138,14 @@
             margin: 2px 0 0;
             font-size: 10.5px;
             color: #374151;
-            font-weight: 700;
+            font-weight: bold;
         }
 
         .inst-office {
             margin: 1px 0 0;
             font-size: 9.5px;
             color: #6b7280;
-            font-weight: 500;
+            font-weight: normal;
         }
 
         .ref-box {
@@ -149,7 +160,7 @@
             background: #eff6ff;
             color: #0b529c;
             font-size: 9px;
-            font-weight: 700;
+            font-weight: bold;
             border: 1px solid #bfdbfe;
             border-radius: 4px;
             text-transform: uppercase;
@@ -158,7 +169,7 @@
         .ref-id {
             font-family: monospace;
             font-size: 10px;
-            font-weight: 700;
+            font-weight: bold;
             color: #374151;
             margin-top: 3px;
         }
@@ -179,7 +190,7 @@
         .doc-meta-table td.label {
             background: #f3f4f6;
             color: #374151;
-            font-weight: 700;
+            font-weight: bold;
             width: 22%;
             text-transform: uppercase;
             font-size: 8.5px;
@@ -187,7 +198,7 @@
 
         .doc-meta-table td.val {
             color: #111827;
-            font-weight: 600;
+            font-weight: normal;
             width: 28%;
         }
 
@@ -204,7 +215,7 @@
 
         .desc-title {
             font-size: 9.5px;
-            font-weight: 800;
+            font-weight: bold;
             color: #0b529c;
             text-transform: uppercase;
             margin-bottom: 3px;
@@ -221,7 +232,7 @@
         /* Section Headings */
         .section-header {
             font-size: 10.5px;
-            font-weight: 800;
+            font-weight: bold;
             color: #0b529c;
             text-transform: uppercase;
             margin: 14px 0 6px 0;
@@ -243,7 +254,7 @@
             border: 1px solid #94a3b8;
             padding: 5px 7px;
             font-size: 9px;
-            font-weight: 700;
+            font-weight: bold;
             text-transform: uppercase;
             text-align: left;
         }
@@ -260,7 +271,7 @@
 
         table.formal-table tr.total-row td {
             background: #f1f5f9;
-            font-weight: 800;
+            font-weight: bold;
             border-top: 2px solid #0b529c;
             color: #0b529c;
         }
@@ -290,7 +301,7 @@
 
         .kpi-tag {
             font-size: 8.5px;
-            font-weight: 700;
+            font-weight: bold;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.3px;
@@ -299,7 +310,7 @@
 
         .kpi-val {
             font-size: 18px;
-            font-weight: 800;
+            font-weight: bold;
             color: #0b529c;
             line-height: 1.1;
         }
@@ -333,14 +344,14 @@
 
         .sig-role {
             font-size: 9px;
-            font-weight: 700;
+            font-weight: bold;
             color: #374151;
             text-transform: uppercase;
         }
 
         .sig-name {
             font-size: 10px;
-            font-weight: 600;
+            font-weight: bold;
             color: #111827;
             margin: 2px 0;
         }
@@ -364,6 +375,10 @@
             box-shadow: 0 1px 4px rgba(0,0,0,0.05);
         }
 
+        button {
+            font-family: inherit;
+        }
+
         .btn-action {
             background: #0b529c;
             color: #ffffff;
@@ -371,8 +386,9 @@
             padding: 7px 14px;
             border-radius: 4px;
             font-size: 11px;
-            font-weight: 700;
+            font-weight: bold;
             cursor: pointer;
+            font-family: inherit;
         }
 
         .btn-sec {
@@ -382,34 +398,37 @@
             padding: 7px 12px;
             border-radius: 4px;
             font-size: 11px;
-            font-weight: 600;
+            font-weight: bold;
             cursor: pointer;
             margin-left: 8px;
+            font-family: inherit;
         }
     </style>
 </head>
 <body>
+    @if(empty($isPdf))
     <!-- Interactive Print & Export Bar (Screen Only) -->
     <div class="toolbar no-print">
-        <span style="font-weight: 700; font-size: 11px; color: #0b529c;">
-            {{ $isAmharic ? 'ይፋዊ ሰነድ ዝግጁ ነው' : 'Official Document Ready' }} — {{ $pageTitle }}
+        <span style="font-weight: bold; font-size: 11px; color: #0b529c;">
+            {{ $isAmharic ? 'ይፋዊ ሰነድ ዝግጁ ነው' : 'Official Document Ready' }} - {{ $pageTitle }}
         </span>
         <div>
             <button class="btn-action" onclick="window.print()">
-                {{ $isAmharic ? '🖨️ አትም / በፒዲኤፍ አስቀምጥ' : '🖨️ Print / Save as PDF' }}
+                {{ $isAmharic ? 'አትም / በፒዲኤፍ አስቀምጥ (Print / PDF)' : 'Print / Save as PDF' }}
             </button>
             <button class="btn-sec" onclick="window.close()">
                 {{ $isAmharic ? 'ዝጋ' : 'Close' }}
             </button>
         </div>
     </div>
+    @endif
 
     <div class="report-page">
         <!-- University Academic Central Header -->
         <table class="inst-header-table">
             <tr>
                 <td class="inst-logo-cell">
-                    <div class="inst-logo">📚</div>
+                    <div class="inst-logo" style="background:#0b529c; border-radius:6px; width:44px; height:44px; text-align:center; line-height:44px; color:#ffffff; font-size:15px; font-weight:bold; font-family:Arial,sans-serif; letter-spacing:0.5px;">WDU</div>
                 </td>
                 <td style="padding-left: 10px;">
                     <h1 class="inst-title">{{ $isAmharic ? 'ወልድያ ዩኒቨርሲቲ' : 'WOLDIA UNIVERSITY' }}</h1>
@@ -447,7 +466,7 @@
                 <td class="label">{{ $isAmharic ? 'ያዘጋጀው ኃላፊ/ሠራተኛ' : 'Reporting Officer' }}</td>
                 <td class="val">{{ $generatedBy }} ({{ $generatedByUsername }})</td>
                 <td class="label">{{ $isAmharic ? 'የኦዲት ወሰን' : 'Audit Scope' }}</td>
-                <td class="val" style="color: #0b529c; font-weight: 700;">{{ strtoupper($scope) }}</td>
+                <td class="val" style="color: #0b529c; font-weight: bold;">{{ strtoupper($scope) }}</td>
             </tr>
         </table>
 
@@ -518,21 +537,21 @@
                     <td><b>{{ $isAmharic ? 'ተማሪዎች (ቅድመ-ምረቃና ድህረ-ምረቃ)' : 'Students (Undergraduate & Postgraduate)' }}</b></td>
                     <td class="text-right">{{ number_format($demographics['student']['male']) }}</td>
                     <td class="text-right">{{ number_format($demographics['student']['female']) }}</td>
-                    <td class="text-right" style="font-weight: 700;">{{ number_format($demographics['student']['total']) }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ number_format($demographics['student']['total']) }}</td>
                     <td class="text-right">{{ $demographics['student']['percent'] }}%</td>
                 </tr>
                 <tr>
                     <td><b>{{ $isAmharic ? 'መምህራንና ተመራማሪዎች' : 'Faculty & Research Scholars' }}</b></td>
                     <td class="text-right">{{ number_format($demographics['teacher']['male']) }}</td>
                     <td class="text-right">{{ number_format($demographics['teacher']['female']) }}</td>
-                    <td class="text-right" style="font-weight: 700;">{{ number_format($demographics['teacher']['total']) }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ number_format($demographics['teacher']['total']) }}</td>
                     <td class="text-right">{{ $demographics['teacher']['percent'] }}%</td>
                 </tr>
                 <tr>
                     <td><b>{{ $isAmharic ? 'የአስተዳደርና ቴክኒክ ሠራተኞች' : 'Administrative & Technical Staff' }}</b></td>
                     <td class="text-right">{{ number_format($demographics['staff']['male']) }}</td>
                     <td class="text-right">{{ number_format($demographics['staff']['female']) }}</td>
-                    <td class="text-right" style="font-weight: 700;">{{ number_format($demographics['staff']['total']) }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ number_format($demographics['staff']['total']) }}</td>
                     <td class="text-right">{{ $demographics['staff']['percent'] }}%</td>
                 </tr>
                 <tr class="total-row">
@@ -571,7 +590,7 @@
                         <td class="text-right">{{ number_format($branch['students']) }}</td>
                         <td class="text-right">{{ number_format($branch['teachers'] ?? 0) }}</td>
                         <td class="text-right">{{ number_format($branch['staff'] ?? 0) }}</td>
-                        <td class="text-right" style="font-weight: 700;">{{ number_format($branch['total']) }}</td>
+                        <td class="text-right" style="font-weight: bold;">{{ number_format($branch['total']) }}</td>
                         <td class="text-right">{{ $branch['percent'] }}%</td>
                     </tr>
                 @empty
@@ -605,11 +624,11 @@
                 @foreach($shiftWindows as $shift)
                     <tr>
                         <td><b>{{ $shift['title'] }}</b></td>
-                        <td style="font-family: monospace;">{{ $shift['time_range'] }}</td>
+                        <td>{{ $shift['time_range'] }}</td>
                         <td class="text-right">{{ number_format($shift['students']) }}</td>
                         <td class="text-right">{{ number_format($shift['teachers'] ?? 0) }}</td>
                         <td class="text-right">{{ number_format($shift['staff'] ?? 0) }}</td>
-                        <td class="text-right" style="font-weight: 700;">{{ number_format($shift['count']) }}</td>
+                        <td class="text-right" style="font-weight: bold;">{{ number_format($shift['count']) }}</td>
                         <td class="text-right">{{ $shift['percent'] }}%</td>
                         <td>{{ $isAmharic ? ($shift['congestion_index_am'] ?? '—') : ($shift['congestion_index'] ?? '—') }}</td>
                     </tr>
@@ -637,12 +656,12 @@
             <tbody>
                 @foreach($dayOfWeekAnalytics as $dow)
                     <tr>
-                        <td><b>{{ $dow['display_name'] }}</b> {{ $dow['is_peak'] ? '★' : '' }}</td>
-                        <td class="text-right" style="font-weight: 700; color: #0b529c;">{{ number_format($dow['daily_average']) }}</td>
+                        <td><b>{{ $dow['display_name'] }}</b> {{ $dow['is_peak'] ? ($isAmharic ? '[ከፍተኛ]' : '[Peak]') : '' }}</td>
+                        <td class="text-right" style="font-weight: bold; color: #0b529c;">{{ number_format($dow['daily_average']) }}</td>
                         <td class="text-right">{{ number_format($dow['total']) }}</td>
                         <td class="text-right">{{ $dow['percentage'] }}%</td>
                         <td style="font-family: monospace; font-size: 8.5px;">{{ $dow['morning'] }} / {{ $dow['afternoon'] }} / {{ $dow['night'] }}</td>
-                        <td><span style="font-weight: 700; color: {{ $dow['is_peak'] ? '#dc2626' : '#2563eb' }};">{{ $isAmharic ? $dow['surge_level_am'] : $dow['surge_level'] }}</span></td>
+                        <td><span style="font-weight: bold; color: {{ $dow['is_peak'] ? '#dc2626' : '#2563eb' }};">{{ $isAmharic ? $dow['surge_level_am'] : $dow['surge_level'] }}</span></td>
                         <td style="font-size: 8.5px;">{{ $isAmharic ? $dow['prediction_am'] : $dow['prediction'] }}</td>
                     </tr>
                 @endforeach
@@ -674,8 +693,8 @@
             <tbody>
                 @foreach($intraMonthDayAnalytics['weekly_cycles'] as $wCycle)
                     <tr>
-                        <td><b>{{ $isAmharic ? $wCycle['label_am'] : $wCycle['label'] }}</b> {{ $wCycle['is_peak_week'] ? '★' : '' }}</td>
-                        <td class="text-right" style="font-weight: 700;">{{ number_format($wCycle['total']) }}</td>
+                        <td><b>{{ $isAmharic ? $wCycle['label_am'] : $wCycle['label'] }}</b> {{ $wCycle['is_peak_week'] ? ($isAmharic ? '[ከፍተኛ]' : '[Peak]') : '' }}</td>
+                        <td class="text-right" style="font-weight: bold;">{{ number_format($wCycle['total']) }}</td>
                         <td class="text-right">{{ number_format($wCycle['daily_average']) }}</td>
                         <td class="text-right">{{ $wCycle['percent'] }}%</td>
                         <td>{{ $isAmharic ? $wCycle['prediction_am'] : $wCycle['prediction'] }}</td>
@@ -735,13 +754,13 @@
             <tbody>
                 @foreach($monthlyAnalytics as $mInfo)
                     <tr>
-                        <td><b>{{ $mInfo['display_name'] }}</b> {{ $mInfo['is_peak_month'] ? '★' : '' }}</td>
-                        <td class="text-right" style="font-weight: 700;">{{ number_format($mInfo['total']) }}</td>
+                        <td><b>{{ $mInfo['display_name'] }}</b> {{ $mInfo['is_peak_month'] ? ($isAmharic ? '[ከፍተኛ]' : '[Peak]') : '' }}</td>
+                        <td class="text-right" style="font-weight: bold;">{{ number_format($mInfo['total']) }}</td>
                         <td class="text-right">{{ number_format($mInfo['students'] ?? 0) }}</td>
                         <td class="text-right">{{ number_format($mInfo['teachers'] ?? 0) }}</td>
                         <td class="text-right">{{ number_format($mInfo['staff'] ?? 0) }}</td>
                         <td class="text-right">{{ number_format($mInfo['daily_avg']) }}</td>
-                        <td class="text-right" style="font-weight: 700; color: {{ str_starts_with($mInfo['growth_rate'], '+') ? '#16a34a' : '#475569' }};">{{ $mInfo['growth_rate'] }}</td>
+                        <td class="text-right" style="font-weight: bold; color: {{ str_starts_with($mInfo['growth_rate'], '+') ? '#16a34a' : '#475569' }};">{{ $mInfo['growth_rate'] }}</td>
                         <td>{{ $mInfo['peak_day'] }}</td>
                     </tr>
                 @endforeach
@@ -763,9 +782,9 @@
                 @foreach($yearlyAnalytics as $yInfo)
                     <tr>
                         <td><b>{{ $yInfo['display_year'] }}</b></td>
-                        <td class="text-right" style="font-weight: 700;">{{ number_format($yInfo['total']) }}</td>
+                        <td class="text-right" style="font-weight: bold;">{{ number_format($yInfo['total']) }}</td>
                         <td class="text-right">{{ number_format($yInfo['daily_avg']) }}</td>
-                        <td class="text-right" style="font-weight: 700; color: {{ str_starts_with($yInfo['growth_rate'], '+') ? '#16a34a' : '#475569' }};">{{ $yInfo['growth_rate'] }}</td>
+                        <td class="text-right" style="font-weight: bold; color: {{ str_starts_with($yInfo['growth_rate'], '+') ? '#16a34a' : '#475569' }};">{{ $yInfo['growth_rate'] }}</td>
                     </tr>
                 @endforeach
             </tbody>

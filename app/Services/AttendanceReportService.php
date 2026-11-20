@@ -952,7 +952,10 @@ class AttendanceReportService
         ];
         $title = $titleMap[$scope] ?? $titleMap['full'];
 
-        $output = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $fontName = $isAmharic ? 'Nyala' : 'Segoe UI';
+
+        $output = chr(0xEF) . chr(0xBB) . chr(0xBF); // UTF-8 BOM for Microsoft Excel UTF-8 encoding detection
+        $output .= '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $output .= '<?mso-application progid="Excel.Sheet"?>' . "\n";
         $output .= '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
         $output .= ' xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n";
@@ -960,16 +963,16 @@ class AttendanceReportService
         $output .= ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
         $output .= ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
 
-        // Styles
+        // Styles with native Ethiopic Unicode font for Amharic
         $output .= ' <Styles>' . "\n";
-        $output .= '  <Style ss:ID="Default" ss:Name="Normal"><Font ss:FontName="Segoe UI" ss:Size="10"/></Style>' . "\n";
-        $output .= '  <Style ss:ID="HeaderTitle"><Font ss:FontName="Segoe UI" ss:Size="14" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0B529C" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>' . "\n";
-        $output .= '  <Style ss:ID="SubHeader"><Font ss:FontName="Segoe UI" ss:Size="10" ss:Italic="1" ss:Color="#333333"/><Alignment ss:Horizontal="Center"/></Style>' . "\n";
-        $output .= '  <Style ss:ID="SectionHeader"><Font ss:FontName="Segoe UI" ss:Size="11" ss:Bold="1" ss:Color="#0B529C"/><Interior ss:Color="#EBF2FA" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0B529C"/></Borders></Style>' . "\n";
-        $output .= '  <Style ss:ID="TableHead"><Font ss:FontName="Segoe UI" ss:Size="10" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1E293B" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>' . "\n";
-        $output .= '  <Style ss:ID="CellText"><Font ss:FontName="Segoe UI" ss:Size="10"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders></Style>' . "\n";
-        $output .= '  <Style ss:ID="CellNumber"><Font ss:FontName="Segoe UI" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Right"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders></Style>' . "\n";
-        $output .= '  <Style ss:ID="CellTotal"><Font ss:FontName="Segoe UI" ss:Size="10" ss:Bold="1" ss:Color="#0B529C"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/><Alignment ss:Horizontal="Right"/><Borders><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#0B529C"/></Borders></Style>' . "\n";
+        $output .= '  <Style ss:ID="Default" ss:Name="Normal"><Font ss:FontName="' . $fontName . '" ss:Size="10"/></Style>' . "\n";
+        $output .= '  <Style ss:ID="HeaderTitle"><Font ss:FontName="' . $fontName . '" ss:Size="14" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0B529C" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>' . "\n";
+        $output .= '  <Style ss:ID="SubHeader"><Font ss:FontName="' . $fontName . '" ss:Size="10" ss:Italic="1" ss:Color="#333333"/><Alignment ss:Horizontal="Center"/></Style>' . "\n";
+        $output .= '  <Style ss:ID="SectionHeader"><Font ss:FontName="' . $fontName . '" ss:Size="11" ss:Bold="1" ss:Color="#0B529C"/><Interior ss:Color="#EBF2FA" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0B529C"/></Borders></Style>' . "\n";
+        $output .= '  <Style ss:ID="TableHead"><Font ss:FontName="' . $fontName . '" ss:Size="10" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#1E293B" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/></Style>' . "\n";
+        $output .= '  <Style ss:ID="CellText"><Font ss:FontName="' . $fontName . '" ss:Size="10"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders></Style>' . "\n";
+        $output .= '  <Style ss:ID="CellNumber"><Font ss:FontName="' . $fontName . '" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Right"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders></Style>' . "\n";
+        $output .= '  <Style ss:ID="CellTotal"><Font ss:FontName="' . $fontName . '" ss:Size="10" ss:Bold="1" ss:Color="#0B529C"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/><Alignment ss:Horizontal="Right"/><Borders><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#0B529C"/></Borders></Style>' . "\n";
         $output .= ' </Styles>' . "\n";
 
         // Scope: Patron Demographics Only
@@ -1117,7 +1120,7 @@ class AttendanceReportService
             foreach ($data['dayOfWeekAnalytics'] as $dow) {
                 $split = $dow['morning'] . ' / ' . $dow['afternoon'] . ' / ' . $dow['night'];
                 $output .= '   <Row>' . "\n";
-                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($dow['display_name']) . ($dow['is_peak'] ? ' ★' : '') . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($dow['display_name']) . ($dow['is_peak'] ? ($isAmharic ? ' [ከፍተኛ]' : ' [Peak]') : '') . '</Data></Cell>' . "\n";
                 $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $dow['daily_average'] . '</Data></Cell>' . "\n";
                 $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $dow['total'] . '</Data></Cell>' . "\n";
                 $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $dow['percentage'] . '%</Data></Cell>' . "\n";
@@ -1184,7 +1187,7 @@ class AttendanceReportService
 
                 foreach ($intra['weekly_cycles'] as $wCycle) {
                     $output .= '   <Row>' . "\n";
-                    $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $wCycle['label_am'] : $wCycle['label']) . ($wCycle['is_peak_week'] ? ' ★' : '') . '</Data></Cell>' . "\n";
+                    $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $wCycle['label_am'] : $wCycle['label']) . ($wCycle['is_peak_week'] ? ($isAmharic ? ' [ከፍተኛ]' : ' [Peak]') : '') . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $wCycle['total'] . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $wCycle['daily_average'] . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $wCycle['percent'] . '%</Data></Cell>' . "\n";
@@ -1338,7 +1341,7 @@ class AttendanceReportService
             foreach ($data['dayOfWeekAnalytics'] as $dow) {
                 $split = $dow['morning'] . ' / ' . $dow['afternoon'] . ' / ' . $dow['night'];
                 $output .= '   <Row>' . "\n";
-                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($dow['display_name']) . ($dow['is_peak'] ? ' ★' : '') . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($dow['display_name']) . ($dow['is_peak'] ? ($isAmharic ? ' [ከፍተኛ]' : ' [Peak]') : '') . '</Data></Cell>' . "\n";
                 $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $dow['daily_average'] . '</Data></Cell>' . "\n";
                 $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $dow['total'] . '</Data></Cell>' . "\n";
                 $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $dow['percentage'] . '%</Data></Cell>' . "\n";
@@ -1367,7 +1370,7 @@ class AttendanceReportService
                     $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . ucfirst($hc['shift']) . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $hc['count'] . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $hc['percent'] . '%</Data></Cell>' . "\n";
-                    $output .= '    <Cell ss:MergeAcross="1" ss:StyleID="CellText"><Data ss:Type="String">' . ($hc['is_peak'] ? ($isAmharic ? 'ከፍተኛ ሰዓት ★' : 'Peak Hour ★') : '—') . '</Data></Cell>' . "\n";
+                    $output .= '    <Cell ss:MergeAcross="1" ss:StyleID="CellText"><Data ss:Type="String">' . ($hc['is_peak'] ? ($isAmharic ? 'ከፍተኛ ሰዓት [ከፍተኛ]' : 'Peak Hour [Peak]') : '—') . '</Data></Cell>' . "\n";
                     $output .= '   </Row>' . "\n";
                 }
             }
@@ -1402,7 +1405,7 @@ class AttendanceReportService
 
                 foreach ($intra['weekly_cycles'] as $wCycle) {
                     $output .= '   <Row>' . "\n";
-                    $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $wCycle['label_am'] : $wCycle['label']) . ($wCycle['is_peak_week'] ? ' ★' : '') . '</Data></Cell>' . "\n";
+                    $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $wCycle['label_am'] : $wCycle['label']) . ($wCycle['is_peak_week'] ? ($isAmharic ? ' [ከፍተኛ]' : ' [Peak]') : '') . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $wCycle['total'] . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $wCycle['daily_average'] . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $wCycle['percent'] . '%</Data></Cell>' . "\n";
@@ -1427,7 +1430,7 @@ class AttendanceReportService
 
                 foreach ($data['monthlyAnalytics'] as $mInfo) {
                     $output .= '   <Row>' . "\n";
-                    $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($mInfo['display_name']) . ($mInfo['is_peak_month'] ? ' ★' : '') . '</Data></Cell>' . "\n";
+                    $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($mInfo['display_name']) . ($mInfo['is_peak_month'] ? ($isAmharic ? ' [ከፍተኛ]' : ' [Peak]') : '') . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $mInfo['total'] . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . ($mInfo['students'] ?? 0) . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . ($mInfo['teachers'] ?? 0) . '</Data></Cell>' . "\n";
@@ -1503,10 +1506,15 @@ class AttendanceReportService
         $title = $isAmharic ? ($scopeTitles[$scope]['am'] ?? $scopeTitles['full']['am']) : ($scopeTitles[$scope]['en'] ?? $scopeTitles['full']['en']);
         $subTitle = $isAmharic ? 'የአካዳሚክ ቤተ-መጻሕፍት አገልግሎት ዳይሬክቶሬት ይፋዊ የኦዲት ሰነድ' : 'Official Audit Document — Directorate of Academic Library & Information Services';
 
-        $html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
-        $html .= '<head><meta charset="utf-8"><title>' . htmlspecialchars($title) . '</title>';
+        $html = chr(0xEF) . chr(0xBB) . chr(0xBF); // UTF-8 BOM for Microsoft Word
+        $html .= '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
+        $html .= '<head>';
+        $html .= '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
+        $html .= '<meta name="ProgId" content="Word.Document">';
+        $html .= '<meta name="Generator" content="Microsoft Word 15">';
+        $html .= '<title>' . htmlspecialchars($title) . '</title>';
         $html .= '<style>';
-        $html .= 'body { font-family: "Times New Roman", "Nyala", "Noto Sans Ethiopic", serif; font-size: 11pt; line-height: 1.4; color: #111; margin: 20mm; }';
+        $html .= 'body { font-family: "Nyala", "Abyssinica SIL", "Noto Sans Ethiopic", "Segoe UI Historic", "Times New Roman", serif; font-size: 11pt; line-height: 1.45; color: #111; margin: 20mm; }';
         $html .= 'h1 { font-size: 16pt; font-weight: bold; text-align: center; text-transform: uppercase; margin-bottom: 2pt; color: #0B529C; }';
         $html .= 'h2 { font-size: 12pt; font-weight: bold; text-align: center; margin-top: 0; color: #444; }';
         $html .= 'h3 { font-size: 11pt; font-weight: bold; margin-top: 18pt; margin-bottom: 6pt; border-bottom: 1.5pt solid #0B529C; padding-bottom: 2pt; text-transform: uppercase; color: #0B529C; }';
@@ -1646,7 +1654,7 @@ class AttendanceReportService
             $html .= '<tr><th>' . ($isAmharic ? 'የሳምንቱ ዕለት' : 'Day of Week') . '</th><th class="text-right">' . ($isAmharic ? 'አማካይ በቀን' : 'Daily Average') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Visitors') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Weekly Share (%)') . '</th><th>' . ($isAmharic ? 'የፍሰት ደረጃ' : 'Surge Level') . '</th><th>' . ($isAmharic ? 'የአስተዳደር የቅድመ-ትንበያ ማስታወሻ' : 'Management Prediction Guidance') . '</th></tr>';
             foreach ($data['dayOfWeekAnalytics'] as $dow) {
                 $html .= '<tr>';
-                $html .= '<td><b>' . htmlspecialchars($dow['display_name']) . '</b>' . ($dow['is_peak'] ? ' ★' : '') . '</td>';
+                $html .= '<td><b>' . htmlspecialchars($dow['display_name']) . '</b>' . ($dow['is_peak'] ? ($isAmharic ? ' [ከፍተኛ]' : ' [Peak]') : '') . '</td>';
                 $html .= '<td class="text-right" style="font-weight:bold;">' . number_format($dow['daily_average']) . '</td>';
                 $html .= '<td class="text-right">' . number_format($dow['total']) . '</td>';
                 $html .= '<td class="text-right">' . $dow['percentage'] . '%</td>';
@@ -1668,7 +1676,7 @@ class AttendanceReportService
             $html .= '<tr><th>' . ($isAmharic ? 'የወሩ ሳምንት' : 'Week in Month') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons') . '</th><th class="text-right">' . ($isAmharic ? 'አማካይ በቀን' : 'Daily Average') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</th><th>' . ($isAmharic ? 'የአሰራር ሁኔታ' : 'Operational Context') . '</th></tr>';
             foreach ($intra['weekly_cycles'] as $wCycle) {
                 $html .= '<tr>';
-                $html .= '<td><b>' . htmlspecialchars($isAmharic ? $wCycle['label_am'] : $wCycle['label']) . '</b>' . ($wCycle['is_peak_week'] ? ' ★' : '') . '</td>';
+                $html .= '<td><b>' . htmlspecialchars($isAmharic ? $wCycle['label_am'] : $wCycle['label']) . '</b>' . ($wCycle['is_peak_week'] ? ($isAmharic ? ' [ከፍተኛ]' : ' [Peak]') : '') . '</td>';
                 $html .= '<td class="text-right" style="font-weight:bold;">' . number_format($wCycle['total']) . '</td>';
                 $html .= '<td class="text-right">' . number_format($wCycle['daily_average']) . '</td>';
                 $html .= '<td class="text-right">' . $wCycle['percent'] . '%</td>';
@@ -1701,7 +1709,7 @@ class AttendanceReportService
                 $html .= '<tr><th>' . ($isAmharic ? 'የሂሳብ ወር' : 'Academic Month') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Visitors') . '</th><th class="text-right">' . ($isAmharic ? 'ተማሪዎች' : 'Students') . '</th><th class="text-right">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</th><th class="text-right">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</th><th class="text-right">' . ($isAmharic ? 'አማካይ' : 'Daily Avg') . '</th><th class="text-right">' . ($isAmharic ? 'የወር እድገት' : 'Growth') . '</th><th>' . ($isAmharic ? 'ከፍተኛ ዕለት' : 'Peak Weekday') . '</th></tr>';
                 foreach ($data['monthlyAnalytics'] as $mInfo) {
                     $html .= '<tr>';
-                    $html .= '<td><b>' . htmlspecialchars($mInfo['display_name']) . '</b>' . ($mInfo['is_peak_month'] ? ' ★' : '') . '</td>';
+                    $html .= '<td><b>' . htmlspecialchars($mInfo['display_name']) . '</b>' . ($mInfo['is_peak_month'] ? ($isAmharic ? ' [ከፍተኛ]' : ' [Peak]') : '') . '</td>';
                     $html .= '<td class="text-right" style="font-weight:bold;">' . number_format($mInfo['total']) . '</td>';
                     $html .= '<td class="text-right">' . number_format($mInfo['students'] ?? 0) . '</td>';
                     $html .= '<td class="text-right">' . number_format($mInfo['teachers'] ?? 0) . '</td>';

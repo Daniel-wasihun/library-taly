@@ -517,9 +517,29 @@ class AttendanceController extends Controller
         }
 
         if ($format === 'pdf') {
+            $reportData['isPdf'] = true;
             $html = view('reports.attendance_print', $reportData)->render();
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('a4', 'portrait');
-            return response($pdf->output(), 200, [
+
+            $options = new \Dompdf\Options();
+            $options->set('isFontSubsettingEnabled', true);
+            $options->set('isRemoteEnabled', true);
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('defaultFont', 'NotoSansEthiopic');
+            $options->set('fontDir', storage_path('fonts'));
+            $options->set('fontCache', storage_path('fonts'));
+            $options->set('chroot', [
+                realpath(base_path()),
+                public_path(),
+                storage_path(),
+                '/usr/share/fonts',
+            ]);
+
+            $dompdf = new \Dompdf\Dompdf($options);
+            $dompdf->loadHtml($html, 'UTF-8');
+            $dompdf->setPaper('a4', 'portrait');
+            $dompdf->render();
+
+            return response($dompdf->output(), 200, [
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="WDU_' . $scopePrefix . '_' . $timestamp . '.pdf"',
                 'Pragma' => 'no-cache',

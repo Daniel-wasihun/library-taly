@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AcademicYearController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
@@ -56,6 +57,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Library Branches (Full CRUD)
     Route::apiResource('libraries', LibraryController::class);
+
+    // Academic Years Calendar CRUD & Active Year Switcher
+    Route::post('/academic-years/{academicYear}/set-current', [AcademicYearController::class, 'setCurrent']);
+    Route::apiResource('academic-years', AcademicYearController::class);
 
     // User Management (Full CRUD + Direct Permission Overrides)
     Route::post('/users/{user}/permissions', [UserController::class, 'overridePermissions']);

@@ -1,5 +1,5 @@
 import api from './client';
-import type { User, DutySchedule, DashboardStats, ApiRole, Library, Attendance, AttendanceStats } from '@/types';
+import type { User, DutySchedule, DashboardStats, ApiRole, Library, Attendance, AttendanceStats, AcademicYear } from '@/types';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
@@ -63,6 +63,42 @@ export const librariesApi = {
 
     destroy: (id: number) =>
         api.delete<{ success: boolean; message: string }>(`/libraries/${id}`),
+};
+
+// ── Academic Years (Academic Calendar CRUD) ──────────────────────────────────
+export const academicYearsApi = {
+    list: () =>
+        api.get<{ data: AcademicYear[]; current: AcademicYear | null }>('/academic-years'),
+
+    show: (id: number) =>
+        api.get<{ data: AcademicYear }>(`/academic-years/${id}`),
+
+    create: (data: {
+        name: string;
+        code: string;
+        start_date: string;
+        end_date: string;
+        is_current?: boolean;
+        description?: string;
+    }) => api.post<{ message: string; data: AcademicYear }>('/academic-years', data),
+
+    update: (
+        id: number,
+        data: {
+            name?: string;
+            code?: string;
+            start_date?: string;
+            end_date?: string;
+            is_current?: boolean;
+            description?: string;
+        }
+    ) => api.put<{ message: string; data: AcademicYear }>(`/academic-years/${id}`, data),
+
+    destroy: (id: number) =>
+        api.delete<{ message: string }>(`/academic-years/${id}`),
+
+    setCurrent: (id: number) =>
+        api.post<{ message: string; data: AcademicYear }>(`/academic-years/${id}/set-current`),
 };
 
 // ── Users ─────────────────────────────────────────────────────────────────────

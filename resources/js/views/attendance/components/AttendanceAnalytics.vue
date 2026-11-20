@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import {
   Calendar,
   RotateCcw,
@@ -36,6 +36,8 @@ import EthiopianDateRangePicker from '@/components/ui/EthiopianDateRangePicker.v
 import { useLanguageStore } from '@/stores/languageStore';
 import { useAttendanceStore } from '@/stores/attendanceStore';
 import { useLibraryStore } from '@/stores/libraryStore';
+import { academicYearsApi } from '@/api';
+import type { AcademicYear } from '@/types';
 import { formatDT } from '@/utils/ethiopianDate';
 
 const props = defineProps<{
@@ -67,6 +69,39 @@ const emit = defineEmits<{
 const langStore = useLanguageStore();
 const attendanceStore = useAttendanceStore();
 const libraryStore = useLibraryStore();
+
+const academicYears = ref<AcademicYear[]>([]);
+const currentAcademicYear = ref<AcademicYear | null>(null);
+const selectedAcademicYearId = ref<number | string>('');
+
+const fetchAcademicYears = async () => {
+  try {
+    const res = await academicYearsApi.list();
+    if (res.data?.data) {
+      academicYears.value = res.data.data;
+      currentAcademicYear.value = res.data.current || null;
+    }
+  } catch (err) {
+    console.error('Failed to load academic years', err);
+  }
+};
+
+onMounted(() => {
+  fetchAcademicYears();
+});
+
+const handleAcademicYearSelect = (ayIdVal: string | number) => {
+  selectedAcademicYearId.value = ayIdVal;
+  if (!ayIdVal) return;
+  const ay = academicYears.value.find(y => String(y.id) === String(ayIdVal));
+  if (ay) {
+    emit('update:dateRange', {
+      from: ay.start_date.split('T')[0],
+      to: ay.end_date.split('T')[0],
+    });
+    emit('refresh');
+  }
+};
 
 const downloadingFormat = ref<string | null>(null);
 const downloadingScope = ref<string | null>(null);
@@ -112,11 +147,14 @@ const triggerDownload = async (
   downloadingFormat.value = format;
   downloadingScope.value = chosenScope;
   try {
-    const activeFilters = {
+    const activeFilters: Record<string, any> = {
       date_from: props.dateRange.from,
       date_to: props.dateRange.to,
       library_id: props.selectedLibrary || undefined,
     };
+    if (selectedAcademicYearId.value) {
+      activeFilters.academic_year_id = selectedAcademicYearId.value;
+    }
     await attendanceStore.downloadFormalReport(format, activeFilters, chosenScope);
   } finally {
     downloadingFormat.value = null;
@@ -256,19 +294,39 @@ const formattedActiveRange = computed(() => {
 
   return { primary, secondary };
 });
+const handleResetToday = () => {
+  selectedAcademicYearId.value = '';
+  emit('clear');
+};
 </script>
 
 <template>
   <div class="space-y-6 pb-8">
-    <!-- Controls Bar with Dual Ethiopian / Gregorian Calendar Range Picker -->
+    <!-- Controls Bar with Dual Ethiopian / Gregorian Calendar Range Picker & Academic Year Selector -->
     <div class="bg-card-bg border border-card-border rounded-md p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-2xs">
-      <!-- Date Range Controls with Ethiopian / Gregorian Synchronization -->
-      <div class="flex-1 min-w-0 max-w-[580px]">
-        <EthiopianDateRangePicker
-          :modelValue="dateRange"
-          @update:modelValue="emit('update:dateRange', $event)"
-          @change="emit('refresh')"
-        />
+      <!-- Date Range Controls & Academic Year Selector -->
+      <div class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-3">
+        <!-- Academic Year Dropdown -->
+        <div v-if="academicYears.length > 0" class="shrink-0">
+          <select
+            v-model="selectedAcademicYearId"
+            @change="handleAcademicYearSelect(selectedAcademicYearId)"
+            class="h-9 px-3 text-xs font-semibold rounded-md bg-card-bg border border-card-border text-main-text hover:border-nav-accent focus:outline-none focus:ring-1 focus:ring-brand-blue shadow-2xs cursor-pointer"
+          >
+            <option value="">{{ langStore.isAmharic() ? '— አካዳሚክ ዓመት ይምረጡ —' : '— Select Academic Year —' }}</option>
+            <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">
+              {{ ay.name }} ({{ ay.code }}) {{ ay.is_current ? (langStore.isAmharic() ? '★ ንቁ' : '★ Current') : '' }}
+            </option>
+          </select>
+        </div>
+
+        <div class="flex-1 min-w-0 max-w-[580px]">
+          <EthiopianDateRangePicker
+            :modelValue="dateRange"
+            @update:modelValue="emit('update:dateRange', $event)"
+            @change="emit('refresh')"
+          />
+        </div>
       </div>
 
       <!-- Action Buttons -->
@@ -285,7 +343,7 @@ const formattedActiveRange = computed(() => {
         <Button
           variant="secondary"
           size="sm"
-          @click="emit('clear')"
+          @click="handleResetToday"
         >
           {{ langStore.t('attendance.reset_today', 'Reset Today') }}
         </Button>
@@ -992,13 +1050,14 @@ const formattedActiveRange = computed(() => {
               class="p-4 rounded-md border border-card-border bg-main-bg/40 space-y-2.5"
             >
               <div class="flex items-center justify-between">
-                <div v-if="langStore.isAmharic()">
-                  <div class="text-base font-bold text-main-text">{{ yr.ethiopian_year }} ዓ.ም</div>
-                  <div class="text-[10px] font-mono text-main-text/50">({{ yr.year }} እ.ኤ.አ)</div>
-                </div>
-                <div v-else>
-                  <div class="text-base font-bold text-main-text">{{ yr.year }} G.C.</div>
-                  <div class="text-[10px] font-mono text-main-text/50">({{ yr.ethiopian_year }} E.C.)</div>
+                <div>
+                  <div class="text-base font-bold text-main-text">{{ yr.display_year || yr.name || (yr.year + ' G.C.') }}</div>
+                  <div v-if="yr.code" class="text-[10px] font-mono text-main-text/50">
+                    {{ yr.code }} · {{ yr.start_date }} – {{ yr.end_date }}
+                    <span v-if="yr.is_current" class="text-emerald-600 dark:text-emerald-400 font-bold ml-1">({{ langStore.isAmharic() ? 'ንቁ' : 'Current' }})</span>
+                  </div>
+                  <div v-else-if="langStore.isAmharic()" class="text-[10px] font-mono text-main-text/50">({{ yr.year }} እ.ኤ.አ)</div>
+                  <div v-else class="text-[10px] font-mono text-main-text/50">({{ yr.ethiopian_year }} E.C.)</div>
                 </div>
                 <span
                   v-if="yr.growth_rate && yr.growth_rate !== '—'"

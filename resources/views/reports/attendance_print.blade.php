@@ -86,8 +86,7 @@
             margin: 0 auto;
             background: #ffffff;
             border: 1px solid #d1d5db;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-            padding: 28px 32px;
+            padding: 24px 28px;
         }
 
         /* Classical Institutional University Header using Table for DomPDF compatibility */
@@ -259,15 +258,15 @@
 
         .kpi-cell {
             border: 1px solid #cbd5e1;
-            padding: 8px 10px;
+            padding: 6px 8px;
             vertical-align: top;
             width: 33.33%;
-            background: #fcfcfd;
+            background: #ffffff;
         }
 
         .kpi-cell.highlight {
-            background: #eff6ff;
-            border-color: #93c5fd;
+            background: #f8fafc;
+            border-color: #94a3b8;
         }
 
         .kpi-tag {
@@ -280,7 +279,7 @@
         }
 
         .kpi-val {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #0b529c;
             line-height: 1.1;
@@ -296,7 +295,7 @@
         .sig-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 28px;
+            margin-top: 24px;
             page-break-inside: avoid;
         }
 
@@ -335,15 +334,14 @@
         /* Screen Toolbar */
         .toolbar {
             max-width: 900px;
-            margin: 0 auto 14px auto;
+            margin: 0 auto 12px auto;
             display: flex;
             align-items: center;
             justify-content: space-between;
             background: #ffffff;
-            padding: 10px 16px;
-            border-radius: 6px;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            padding: 8px 14px;
+            border-radius: 4px;
+            border: 1px solid #d1d5db;
         }
 
         button {
@@ -439,6 +437,12 @@
                 <td class="label">{{ $isAmharic ? 'የኦዲት ወሰን' : 'Audit Scope' }}</td>
                 <td class="val" style="color: #0b529c; font-weight: bold;">{{ strtoupper($scope) }}</td>
             </tr>
+            @if(!empty($academicYear))
+            <tr>
+                <td class="label">{{ $isAmharic ? 'የአካዳሚክ ዓመት' : 'Academic Year' }}</td>
+                <td class="val" colspan="3"><b>{{ $academicYear['name'] }}</b> ({{ $academicYear['code'] }}: {{ $academicYear['start_date'] }} – {{ $academicYear['end_date'] }})</td>
+            </tr>
+            @endif
         </table>
 
         @if($scope === 'full')

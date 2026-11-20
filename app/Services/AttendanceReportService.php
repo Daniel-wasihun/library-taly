@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AcademicYear;
 use App\Models\Library;
 use App\Models\LibraryAttendance;
 use App\Models\User;
@@ -26,6 +27,15 @@ class AttendanceReportService
         } elseif (!empty($filters['library_id'])) {
             $restrictedLibraryId = (int) $filters['library_id'];
             $selectedLibrary = Library::find($restrictedLibraryId);
+        }
+
+        $academicYear = null;
+        if (!empty($filters['academic_year_id'])) {
+            $academicYear = AcademicYear::find((int) $filters['academic_year_id']);
+            if ($academicYear) {
+                $filters['date_from'] = $academicYear->start_date->toDateString();
+                $filters['date_to'] = $academicYear->end_date->toDateString();
+            }
         }
 
         $dateFromStr = $filters['date_from'] ?? Carbon::today()->toDateString();
@@ -303,6 +313,13 @@ class AttendanceReportService
             'generatedBy' => $user->name,
             'generatedByUsername' => $user->username,
             'description' => $description,
+            'academicYear' => $academicYear ? [
+                'id' => $academicYear->id,
+                'name' => $academicYear->name,
+                'code' => $academicYear->code,
+                'start_date' => $academicYear->start_date->toDateString(),
+                'end_date' => $academicYear->end_date->toDateString(),
+            ] : null,
             'filters' => $filters,
         ];
     }
@@ -859,10 +876,65 @@ class AttendanceReportService
     }
 
     /**
-     * Calculate Year-over-Year Trajectory Analytics.
+     * Calculate Year-over-Year Trajectory Analytics based on Academic Years.
      */
     protected function calculateYearlyAnalytics($records, bool $isAmharic): array
     {
+        $academicYears = AcademicYear::orderBy('start_date', 'asc')->get();
+
+        if ($academicYears->isNotEmpty()) {
+            $yearlyData = [];
+            $prevYearTotal = null;
+
+            foreach ($academicYears as $ay) {
+                $ayStart = Carbon::parse($ay->start_date)->startOfDay();
+                $ayEnd = Carbon::parse($ay->end_date)->endOfDay();
+
+                $logs = $records->filter(function($r) use ($ayStart, $ayEnd) {
+                    $entry = Carbon::parse($r->entry_at);
+                    return $entry->greaterThanOrEqualTo($ayStart) && $entry->lessThanOrEqualTo($ayEnd);
+                });
+
+                $tot = (int) $logs->sum('visitor_count');
+                $growthRate = '—';
+                if ($prevYearTotal !== null && $prevYearTotal > 0) {
+                    $pct = round((($tot - $prevYearTotal) / $prevYearTotal) * 100, 1);
+                    $growthRate = ($pct >= 0 ? '+' : '') . $pct . '%';
+                }
+                if ($prevYearTotal !== null || $tot > 0) {
+                    $prevYearTotal = $tot;
+                }
+
+                $operatingDays = max(1, count($logs->groupBy(fn($l) => Carbon::parse($l->entry_at)->toDateString())));
+                $dailyAvg = round($tot / $operatingDays, 1);
+                $students = (int) $logs->where('user_type', 'student')->sum('visitor_count');
+                $teachers = (int) $logs->where('user_type', 'teacher')->sum('visitor_count');
+                $staff = (int) $logs->where('user_type', 'staff')->sum('visitor_count');
+
+                $yearlyData[] = [
+                    'id' => $ay->id,
+                    'code' => $ay->code,
+                    'name' => $ay->name,
+                    'year' => $ay->code,
+                    'is_current' => (bool) $ay->is_current,
+                    'start_date' => $ay->start_date->toDateString(),
+                    'end_date' => $ay->end_date->toDateString(),
+                    'display_year' => $ay->name,
+                    'total' => $tot,
+                    'operating_days' => $operatingDays,
+                    'daily_avg' => $dailyAvg,
+                    'daily_average' => $dailyAvg,
+                    'students' => $students,
+                    'teachers' => $teachers,
+                    'staff' => $staff,
+                    'faculty' => $teachers + $staff,
+                    'growth_rate' => $growthRate,
+                ];
+            }
+
+            return $yearlyData;
+        }
+
         $yearGroups = $records->groupBy(function($r) {
             return Carbon::parse($r->entry_at)->format('Y');
         })->sortKeys();

@@ -94,6 +94,18 @@ export interface Attendance {
     };
 }
 
+export interface AcademicYear {
+    id: number;
+    name: string;
+    code: string;
+    start_date: string;
+    end_date: string;
+    is_current: boolean;
+    description: string | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
 export interface AttendanceStats {
     total_users: number;
     total_male: number;

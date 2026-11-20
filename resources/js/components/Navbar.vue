@@ -77,7 +77,7 @@ const langStore = useLanguageStore();
 
 const title = computed(() => {
   const path = route.path;
-  if (path.startsWith('/attendance')) return langStore.t('nav.attendance', 'Attendance Counter');
+  if (path.startsWith('/attendance')) return langStore.t('nav.attendance', 'Attendance');
   if (path.startsWith('/users')) return langStore.t('nav.users', 'User Accounts');
   if (path.startsWith('/roles')) return langStore.t('nav.roles', 'Roles & Permissions');
   if (path.startsWith('/schedules')) return langStore.t('nav.schedules', 'Shift Schedules');

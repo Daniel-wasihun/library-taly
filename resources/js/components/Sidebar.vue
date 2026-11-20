@@ -146,13 +146,13 @@
               ? 'bg-nav-accent/10 text-nav-accent font-bold shadow-2xs'
               : 'text-main-text/75 hover:bg-nav-accent/5 hover:text-nav-accent'
           ]"
-          :title="langStore.t('nav.attendance', 'Attendance Counter')"
+          :title="langStore.t('nav.attendance', 'Attendance')"
         >
           <Activity
             class="w-4 h-4 shrink-0 transition-colors"
             :class="isActive('/attendance') ? 'text-nav-accent' : 'text-main-text/50 group-hover:text-nav-accent'"
           />
-          <span v-if="!isCollapsed" class="truncate font-semibold">{{ langStore.t('nav.attendance', 'Attendance Counter') }}</span>
+          <span v-if="!isCollapsed" class="truncate font-semibold">{{ langStore.t('nav.attendance', 'Attendance') }}</span>
           <div
             v-if="isActive('/attendance')"
             class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-nav-accent rounded-r-full"

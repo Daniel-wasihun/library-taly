@@ -27,11 +27,13 @@ import {
   Moon,
   AlertCircle,
   CalendarDays,
+  GraduationCap,
   Compass,
   Flame,
   Loader2,
 } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
+import AppDropdown from '@/components/ui/AppDropdown.vue';
 import EthiopianDateRangePicker from '@/components/ui/EthiopianDateRangePicker.vue';
 import { useLanguageStore } from '@/stores/languageStore';
 import { useAttendanceStore } from '@/stores/attendanceStore';
@@ -73,6 +75,14 @@ const libraryStore = useLibraryStore();
 const academicYears = ref<AcademicYear[]>([]);
 const currentAcademicYear = ref<AcademicYear | null>(null);
 const selectedAcademicYearId = ref<number | string>('');
+
+const academicYearOptions = computed(() => {
+  return academicYears.value.map((ay) => ({
+    value: ay.id,
+    label: ay.name,
+    badge: ay.is_current ? (langStore.isAmharic() ? 'ንቁ' : 'Current') : undefined,
+  }));
+});
 
 const fetchAcademicYears = async () => {
   try {
@@ -308,60 +318,63 @@ const handleResetToday = () => {
   <div class="space-y-6 pb-8">
     <!-- Controls Bar with Dual Ethiopian / Gregorian Calendar Range Picker & Academic Year Selector -->
     <div class="bg-card-bg border border-card-border rounded-md p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-2xs">
-      <!-- Date Range Controls & Academic Year Selector -->
-      <div class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-3">
-        <!-- Academic Year Dropdown (Compact button style, showing only academic year) -->
-        <div v-if="academicYears.length > 0" class="shrink-0">
-          <select
-            v-model="selectedAcademicYearId"
-            @change="handleAcademicYearSelect(selectedAcademicYearId)"
-            class="h-8 px-2.5 text-[11px] font-semibold rounded bg-card-bg border border-card-border/90 text-main-text hover:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue shadow-2xs cursor-pointer transition-all"
-            :title="langStore.isAmharic() ? 'የአካዳሚክ ዓመት ይምረጡ' : 'Select Academic Year'"
-          >
-            <option value="">{{ langStore.isAmharic() ? '— ዓመት ይምረጡ —' : '— Select Year —' }}</option>
-            <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">
-              {{ ay.name }}
-            </option>
-          </select>
-        </div>
-
-        <div class="flex-1 min-w-0 max-w-[580px]">
-          <EthiopianDateRangePicker
-            :modelValue="dateRange"
-            @update:modelValue="emit('update:dateRange', $event)"
-            @change="emit('refresh')"
-          />
-        </div>
+      <!-- Left: Dual Ethiopian / Gregorian Date Range Controls -->
+      <div class="flex-1 min-w-0 max-w-[580px]">
+        <EthiopianDateRangePicker
+          :modelValue="dateRange"
+          @update:modelValue="emit('update:dateRange', $event)"
+          @change="emit('refresh')"
+        />
       </div>
 
-      <!-- Action Buttons -->
-      <div class="flex items-center gap-2 flex-wrap shrink-0">
-        <Button
-          variant="secondary"
-          size="sm"
-          :icon="RotateCcw"
-          :loading="statsLoading"
-          @click="emit('refresh')"
-        >
-          {{ langStore.t('common.refresh', 'Apply & Refresh') }}
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          @click="handleResetToday"
-        >
-          {{ langStore.t('attendance.reset_today', 'Reset Today') }}
-        </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          :icon="Printer"
-          :loading="downloadingFormat === 'pdf'"
-          @click="triggerDownload('pdf', 'full')"
-          class="!bg-brand-blue text-white shadow-2xs"
-        >
-          {{ langStore.t('attendance.print_report', 'Print Official Report') }}
-        </Button>
+      <!-- Right Column: Academic Year Dropdown at the Top + Action Buttons below -->
+      <div class="flex flex-col items-start lg:items-end gap-2.5 shrink-0">
+        <!-- Top Right: Academic Year Selector Dropdown -->
+        <div v-if="academicYears.length > 0" class="flex items-center gap-2">
+          <span class="text-[11px] font-semibold text-main-text/60 whitespace-nowrap">
+            {{ langStore.isAmharic() ? 'የአካዳሚክ ዓመት:' : 'Academic Year:' }}
+          </span>
+          <AppDropdown
+            v-model="selectedAcademicYearId"
+            :options="academicYearOptions"
+            :placeholder="langStore.isAmharic() ? '— ዓመት ይምረጡ —' : '— Select Year —'"
+            size="sm"
+            align="right"
+            :icon="GraduationCap"
+            menuWidth="w-56"
+            @change="handleAcademicYearSelect"
+          />
+        </div>
+
+        <!-- Bottom Right: Action Buttons (Apply & Refresh, Reset Today, Print Official Report) -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="secondary"
+            size="sm"
+            :icon="RotateCcw"
+            :loading="statsLoading"
+            @click="emit('refresh')"
+          >
+            {{ langStore.t('common.refresh', 'Apply & Refresh') }}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            @click="handleResetToday"
+          >
+            {{ langStore.t('attendance.reset_today', 'Reset Today') }}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            :icon="Printer"
+            :loading="downloadingFormat === 'pdf'"
+            @click="triggerDownload('pdf', 'full')"
+            class="!bg-brand-blue text-white shadow-2xs"
+          >
+            {{ langStore.t('attendance.print_report', 'Print Official Report') }}
+          </Button>
+        </div>
       </div>
     </div>
 

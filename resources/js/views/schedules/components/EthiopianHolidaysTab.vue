@@ -15,52 +15,35 @@
       <div class="flex flex-wrap items-center gap-3">
         <!-- Academic Year / Year Filter -->
         <div class="flex items-center gap-1.5">
-          <label class="text-xs font-semibold text-main-text whitespace-nowrap">{{ langStore.isAmharic() ? 'የአካዳሚክ ዓመት' : 'Academic Year' }}:</label>
-          <div class="relative">
-            <select
-              v-if="academicYears.length > 0"
-              v-model="selectedAcademicYearId"
-              class="h-8 appearance-none pl-2.5 pr-7 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-semibold hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
-              @change="handleAcademicYearChange"
-            >
-              <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">
-                {{ ay.name }} {{ ay.is_current ? (langStore.isAmharic() ? '★ ንቁ' : '★ Current') : '' }}
-              </option>
-            </select>
-            <select
-              v-else
-              v-model.number="selectedYear"
-              class="h-8 appearance-none pl-2.5 pr-7 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-mono hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
-              @change="fetchHolidays"
-            >
-              <option v-for="y in [2017, 2018, 2019, 2020, 2021, 2022]" :key="y" :value="y">
-                {{ langStore.isAmharic() ? `${y} ዓ.ም` : `${y} E.C.` }}
-              </option>
-            </select>
-            <div class="absolute right-2 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
-              <ChevronDown class="w-3.5 h-3.5" />
-            </div>
-          </div>
+          <label class="text-xs font-semibold text-main-text whitespace-nowrap">{{ langStore.isAmharic() ? 'የአካዳሚክ ዓመት:' : 'Academic Year:' }}</label>
+          <AppDropdown
+            v-if="academicYears.length > 0"
+            v-model="selectedAcademicYearId"
+            :options="academicYearOptions"
+            size="sm"
+            variant="button"
+            @change="handleAcademicYearChange"
+          />
+          <AppDropdown
+            v-else
+            v-model="selectedYear"
+            :options="yearFallbackOptions"
+            size="sm"
+            variant="button"
+            @change="fetchHolidays"
+          />
         </div>
 
         <!-- Month Filter -->
         <div class="flex items-center gap-1.5">
           <label class="text-xs font-semibold text-main-text whitespace-nowrap">{{ langStore.t('schedules.ethiopian_month', 'Month') }}:</label>
-          <div class="relative">
-            <select
-              v-model="selectedMonth"
-              class="h-8 appearance-none pl-2.5 pr-7 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer font-medium"
-              @change="fetchHolidays"
-            >
-              <option value="">{{ langStore.isAmharic() ? 'ሁሉም ወራት (1–13)' : 'All Months (1–13)' }}</option>
-              <option v-for="m in ethiopianMonths" :key="m.number" :value="m.number">
-                {{ m.number }}. {{ langStore.isAmharic() ? m.name_am : m.name_en }}
-              </option>
-            </select>
-            <div class="absolute right-2 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
-              <ChevronDown class="w-3.5 h-3.5" />
-            </div>
-          </div>
+          <AppDropdown
+            v-model="selectedMonth"
+            :options="monthOptions"
+            size="sm"
+            variant="button"
+            @change="fetchHolidays"
+          />
         </div>
 
         <Button
@@ -300,6 +283,7 @@ import { useLanguageStore } from '@/stores/languageStore';
 import { useToastStore } from '@/stores/toastStore';
 import Button from '@/components/ui/Button.vue';
 import Modal from '@/components/ui/Modal.vue';
+import AppDropdown from '@/components/ui/AppDropdown.vue';
 import { CalendarOff, Plus, Trash2, ChevronDown, GraduationCap } from 'lucide-vue-next';
 import { academicYearsApi } from '@/api';
 import { toEthiopian } from '@/utils/ethiopianDate';
@@ -346,6 +330,34 @@ const handleAcademicYearChange = () => {
     fetchHolidays();
   }
 };
+
+const academicYearOptions = computed(() => {
+  return academicYears.value.map((ay) => ({
+    value: ay.id,
+    label: ay.name,
+    badge: ay.is_current ? (langStore.isAmharic() ? 'ንቁ' : 'Current') : undefined,
+  }));
+});
+
+const yearFallbackOptions = computed(() => {
+  return [2017, 2018, 2019, 2020, 2021, 2022].map((y) => ({
+    value: y,
+    label: langStore.isAmharic() ? `${y} ዓ.ም` : `${y} E.C.`,
+  }));
+});
+
+const monthOptions = computed(() => {
+  const list: { value: any; label: string }[] = [
+    { value: '', label: langStore.isAmharic() ? 'ሁሉም ወራት (1–13)' : 'All Months (1–13)' },
+  ];
+  ethiopianMonths.forEach((m) => {
+    list.push({
+      value: m.number,
+      label: `${m.number}. ${langStore.isAmharic() ? m.name_am : m.name_en}`,
+    });
+  });
+  return list;
+});
 
 const holidaysList = ref<any[]>([]);
 

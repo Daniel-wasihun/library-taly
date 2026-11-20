@@ -9,31 +9,24 @@
             <GraduationCap class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
             <span>{{ langStore.isAmharic() ? 'የአካዳሚክ ዓመት' : 'Academic Year' }}</span>
           </label>
-          <div class="relative">
-            <select
-              v-if="academicYears.length > 0"
-              v-model="selectedAcademicYearId"
-              class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text shadow-2xs hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent transition cursor-pointer"
-              @change="handleAcademicYearChange"
-            >
-              <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">
-                {{ ay.name }} {{ ay.is_current ? (langStore.isAmharic() ? '★ ንቁ' : '★ Current') : '' }}
-              </option>
-            </select>
-            <select
-              v-else
-              v-model.number="selectedYear"
-              class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-mono rounded-md bg-card-bg border border-card-border/80 text-main-text shadow-2xs hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent transition cursor-pointer"
-              @change="loadMatrix"
-            >
-              <option v-for="y in availableYears" :key="y" :value="y">
-                {{ langStore.isAmharic() ? `${y} ዓ.ም` : `${y} E.C. (${y + 7}/${y + 8})` }}
-              </option>
-            </select>
-            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
-              <ChevronDown class="w-3.5 h-3.5" />
-            </div>
-          </div>
+          <AppDropdown
+            v-if="academicYears.length > 0"
+            v-model="selectedAcademicYearId"
+            :options="academicYearOptions"
+            block
+            size="md"
+            variant="button"
+            @change="handleAcademicYearChange"
+          />
+          <AppDropdown
+            v-else
+            v-model="selectedYear"
+            :options="yearFallbackOptions"
+            block
+            size="md"
+            variant="button"
+            @change="loadMatrix"
+          />
         </div>
 
         <!-- 2. Ethiopian Month (Meskerem to Pagume, Days 1-30) -->
@@ -42,24 +35,14 @@
             <CalendarDays class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
             <span>{{ langStore.t('schedules.ethiopian_month', 'Ethiopian Month') }}</span>
           </label>
-          <div class="relative">
-            <select
-              v-model.number="selectedMonth"
-              class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-medium rounded-md bg-card-bg border border-card-border/80 text-main-text shadow-2xs hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent transition cursor-pointer"
-              @change="loadMatrix"
-            >
-              <option
-                v-for="m in shiftStore.matrixData?.ethiopian_months || defaultMonths"
-                :key="m.number"
-                :value="m.number"
-              >
-                {{ m.number }}. {{ langStore.isAmharic() ? `${m.name_am} (1–${m.days_count} ቀን)` : `${m.name_en} (1–${m.days_count} Days)` }}
-              </option>
-            </select>
-            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
-              <ChevronDown class="w-3.5 h-3.5" />
-            </div>
-          </div>
+          <AppDropdown
+            v-model="selectedMonth"
+            :options="monthOptions"
+            block
+            size="md"
+            variant="button"
+            @change="loadMatrix"
+          />
         </div>
 
         <!-- 3. Shift Group Selector (Group A, Group B, Group C...) -->
@@ -68,23 +51,15 @@
             <Users class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
             <span>{{ langStore.t('schedules.duty_group', 'Duty Group') }}</span>
           </label>
-          <div class="relative">
-            <select
-              v-model="selectedGroupId"
-              class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text shadow-2xs hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent transition cursor-pointer"
-              @change="syncGroupDaysFromMatrix"
-            >
-              <option v-if="filteredGroups.length === 0" value="">
-                {{ langStore.t('schedules.no_groups_defined', 'No groups defined') }}
-              </option>
-              <option v-for="g in filteredGroups" :key="g.id" :value="g.id">
-                {{ g.name }} ({{ g.users?.length || 0 }} {{ langStore.isAmharic() ? 'ረዳቶች' : 'attendants' }})
-              </option>
-            </select>
-            <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-main-text/40 pointer-events-none">
-              <ChevronDown class="w-3.5 h-3.5" />
-            </div>
-          </div>
+          <AppDropdown
+            v-model="selectedGroupId"
+            :options="groupOptions"
+            :placeholder="langStore.t('schedules.select_group', 'Select Duty Group...')"
+            block
+            size="md"
+            variant="button"
+            @change="syncGroupDaysFromMatrix"
+          />
         </div>
       </div>
 
@@ -652,6 +627,7 @@ import { useLanguageStore } from '@/stores/languageStore';
 import { useToastStore } from '@/stores/toastStore';
 import Button from '@/components/ui/Button.vue';
 import Modal from '@/components/ui/Modal.vue';
+import AppDropdown from '@/components/ui/AppDropdown.vue';
 import {
   Building2,
   Calendar,
@@ -733,6 +709,37 @@ const handleAcademicYearChange = () => {
     loadMatrix();
   }
 };
+
+const academicYearOptions = computed(() => {
+  return academicYears.value.map((ay) => ({
+    value: ay.id,
+    label: ay.name,
+    badge: ay.is_current ? (langStore.isAmharic() ? 'ንቁ' : 'Current') : undefined,
+  }));
+});
+
+const yearFallbackOptions = computed(() => {
+  return availableYears.map((y) => ({
+    value: y,
+    label: langStore.isAmharic() ? `${y} ዓ.ም` : `${y} E.C. (${y + 7}/${y + 8})`,
+  }));
+});
+
+const monthOptions = computed(() => {
+  const months = shiftStore.matrixData?.ethiopian_months || defaultMonths;
+  return months.map((m: any) => ({
+    value: m.number,
+    label: `${m.number}. ${langStore.isAmharic() ? `${m.name_am} (1–${m.days_count} ቀን)` : `${m.name_en} (1–${m.days_count} Days)`}`,
+  }));
+});
+
+const groupOptions = computed(() => {
+  return filteredGroups.value.map((g: any) => ({
+    value: g.id,
+    label: g.name,
+    badge: `${g.users?.length || 0} ${langStore.isAmharic() ? 'ረዳቶች' : 'attendants'}`,
+  }));
+});
 
 // Shift Selections: shift_id => Array of selected days [1, 2, ... 30]
 const shiftSelections = reactive<Record<number, number[]>>({});

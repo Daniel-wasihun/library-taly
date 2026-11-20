@@ -342,6 +342,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/authStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import { useRoleStore } from '@/stores/roleStore';
 import Button from '@/components/ui/Button.vue';
@@ -349,6 +350,7 @@ import Modal from '@/components/ui/Modal.vue';
 import RoleBadge from '@/components/ui/RoleBadge.vue';
 import { ShieldCheck, Shield, Grid, Plus, Pencil, Trash2, Users, RefreshCw } from 'lucide-vue-next';
 
+const authStore = useAuthStore();
 const langStore = useLanguageStore();
 const roleStore = useRoleStore();
 

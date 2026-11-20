@@ -472,6 +472,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/authStore';
 import { useUserStore } from '@/stores/userStore';
 import { useLibraryStore } from '@/stores/libraryStore';
 import { useRoleStore } from '@/stores/roleStore';
@@ -485,6 +486,7 @@ import StatusBadge from '@/components/ui/StatusBadge.vue';
 import { Users, Plus, Pencil, Trash2, UserPlus, Shield, Zap, RefreshCw, Building2, ChevronDown } from 'lucide-vue-next';
 import type { User } from '@/types';
 
+const authStore = useAuthStore();
 const userStore = useUserStore();
 const libraryStore = useLibraryStore();
 const roleStore = useRoleStore();

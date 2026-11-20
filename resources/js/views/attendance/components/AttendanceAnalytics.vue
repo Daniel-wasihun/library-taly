@@ -79,7 +79,11 @@ const fetchAcademicYears = async () => {
     const res = await academicYearsApi.list();
     if (res.data?.data) {
       academicYears.value = res.data.data;
-      currentAcademicYear.value = res.data.current || null;
+      const curr = res.data.current || res.data.data.find(y => y.is_current) || res.data.data[0];
+      currentAcademicYear.value = curr || null;
+      if (curr && !selectedAcademicYearId.value) {
+        selectedAcademicYearId.value = curr.id;
+      }
     }
   } catch (err) {
     console.error('Failed to load academic years', err);
@@ -306,16 +310,17 @@ const handleResetToday = () => {
     <div class="bg-card-bg border border-card-border rounded-md p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-2xs">
       <!-- Date Range Controls & Academic Year Selector -->
       <div class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-3">
-        <!-- Academic Year Dropdown -->
+        <!-- Academic Year Dropdown (Compact button style, showing only academic year) -->
         <div v-if="academicYears.length > 0" class="shrink-0">
           <select
             v-model="selectedAcademicYearId"
             @change="handleAcademicYearSelect(selectedAcademicYearId)"
-            class="h-9 px-3 text-xs font-semibold rounded-md bg-card-bg border border-card-border text-main-text hover:border-nav-accent focus:outline-none focus:ring-1 focus:ring-brand-blue shadow-2xs cursor-pointer"
+            class="h-8 px-2.5 text-[11px] font-semibold rounded bg-card-bg border border-card-border/90 text-main-text hover:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue shadow-2xs cursor-pointer transition-all"
+            :title="langStore.isAmharic() ? 'የአካዳሚክ ዓመት ይምረጡ' : 'Select Academic Year'"
           >
-            <option value="">{{ langStore.isAmharic() ? '— አካዳሚክ ዓመት ይምረጡ —' : '— Select Academic Year —' }}</option>
+            <option value="">{{ langStore.isAmharic() ? '— ዓመት ይምረጡ —' : '— Select Year —' }}</option>
             <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">
-              {{ ay.name }} ({{ ay.code }}) [{{ langStore.isAmharic() ? `${formatDT(ay.start_date, true).date} – ${formatDT(ay.end_date, true).date} ዓ.ም` : `${formatDT(ay.start_date, false).date} – ${formatDT(ay.end_date, false).date}` }}] {{ ay.is_current ? (langStore.isAmharic() ? '★ ንቁ' : '★ Current') : '' }}
+              {{ ay.name }}
             </option>
           </select>
         </div>

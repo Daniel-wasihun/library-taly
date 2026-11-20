@@ -3,14 +3,25 @@
     <!-- Top Selector Bar: Branch, Ethiopian Year, Month, Group, Auto-Generate -->
     <div class="bg-card-bg border border-card-border rounded-sm p-4 shadow-2xs space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-        <!-- 1. Ethiopian Year -->
+        <!-- 1. Academic Year / Ethiopian Session -->
         <div>
           <label class="block text-xs font-bold text-main-text mb-1.5 flex items-center gap-1.5">
-            <Calendar class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
-            <span>{{ langStore.t('schedules.ethiopian_year', 'Ethiopian Year') }}</span>
+            <GraduationCap class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
+            <span>{{ langStore.isAmharic() ? 'የአካዳሚክ ዓመት' : 'Academic Year' }}</span>
           </label>
           <div class="relative">
             <select
+              v-if="academicYears.length > 0"
+              v-model="selectedAcademicYearId"
+              class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-semibold rounded-md bg-card-bg border border-card-border/80 text-main-text shadow-2xs hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent transition cursor-pointer"
+              @change="handleAcademicYearChange"
+            >
+              <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">
+                {{ ay.name }} {{ ay.is_current ? (langStore.isAmharic() ? '★ ንቁ' : '★ Current') : '' }}
+              </option>
+            </select>
+            <select
+              v-else
               v-model.number="selectedYear"
               class="w-full h-9 appearance-none pl-3 pr-8 text-xs font-mono rounded-md bg-card-bg border border-card-border/80 text-main-text shadow-2xs hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent transition cursor-pointer"
               @change="loadMatrix"
@@ -82,6 +93,7 @@
         <div class="flex flex-wrap items-center gap-3">
           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-brand-blue/10 text-brand-blue dark:text-brand-yellow font-bold text-[11px] border border-brand-blue/20">
             🇪🇹 {{ langStore.isAmharic() ? `${currentMonthNameAm} ${selectedYear} ዓ.ም` : `${currentMonthNameEn} ${selectedYear} E.C.` }}
+            <span v-if="activeAcademicYear" class="ml-1 opacity-80 font-normal font-sans">({{ activeAcademicYear.name }})</span>
           </span>
           <span class="text-xs">
             {{ langStore.t('schedules.scope_label', 'Scope') }}: <strong class="text-main-text">{{ langStore.t('schedules.all_branches_default', 'All University Library Branches (Default)') }}</strong>
@@ -644,6 +656,7 @@ import {
   Building2,
   Calendar,
   CalendarDays,
+  GraduationCap,
   Users,
   Sparkles,
   AlertCircle,
@@ -651,7 +664,9 @@ import {
   Trash2,
   ChevronDown,
 } from 'lucide-vue-next';
-import type { ShiftGroup, EthiopianHoliday } from '@/types';
+import { academicYearsApi } from '@/api';
+import { toEthiopian } from '@/utils/ethiopianDate';
+import type { ShiftGroup, EthiopianHoliday, AcademicYear } from '@/types';
 
 const shiftStore = useShiftStore();
 const libraryStore = useLibraryStore();
@@ -678,11 +693,46 @@ const defaultMonths = [
 
 const availableYears = [2017, 2018, 2019, 2020, 2021, 2022];
 
+// Academic Year State
+const academicYears = ref<AcademicYear[]>([]);
+const selectedAcademicYearId = ref<number | ''>('');
+const activeAcademicYear = computed(() => {
+  return academicYears.value.find(y => y.id === selectedAcademicYearId.value) || null;
+});
+
 // Selected State
 const selectedLibraryId = ref<number>(1);
 const selectedYear = ref<number>(2019);
 const selectedMonth = ref<number>(3); // Hidar default
 const selectedGroupId = ref<number | ''>('');
+
+const loadAcademicYears = async () => {
+  try {
+    const res = await academicYearsApi.list();
+    if (res.data?.data && res.data.data.length > 0) {
+      academicYears.value = res.data.data;
+      const curr = res.data.current || res.data.data.find((y) => y.is_current) || res.data.data[0];
+      if (curr) {
+        selectedAcademicYearId.value = curr.id;
+        const [gy, gm, gd] = curr.start_date.split('T')[0].split('-').map(Number);
+        const [ey] = toEthiopian(gy, gm, gd);
+        selectedYear.value = ey;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load academic years in scheduler', err);
+  }
+};
+
+const handleAcademicYearChange = () => {
+  const ay = academicYears.value.find(y => y.id === selectedAcademicYearId.value);
+  if (ay) {
+    const [gy, gm, gd] = ay.start_date.split('T')[0].split('-').map(Number);
+    const [ey] = toEthiopian(gy, gm, gd);
+    selectedYear.value = ey;
+    loadMatrix();
+  }
+};
 
 // Shift Selections: shift_id => Array of selected days [1, 2, ... 30]
 const shiftSelections = reactive<Record<number, number[]>>({});
@@ -1197,6 +1247,7 @@ onMounted(async () => {
   await Promise.all([
     shiftStore.fetchShifts(),
     shiftStore.fetchGroups(),
+    loadAcademicYears(),
   ]);
   await loadMatrix();
 });

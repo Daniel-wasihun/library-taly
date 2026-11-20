@@ -13,11 +13,22 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
-        <!-- Year Filter -->
+        <!-- Academic Year / Year Filter -->
         <div class="flex items-center gap-1.5">
-          <label class="text-xs font-semibold text-main-text whitespace-nowrap">{{ langStore.t('schedules.ethiopian_year', 'Year') }}:</label>
+          <label class="text-xs font-semibold text-main-text whitespace-nowrap">{{ langStore.isAmharic() ? 'የአካዳሚክ ዓመት' : 'Academic Year' }}:</label>
           <div class="relative">
             <select
+              v-if="academicYears.length > 0"
+              v-model="selectedAcademicYearId"
+              class="h-8 appearance-none pl-2.5 pr-7 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-semibold hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
+              @change="handleAcademicYearChange"
+            >
+              <option v-for="ay in academicYears" :key="ay.id" :value="ay.id">
+                {{ ay.name }} {{ ay.is_current ? (langStore.isAmharic() ? '★ ንቁ' : '★ Current') : '' }}
+              </option>
+            </select>
+            <select
+              v-else
               v-model.number="selectedYear"
               class="h-8 appearance-none pl-2.5 pr-7 text-xs rounded-md bg-card-bg border border-card-border/80 text-main-text font-mono hover:border-nav-accent/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-nav-accent shadow-2xs transition cursor-pointer"
               @change="fetchHolidays"
@@ -289,7 +300,10 @@ import { useLanguageStore } from '@/stores/languageStore';
 import { useToastStore } from '@/stores/toastStore';
 import Button from '@/components/ui/Button.vue';
 import Modal from '@/components/ui/Modal.vue';
-import { CalendarOff, Plus, Trash2, ChevronDown } from 'lucide-vue-next';
+import { CalendarOff, Plus, Trash2, ChevronDown, GraduationCap } from 'lucide-vue-next';
+import { academicYearsApi } from '@/api';
+import { toEthiopian } from '@/utils/ethiopianDate';
+import type { AcademicYear } from '@/types';
 import api from '@/api/client';
 
 const shiftStore = useShiftStore();
@@ -300,8 +314,38 @@ const toast = useToastStore();
 const loading = ref(false);
 const showModal = ref(false);
 
+const academicYears = ref<AcademicYear[]>([]);
+const selectedAcademicYearId = ref<number | ''>('');
 const selectedYear = ref<number>(2019);
 const selectedMonth = ref<number | ''>(3); // Hidar default
+
+const loadAcademicYears = async () => {
+  try {
+    const res = await academicYearsApi.list();
+    if (res.data?.data && res.data.data.length > 0) {
+      academicYears.value = res.data.data;
+      const curr = res.data.current || res.data.data.find((y) => y.is_current) || res.data.data[0];
+      if (curr) {
+        selectedAcademicYearId.value = curr.id;
+        const [gy, gm, gd] = curr.start_date.split('T')[0].split('-').map(Number);
+        const [ey] = toEthiopian(gy, gm, gd);
+        selectedYear.value = ey;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load academic years for holidays', err);
+  }
+};
+
+const handleAcademicYearChange = () => {
+  const ay = academicYears.value.find((y) => y.id === selectedAcademicYearId.value);
+  if (ay) {
+    const [gy, gm, gd] = ay.start_date.split('T')[0].split('-').map(Number);
+    const [ey] = toEthiopian(gy, gm, gd);
+    selectedYear.value = ey;
+    fetchHolidays();
+  }
+};
 
 const holidaysList = ref<any[]>([]);
 
@@ -409,7 +453,8 @@ const confirmDelete = async (holiday: any) => {
   }
 };
 
-onMounted(() => {
-  fetchHolidays();
+onMounted(async () => {
+  await loadAcademicYears();
+  await fetchHolidays();
 });
 </script>

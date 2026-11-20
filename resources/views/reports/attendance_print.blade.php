@@ -202,33 +202,6 @@
             width: 28%;
         }
 
-        /* Executive Description Box */
-        .desc-box {
-            background: #f9fafb;
-            border-left: 3.5px solid #0b529c;
-            border-top: 1px solid #e5e7eb;
-            border-right: 1px solid #e5e7eb;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 8px 12px;
-            margin-bottom: 16px;
-        }
-
-        .desc-title {
-            font-size: 9.5px;
-            font-weight: bold;
-            color: #0b529c;
-            text-transform: uppercase;
-            margin-bottom: 3px;
-        }
-
-        .desc-text {
-            margin: 0;
-            font-size: 10px;
-            color: #374151;
-            text-align: justify;
-            line-height: 1.45;
-        }
-
         /* Section Headings */
         .section-header {
             font-size: 10.5px;
@@ -470,13 +443,7 @@
             </tr>
         </table>
 
-        <!-- Executive Narrative Description -->
-        <div class="desc-box">
-            <div class="desc-title">{{ $isAmharic ? 'የስራ አስፈጻሚ ማጠቃለያና መግለጫ' : 'Executive Context & Regulatory Scope' }}</div>
-            <p class="desc-text">{{ $description }}</p>
-        </div>
-
-        @if($scope === 'full' || $scope === 'patron_types')
+        @if($scope === 'full')
         <!-- Section 1: KPI Highlights Table -->
         <div class="section-header">
             <span>{{ $isAmharic ? '1. ዋና ዋና የአፈጻጸም ጠቋሚዎች (KPIs)' : '1. Key Performance Indicators (KPIs)' }}</span>
@@ -517,10 +484,12 @@
                 </td>
             </tr>
         </table>
+        @endif
 
+        @if($scope === 'full' || $scope === 'patron_types')
         <!-- Section 2: Patron Category Demographic Table -->
         <div class="section-header">
-            <span>{{ $isAmharic ? '2. የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር' : '2. Patron Demographic Categorization' }}</span>
+            <span>{{ $isAmharic ? ($scope === 'patron_types' ? 'የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር' : '2. የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር') : ($scope === 'patron_types' ? 'Patron Demographic Categorization' : '2. Patron Demographic Categorization') }}</span>
         </div>
         <table class="formal-table">
             <thead>

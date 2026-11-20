@@ -16,6 +16,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
     // Pinia Cache Flags
     const isLoaded = ref(false);
     const statsLoaded = ref(false);
+    const isDownloadingReport = ref(false);
+    const downloadingReportFormat = ref<string | null>(null);
 
     const loadSavedHistory = () => {
         try {
@@ -204,6 +206,15 @@ export const useAttendanceStore = defineStore('attendance', () => {
             csv: 'text/csv',
         };
 
+        isDownloadingReport.value = true;
+        downloadingReportFormat.value = format;
+
+        toast.info(
+            langStore.isAmharic()
+                ? `የ${format.toUpperCase()} ይፋዊ ሰነድ በመዘጋጀት ላይ ነው፤ እባክዎ ጥቂት ይጠብቁ...`
+                : `Generating official ${format.toUpperCase()} report, please wait...`
+        );
+
         try {
             const response = await attendanceApi.downloadReport(params);
             const blob = new Blob([response.data], { type: mimeMap[format] || 'application/octet-stream' });
@@ -259,6 +270,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
                     ? 'ሪፖርቱን ማውረድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።'
                     : 'Failed to generate official report download. Please retry.'
             );
+        } finally {
+            isDownloadingReport.value = false;
+            downloadingReportFormat.value = null;
         }
     }
 
@@ -318,6 +332,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
         filters,
         isLoaded,
         statsLoaded,
+        isDownloadingReport,
+        downloadingReportFormat,
         fetchLogs,
         logEntry,
         fetchStats,

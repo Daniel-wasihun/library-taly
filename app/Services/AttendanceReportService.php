@@ -248,12 +248,8 @@ class AttendanceReportService
             default => $dominantPatron,
         };
 
-        // Formal Executive Narrative Description
-        $descriptionEn = "This official periodic attendance and patron demographic analytics report is compiled by the Woldia University Directorate of Library and Information Services in accordance with the Academic Governance and Library Utilization Policy. The audit encompasses physical gate foot-traffic, patron categorization (undergraduate and postgraduate students, teaching and research faculty, and administrative staff), and gender distribution across campus library facilities ({$libraryName}). The reporting window spans from {$fromFormatted['full']} to {$toFormatted['full']}. The primary objective is to evaluate campus learning resource utilization, monitor shift peak occupancy, maintain institutional audit transparency, and support data-driven allocation of facility infrastructure, study desk seating, and catalog staffing.";
-
-        $descriptionAm = "ይህ ይፋዊ የቤተ-መጻሕፍት አጠቃቀም እና የተጠቃሚዎች ስነ-ሕዝብ ትንተና ሪፖርት በወልድያ ዩኒቨርሲቲ የቤተ-መጻሕፍት እና መረጃ አገልግሎት ዳይሬክቶሬት የአካዳሚክ አስተዳደርና የቤተ-መጻሕፍት አጠቃቀም መመሪያን መሠረት በማድረግ የተዘጋጀ ነው። ሪፖርቱ በዩኒቨርሲቲው የቤተ-መጻሕፍት ቅርንጫፎች ({$libraryName}) የተመዘገቡ የቀጥታ ተጠቃሚዎችን፣ የተጠቃሚዎችን የትምህርትና የስራ ደረጃ (የቅድመ-ምረቃና ድህረ-ምረቃ ተማሪዎች፣ መምህራንና ተመራማሪዎች፣ የአስተዳደርና ቴክኒክ ሠራተኞች) እንዲሁም የጾታ ስርጭት ትንተናን በዝርዝር ያካትታል። የሪፖርቱ ሽፋን ጊዜ ከ {$fromFormatted['full']} እስከ {$toFormatted['full']} ነው። የዚህ ሪፖርት ዋነኛ ዓላማ የቤተ-መጻሕፍት ሀብት አጠቃቀምን መገምገም፣ የፈረቃ ተረኝነትንና ከፍተኛ የተጠቃሚዎች ሰዓትን መለየት፣ የተቋማዊ ቁጥጥር ግልጽነትን ማስጠበቅ እና በመረጃ ላይ የተመሠረተ የሀብትና የሰው ኃይል ድልድል ማከናወን ነው።";
-
-        $description = $isAmharic ? $descriptionAm : $descriptionEn;
+        // Formal Executive Narrative Description (Omitted per user requirements)
+        $description = '';
 
         return [
             'scope' => $filters['scope'] ?? 'full',
@@ -1557,12 +1553,8 @@ class AttendanceReportService
         $html .= '</tr>';
         $html .= '</table>';
 
-        // Executive Narrative Description
-        $html .= '<h3>' . ($isAmharic ? 'የስራ አስፈጻሚ ማጠቃለያና መግለጫ' : 'Executive Summary & Narrative') . '</h3>';
-        $html .= '<p>' . htmlspecialchars($data['description']) . '</p>';
-
-        // Section 1: KPI Summary Table (full or patron_types)
-        if ($scope === 'full' || $scope === 'patron_types') {
+        // Section 1: KPI Summary Table (full only)
+        if ($scope === 'full') {
             $html .= '<h3>' . ($isAmharic ? '1. ዋና ዋና የአፈጻጸም ጠቋሚዎች ማጠቃለያ' : '1. Key Performance Indicators (KPIs)') . '</h3>';
             $html .= '<table>';
             $html .= '<tr><th>' . ($isAmharic ? 'የመለኪያ መግለጫ' : 'Metric Indicator') . '</th><th class="text-right">' . ($isAmharic ? 'የተመዘገበ ቁጥር' : 'Recorded Value') . '</th><th>' . ($isAmharic ? 'የድርሻ መጠን' : 'Percentage / Proportion') . '</th><th>' . ($isAmharic ? 'ተጨማሪ የአሰራር ማስታወሻ' : 'Operational Note') . '</th></tr>';
@@ -1785,8 +1777,8 @@ class AttendanceReportService
         fputcsv($f, [$isAmharic ? 'የኦዲት ወሰን' : 'Audit Scope', strtoupper($scope)]);
         fputcsv($f, []);
 
-        // Key KPIs (for full or patron_types)
-        if ($scope === 'full' || $scope === 'patron_types') {
+        // Key KPIs (for full audit only)
+        if ($scope === 'full') {
             fputcsv($f, [$isAmharic ? '--- 1. ዋና ዋና ጠቋሚዎች ---' : '--- 1. KEY PERFORMANCE INDICATORS ---']);
             fputcsv($f, [$isAmharic ? 'ጠቅላላ ተጠቃሚዎች' : 'Total Visitors', $data['totalCount']]);
             fputcsv($f, [$isAmharic ? 'ወንድ ተጠቃሚዎች' : 'Male Visitors', $data['maleCount'], $data['malePercent'] . '%']);

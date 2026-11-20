@@ -29,6 +29,7 @@ import {
   CalendarDays,
   Compass,
   Flame,
+  Loader2,
 } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import EthiopianDateRangePicker from '@/components/ui/EthiopianDateRangePicker.vue';
@@ -68,6 +69,7 @@ const attendanceStore = useAttendanceStore();
 const libraryStore = useLibraryStore();
 
 const downloadingFormat = ref<string | null>(null);
+const downloadingScope = ref<string | null>(null);
 const selectedDowIndex = ref<number | null>(null);
 const selectedOccDow = ref<number>(1); // 1 = Monday
 
@@ -108,10 +110,17 @@ const triggerDownload = async (
 ) => {
   const chosenScope = scope || selectedExportScope.value;
   downloadingFormat.value = format;
+  downloadingScope.value = chosenScope;
   try {
-    await attendanceStore.downloadFormalReport(format, undefined, chosenScope);
+    const activeFilters = {
+      date_from: props.dateRange.from,
+      date_to: props.dateRange.to,
+      library_id: props.selectedLibrary || undefined,
+    };
+    await attendanceStore.downloadFormalReport(format, activeFilters, chosenScope);
   } finally {
     downloadingFormat.value = null;
+    downloadingScope.value = null;
   }
 };
 
@@ -474,8 +483,9 @@ const formattedActiveRange = computed(() => {
               class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-brand-blue hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
               :title="langStore.isAmharic() ? 'የተጠቃሚዎችን ምድብ ብቻ በPDF አውርድ' : 'Export Demographics as PDF'"
             >
-              <Printer class="w-3 h-3" />
-              <span>PDF</span>
+              <Loader2 v-if="downloadingFormat === 'pdf' && downloadingScope === 'patron_types'" class="w-3 h-3 animate-spin text-brand-blue" />
+              <Printer v-else class="w-3 h-3" />
+              <span>{{ downloadingFormat === 'pdf' && downloadingScope === 'patron_types' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'PDF' }}</span>
             </button>
             <button
               type="button"
@@ -484,8 +494,9 @@ const formattedActiveRange = computed(() => {
               class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-emerald-600 hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
               :title="langStore.isAmharic() ? 'የተጠቃሚዎችን ምድብ ብቻ በExcel አውርድ' : 'Export Demographics as Excel'"
             >
-              <FileSpreadsheet class="w-3 h-3" />
-              <span>Excel</span>
+              <Loader2 v-if="downloadingFormat === 'xlsx' && downloadingScope === 'patron_types'" class="w-3 h-3 animate-spin text-emerald-600" />
+              <FileSpreadsheet v-else class="w-3 h-3" />
+              <span>{{ downloadingFormat === 'xlsx' && downloadingScope === 'patron_types' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'Excel' }}</span>
             </button>
           </div>
         </div>
@@ -544,8 +555,9 @@ const formattedActiveRange = computed(() => {
               class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-brand-blue hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
               :title="langStore.isAmharic() ? 'የቅርንጫፎች ንጽጽር በPDF አውርድ' : 'Export Branch Comparison as PDF'"
             >
-              <Printer class="w-3 h-3" />
-              <span>PDF</span>
+              <Loader2 v-if="downloadingFormat === 'pdf' && downloadingScope === 'branches'" class="w-3 h-3 animate-spin text-brand-blue" />
+              <Printer v-else class="w-3 h-3" />
+              <span>{{ downloadingFormat === 'pdf' && downloadingScope === 'branches' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'PDF' }}</span>
             </button>
             <button
               type="button"
@@ -554,8 +566,9 @@ const formattedActiveRange = computed(() => {
               class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-emerald-600 hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
               :title="langStore.isAmharic() ? 'የቅርንጫፎች ንጽጽር በExcel አውርድ' : 'Export Branch Comparison as Excel'"
             >
-              <FileSpreadsheet class="w-3 h-3" />
-              <span>Excel</span>
+              <Loader2 v-if="downloadingFormat === 'xlsx' && downloadingScope === 'branches'" class="w-3 h-3 animate-spin text-emerald-600" />
+              <FileSpreadsheet v-else class="w-3 h-3" />
+              <span>{{ downloadingFormat === 'xlsx' && downloadingScope === 'branches' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'Excel' }}</span>
             </button>
           </div>
         </div>
@@ -620,8 +633,9 @@ const formattedActiveRange = computed(() => {
               class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-brand-blue hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
               :title="langStore.isAmharic() ? 'የቀናት ፍሰት በPDF አውርድ' : 'Export Day Influx as PDF'"
             >
-              <Printer class="w-3 h-3" />
-              <span>PDF</span>
+              <Loader2 v-if="downloadingFormat === 'pdf' && downloadingScope === 'day_of_week'" class="w-3 h-3 animate-spin text-brand-blue" />
+              <Printer v-else class="w-3 h-3" />
+              <span>{{ downloadingFormat === 'pdf' && downloadingScope === 'day_of_week' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'PDF' }}</span>
             </button>
             <button
               type="button"
@@ -630,8 +644,9 @@ const formattedActiveRange = computed(() => {
               class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-emerald-600 hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
               :title="langStore.isAmharic() ? 'የቀናት ፍሰት በExcel አውርድ' : 'Export Day Influx as Excel'"
             >
-              <FileSpreadsheet class="w-3 h-3" />
-              <span>Excel</span>
+              <Loader2 v-if="downloadingFormat === 'xlsx' && downloadingScope === 'day_of_week'" class="w-3 h-3 animate-spin text-emerald-600" />
+              <FileSpreadsheet v-else class="w-3 h-3" />
+              <span>{{ downloadingFormat === 'xlsx' && downloadingScope === 'day_of_week' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'Excel' }}</span>
             </button>
           </div>
           <span class="text-[11px] font-mono font-semibold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-main-text/70 border border-card-border">
@@ -750,8 +765,9 @@ const formattedActiveRange = computed(() => {
               class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-brand-blue hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
               :title="langStore.isAmharic() ? 'የወሩ ሳምንታት በPDF አውርድ' : 'Export Intra-Month as PDF'"
             >
-              <Printer class="w-3 h-3" />
-              <span>PDF</span>
+              <Loader2 v-if="downloadingFormat === 'pdf' && downloadingScope === 'intra_month'" class="w-3 h-3 animate-spin text-brand-blue" />
+              <Printer v-else class="w-3 h-3" />
+              <span>{{ downloadingFormat === 'pdf' && downloadingScope === 'intra_month' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'PDF' }}</span>
             </button>
             <button
               type="button"
@@ -760,8 +776,9 @@ const formattedActiveRange = computed(() => {
               class="px-2 py-0.5 text-[10px] font-bold rounded border border-card-border bg-main-bg hover:bg-emerald-600 hover:text-white transition cursor-pointer flex items-center gap-1 disabled:opacity-50"
               :title="langStore.isAmharic() ? 'የወሩ ሳምንታት በExcel አውርድ' : 'Export Intra-Month as Excel'"
             >
-              <FileSpreadsheet class="w-3 h-3" />
-              <span>Excel</span>
+              <Loader2 v-if="downloadingFormat === 'xlsx' && downloadingScope === 'intra_month'" class="w-3 h-3 animate-spin text-emerald-600" />
+              <FileSpreadsheet v-else class="w-3 h-3" />
+              <span>{{ downloadingFormat === 'xlsx' && downloadingScope === 'intra_month' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'Excel' }}</span>
             </button>
           </div>
           <div class="flex items-center gap-1.5">
@@ -1249,8 +1266,9 @@ const formattedActiveRange = computed(() => {
             :disabled="Boolean(downloadingFormat)"
             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-2xs cursor-pointer disabled:opacity-50"
           >
-            <FileSpreadsheet class="w-3.5 h-3.5" />
-            <span>Excel (.xlsx)</span>
+            <Loader2 v-if="downloadingFormat === 'xlsx'" class="w-3.5 h-3.5 animate-spin" />
+            <FileSpreadsheet v-else class="w-3.5 h-3.5" />
+            <span>{{ downloadingFormat === 'xlsx' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'Excel (.xlsx)' }}</span>
           </button>
 
           <!-- Word .doc -->
@@ -1260,8 +1278,9 @@ const formattedActiveRange = computed(() => {
             :disabled="Boolean(downloadingFormat)"
             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white transition shadow-2xs cursor-pointer disabled:opacity-50"
           >
-            <FileText class="w-3.5 h-3.5" />
-            <span>Word (.doc)</span>
+            <Loader2 v-if="downloadingFormat === 'doc'" class="w-3.5 h-3.5 animate-spin" />
+            <FileText v-else class="w-3.5 h-3.5" />
+            <span>{{ downloadingFormat === 'doc' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'Word (.doc)' }}</span>
           </button>
 
           <!-- CSV .csv -->
@@ -1271,8 +1290,9 @@ const formattedActiveRange = computed(() => {
             :disabled="Boolean(downloadingFormat)"
             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-slate-700 hover:bg-slate-800 text-white transition shadow-2xs cursor-pointer disabled:opacity-50"
           >
-            <FileCheck2 class="w-3.5 h-3.5" />
-            <span>CSV (.csv)</span>
+            <Loader2 v-if="downloadingFormat === 'csv'" class="w-3.5 h-3.5 animate-spin" />
+            <FileCheck2 v-else class="w-3.5 h-3.5" />
+            <span>{{ downloadingFormat === 'csv' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'CSV (.csv)' }}</span>
           </button>
 
           <!-- Direct PDF Download -->
@@ -1282,10 +1302,24 @@ const formattedActiveRange = computed(() => {
             :disabled="Boolean(downloadingFormat)"
             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-brand-blue hover:bg-blue-900 text-white transition shadow-2xs cursor-pointer disabled:opacity-50"
           >
-            <Printer class="w-3.5 h-3.5" />
-            <span>PDF (.pdf)</span>
+            <Loader2 v-if="downloadingFormat === 'pdf'" class="w-3.5 h-3.5 animate-spin" />
+            <Printer v-else class="w-3.5 h-3.5" />
+            <span>{{ downloadingFormat === 'pdf' ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : 'PDF (.pdf)' }}</span>
           </button>
         </div>
+      </div>
+
+      <!-- Active File Generation Notice Banner -->
+      <div
+        v-if="downloadingFormat"
+        class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-md bg-brand-blue/10 border border-brand-blue/30 text-brand-blue dark:text-brand-yellow text-xs font-bold animate-pulse"
+      >
+        <Loader2 class="w-4 h-4 animate-spin shrink-0 text-brand-blue dark:text-brand-yellow" />
+        <span>
+          {{ langStore.isAmharic()
+            ? `የ${downloadingFormat.toUpperCase()} ይፋዊ ሰነድ በመዘጋጀት ላይ ነው፤ እባክዎ ጥቂት ይጠብቁ...`
+            : `Generating official ${downloadingFormat.toUpperCase()} document, please wait...` }}
+        </span>
       </div>
 
       <!-- Scope Selector Segmented Controls -->
@@ -1446,10 +1480,12 @@ const formattedActiveRange = computed(() => {
             <button
               type="button"
               @click="triggerDownload(item.format)"
-              class="px-2.5 py-1 rounded text-xs font-bold border border-card-border hover:bg-brand-blue hover:text-white hover:border-brand-blue transition cursor-pointer shrink-0"
+              :disabled="Boolean(downloadingFormat)"
+              class="px-2.5 py-1 rounded text-xs font-bold border border-card-border hover:bg-brand-blue hover:text-white hover:border-brand-blue transition cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
               title="Download File"
             >
-              {{ langStore.t('common.download', 'Download') }}
+              <Loader2 v-if="downloadingFormat === item.format" class="w-3 h-3 animate-spin" />
+              <span>{{ downloadingFormat === item.format ? (langStore.isAmharic() ? 'በማዘጋጀት ላይ...' : 'Generating...') : langStore.t('common.download', 'Download') }}</span>
             </button>
           </div>
         </div>

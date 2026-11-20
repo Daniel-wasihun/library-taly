@@ -3,6 +3,7 @@ import { History, Download, Plus, Minus, Trash2, Printer, Building2, Clock, User
 import Button from '@/components/ui/Button.vue';
 import { useLanguageStore } from '@/stores/languageStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useAttendanceStore } from '@/stores/attendanceStore';
 import { formatDT } from '@/utils/ethiopianDate';
 import type { Attendance } from '@/types';
 
@@ -27,6 +28,7 @@ const emit = defineEmits<{
 
 const langStore = useLanguageStore();
 const authStore = useAuthStore();
+const attendanceStore = useAttendanceStore();
 
 const getTimeDisplay = (dateStr: string) => {
   return formatDT(dateStr, langStore.isAmharic()).time;
@@ -116,6 +118,8 @@ const getDateDisplay = (dateStr: string) => {
             variant="primary"
             size="sm"
             :icon="Printer"
+            :loading="attendanceStore.isDownloadingReport && attendanceStore.downloadingReportFormat === 'pdf'"
+            :disabled="attendanceStore.isDownloadingReport"
             @click="emit('print')"
             class="!bg-brand-blue text-white shadow-2xs text-[11px] sm:text-xs py-1 px-2.5 sm:py-1.5 sm:px-3 flex-1 sm:flex-initial"
           >
@@ -127,6 +131,8 @@ const getDateDisplay = (dateStr: string) => {
             variant="secondary"
             size="sm"
             :icon="Download"
+            :loading="attendanceStore.isDownloadingReport && attendanceStore.downloadingReportFormat === 'csv'"
+            :disabled="attendanceStore.isDownloadingReport"
             @click="emit('export')"
             class="text-[11px] sm:text-xs py-1 px-2.5 sm:py-1.5 sm:px-3 flex-1 sm:flex-initial"
           >

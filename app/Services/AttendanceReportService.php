@@ -208,18 +208,34 @@ class AttendanceReportService
 
         usort($staffActivity, fn($a, $b) => $b['visitors_handled'] <=> $a['visitors_handled']);
 
-        // 6. Longitudinal Records for Day-of-Week, Intra-Month, Monthly & Yearly Trend Intelligence
-        $longitudinalRecords = LibraryAttendance::query()
-            ->when($restrictedLibraryId, fn($q) => $q->where('library_id', $restrictedLibraryId))
-            ->when(!empty($filters['user_type']), fn($q) => $q->where('user_type', $filters['user_type']))
-            ->when(!empty($filters['gender']), fn($q) => $q->where('gender', $filters['gender']))
-            ->select(['id', 'entry_at', 'visitor_count', 'user_type', 'gender', 'library_id'])
-            ->get();
+        // 6. Longitudinal Records for Day-of-Week, Intra-Month, Monthly & Yearly Trend Intelligence (Optimized for speed)
+        $scope = strtolower($filters['scope'] ?? 'full');
+        $needLongitudinal = in_array($scope, ['full', 'day_of_week', 'intra_month']);
+        $dayOfWeekAnalytics = [];
+        $intraMonthDayAnalytics = [];
+        $monthlyAnalytics = [];
+        $yearlyAnalytics = [];
 
-        $dayOfWeekAnalytics = $this->calculateDayOfWeekAnalytics($longitudinalRecords, $isAmharic);
-        $intraMonthDayAnalytics = $this->calculateIntraMonthDayAnalytics($longitudinalRecords, $isAmharic);
-        $monthlyAnalytics = $this->calculateMonthlyAnalytics($longitudinalRecords, $isAmharic);
-        $yearlyAnalytics = $this->calculateYearlyAnalytics($longitudinalRecords, $isAmharic);
+        if ($needLongitudinal) {
+            $longitudinalRecords = LibraryAttendance::query()
+                ->when($restrictedLibraryId, fn($q) => $q->where('library_id', $restrictedLibraryId))
+                ->when(!empty($filters['user_type']), fn($q) => $q->where('user_type', $filters['user_type']))
+                ->when(!empty($filters['gender']), fn($q) => $q->where('gender', $filters['gender']))
+                ->select(['id', 'entry_at', 'visitor_count', 'user_type', 'gender', 'library_id'])
+                ->get();
+
+            if ($scope === 'full' || $scope === 'day_of_week') {
+                $dayOfWeekAnalytics = $this->calculateDayOfWeekAnalytics($longitudinalRecords, $isAmharic);
+            }
+            if ($scope === 'full' || $scope === 'intra_month') {
+                $intraMonthDayAnalytics = $this->calculateIntraMonthDayAnalytics($longitudinalRecords, $isAmharic);
+            }
+            if ($scope === 'full') {
+                $monthlyAnalytics = $this->calculateMonthlyAnalytics($longitudinalRecords, $isAmharic);
+                $yearlyAnalytics = $this->calculateYearlyAnalytics($longitudinalRecords, $isAmharic);
+            }
+        }
+
         $shiftTimeAnalytics = $this->calculateShiftTimeAnalytics($hourlyDistribution, $shiftWindows, $totalCount, $isAmharic);
 
         // Date & Time formatting
@@ -287,7 +303,41 @@ class AttendanceReportService
             'generatedBy' => $user->name,
             'generatedByUsername' => $user->username,
             'description' => $description,
+            'filters' => $filters,
         ];
+    }
+
+    /**
+     * Generate semantic, professional export filename with date suffix (no random numbers).
+     */
+    public function generateReportFilename(array $data, string $extension): string
+    {
+        $scope = strtolower($data['scope'] ?? 'full');
+        $scopeName = match ($scope) {
+            'patron_types' => 'Patron_Demographics',
+            'branches' => 'Campus_Facilities_Comparison',
+            'day_of_week' => 'Day_Of_Week_Influx_Profile',
+            'intra_month' => 'Intra_Month_Cycles',
+            default => 'Executive_Attendance_Audit',
+        };
+
+        $facilityName = '';
+        if (!empty($data['selectedLibrary'])) {
+            $name = $data['selectedLibrary']->name ?? $data['selectedLibrary']->code ?? '';
+            $cleanName = preg_replace('/[^A-Za-z0-9]/', '_', $name);
+            $cleanName = trim(preg_replace('/_+/', '_', $cleanName), '_');
+            if ($cleanName !== '') {
+                $facilityName = $cleanName . '_';
+            }
+        } elseif ($scope === 'full' || $scope === 'patron_types') {
+            $facilityName = 'All_Libraries_';
+        }
+
+        $from = $data['filters']['date_from'] ?? $data['rawDateFrom'] ?? now()->toDateString();
+        $to = $data['filters']['date_to'] ?? $data['rawDateTo'] ?? $from;
+        $dateSuffix = ($from === $to) ? $from : "{$from}_to_{$to}";
+
+        return "WDU_{$facilityName}{$scopeName}_{$dateSuffix}.{$extension}";
     }
 
     /**
@@ -985,19 +1035,19 @@ class AttendanceReportService
             $output .= '   <Row><Cell ss:MergeAcross="4" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . $data['dateFromStr']['date'] . ' – ' . $data['dateToStr']['date'] . ' | ' . $data['refNumber']) . '</Data></Cell></Row>' . "\n";
             $output .= '   <Row ss:Height="12"><Cell ss:MergeAcross="4"/></Row>' . "\n";
 
-            $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="4" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? 'የተጠቃሚዎች ስነ-ሕዝብና የአጠቃቀም ቆጣሪ ስርጭት' : 'Patron Category Demographic Breakdown') . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="4" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? 'የተጠቃሚዎች ምድብና የስነ-ሕዝብ ስርጭት' : 'Patron Category Demographic Breakdown') . '</Data></Cell></Row>' . "\n";
             $output .= '   <Row ss:Height="18">' . "\n";
-            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የተጠቃሚ ምድብ' : 'Patron Category') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የተጠቃሚ ምድብ' : 'User Type') . '</Data></Cell>' . "\n";
             $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ወንድ' : 'Male') . '</Data></Cell>' . "\n";
             $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ሴት' : 'Female') . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ ድምር' : 'Subtotal') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ' : 'Total') . '</Data></Cell>' . "\n";
             $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</Data></Cell>' . "\n";
             $output .= '   </Row>' . "\n";
 
             $types = [
-                'student' => $isAmharic ? 'ተማሪዎች (ቅድመ-ምረቃና ድህረ-ምረቃ)' : 'Students (Undergraduate & Postgraduate)',
-                'teacher' => $isAmharic ? 'መምህራንና ተመራማሪዎች' : 'Faculty & Research Scholars',
-                'staff' => $isAmharic ? 'የአስተዳደርና ቴክኒክ ሠራተኞች' : 'Administrative & Technical Staff',
+                'student' => $isAmharic ? 'ተማሪ' : 'Student',
+                'teacher' => $isAmharic ? 'መምህር' : 'Teacher',
+                'staff' => $isAmharic ? 'ሠራተኛ' : 'Staff',
             ];
 
             foreach ($types as $key => $label) {
@@ -1012,7 +1062,7 @@ class AttendanceReportService
             }
 
             $output .= '   <Row>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="String">' . ($isAmharic ? 'አጠቃላይ ድምር' : 'Grand Total') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ' : 'Total') . '</Data></Cell>' . "\n";
             $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $data['maleCount'] . '</Data></Cell>' . "\n";
             $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $data['femaleCount'] . '</Data></Cell>' . "\n";
             $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $data['totalCount'] . '</Data></Cell>' . "\n";
@@ -1226,17 +1276,17 @@ class AttendanceReportService
         // Section 2: Demographic Breakdown
         $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="6" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? '2. የተጠቃሚዎች ስነ-ሕዝብና ምድብ ስርጭት' : '2. Patron Demographic Distribution') . '</Data></Cell></Row>' . "\n";
         $output .= '   <Row ss:Height="18">' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የተጠቃሚ ምድብ' : 'Patron Category') . '</Data></Cell>' . "\n";
+        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የተጠቃሚ ምድብ' : 'User Type') . '</Data></Cell>' . "\n";
         $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ወንድ' : 'Male') . '</Data></Cell>' . "\n";
         $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ሴት' : 'Female') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ ድምር' : 'Subtotal') . '</Data></Cell>' . "\n";
+        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ' : 'Total') . '</Data></Cell>' . "\n";
         $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</Data></Cell>' . "\n";
         $output .= '   </Row>' . "\n";
 
         $types = [
-            'student' => $isAmharic ? 'ተማሪዎች (ቅድመ-ምረቃና ድህረ-ምረቃ)' : 'Students (Undergraduate & Postgraduate)',
-            'teacher' => $isAmharic ? 'መምህራንና ተመራማሪዎች' : 'Faculty & Research Scholars',
-            'staff' => $isAmharic ? 'የአስተዳደርና ቴክኒክ ሠራተኞች' : 'Administrative & Technical Staff',
+            'student' => $isAmharic ? 'ተማሪ' : 'Student',
+            'teacher' => $isAmharic ? 'መምህር' : 'Teacher',
+            'staff' => $isAmharic ? 'ሠራተኛ' : 'Staff',
         ];
 
         foreach ($types as $key => $label) {
@@ -1251,7 +1301,7 @@ class AttendanceReportService
         }
 
         $output .= '   <Row>' . "\n";
-        $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="String">' . ($isAmharic ? 'አጠቃላይ ድምር' : 'Grand Total') . '</Data></Cell>' . "\n";
+        $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ' : 'Total') . '</Data></Cell>' . "\n";
         $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $data['maleCount'] . '</Data></Cell>' . "\n";
         $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $data['femaleCount'] . '</Data></Cell>' . "\n";
         $output .= '    <Cell ss:StyleID="CellTotal"><Data ss:Type="Number">' . $data['totalCount'] . '</Data></Cell>' . "\n";
@@ -1568,14 +1618,14 @@ class AttendanceReportService
 
         // Section 2: Demographic Patron Matrix (full or patron_types)
         if ($scope === 'full' || $scope === 'patron_types') {
-            $html .= '<h3>' . ($isAmharic ? '2. የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር' : '2. Patron Demographic Categorization') . '</h3>';
+            $html .= '<h3>' . ($isAmharic ? ($scope === 'patron_types' ? 'የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር' : '2. የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር') : ($scope === 'patron_types' ? 'Patron Demographic Categorization' : '2. Patron Demographic Categorization')) . '</h3>';
             $html .= '<table>';
-            $html .= '<tr><th>' . ($isAmharic ? 'የተጠቃሚ ምድብ' : 'Patron Category') . '</th><th class="text-right">' . ($isAmharic ? 'ወንድ' : 'Male') . '</th><th class="text-right">' . ($isAmharic ? 'ሴት' : 'Female') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ድምር' : 'Subtotal') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</th></tr>';
+            $html .= '<tr><th>' . ($isAmharic ? 'የተጠቃሚ ምድብ' : 'User Type') . '</th><th class="text-right">' . ($isAmharic ? 'ወንድ' : 'Male') . '</th><th class="text-right">' . ($isAmharic ? 'ሴት' : 'Female') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ' : 'Total') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</th></tr>';
 
             $types = [
-                'student' => $isAmharic ? 'ተማሪዎች (ቅድመ-ምረቃና ድህረ-ምረቃ)' : 'Students (Undergraduate & Postgraduate)',
-                'teacher' => $isAmharic ? 'መምህራንና ተመራማሪዎች' : 'Faculty & Research Scholars',
-                'staff' => $isAmharic ? 'የአስተዳደርና ቴክኒክ ሠራተኞች' : 'Administrative & Technical Staff',
+                'student' => $isAmharic ? 'ተማሪ' : 'Student',
+                'teacher' => $isAmharic ? 'መምህር' : 'Teacher',
+                'staff' => $isAmharic ? 'ሠራተኛ' : 'Staff',
             ];
 
             foreach ($types as $key => $label) {
@@ -1590,7 +1640,7 @@ class AttendanceReportService
             }
 
             $html .= '<tr class="total-row">';
-            $html .= '<td>' . ($isAmharic ? 'አጠቃላይ ድምር' : 'Grand Total') . '</td>';
+            $html .= '<td>' . ($isAmharic ? 'ጠቅላላ' : 'Total') . '</td>';
             $html .= '<td class="text-right">' . number_format($data['maleCount']) . '</td>';
             $html .= '<td class="text-right">' . number_format($data['femaleCount']) . '</td>';
             $html .= '<td class="text-right">' . number_format($data['totalCount']) . '</td>';
@@ -1792,24 +1842,24 @@ class AttendanceReportService
         if ($scope === 'full' || $scope === 'patron_types') {
             fputcsv($f, [$isAmharic ? '--- 2. የተጠቃሚዎች ስነ-ሕዝብ ስርጭት ---' : '--- 2. PATRON DEMOGRAPHIC BREAKDOWN ---']);
             fputcsv($f, [
-                $isAmharic ? 'የተጠቃሚ ምድብ' : 'Patron Category',
+                $isAmharic ? 'የተጠቃሚ ምድብ' : 'User Type',
                 $isAmharic ? 'ወንድ' : 'Male',
                 $isAmharic ? 'ሴት' : 'Female',
-                $isAmharic ? 'ጠቅላላ ድምር' : 'Subtotal',
+                $isAmharic ? 'ጠቅላላ' : 'Total',
                 $isAmharic ? 'ድርሻ (%)' : 'Share (%)',
             ]);
 
             $types = [
-                'student' => $isAmharic ? 'ተማሪዎች' : 'Students',
-                'teacher' => $isAmharic ? 'መምህራን' : 'Faculty',
-                'staff' => $isAmharic ? 'ሠራተኞች' : 'Staff',
+                'student' => $isAmharic ? 'ተማሪ' : 'Student',
+                'teacher' => $isAmharic ? 'መምህር' : 'Teacher',
+                'staff' => $isAmharic ? 'ሠራተኛ' : 'Staff',
             ];
 
             foreach ($types as $key => $label) {
                 $row = $data['demographics'][$key];
                 fputcsv($f, [$label, $row['male'], $row['female'], $row['total'], $row['percent'] . '%']);
             }
-            fputcsv($f, [$isAmharic ? 'አጠቃላይ ድምር' : 'Grand Total', $data['maleCount'], $data['femaleCount'], $data['totalCount'], '100%']);
+            fputcsv($f, [$isAmharic ? 'ጠቅላላ' : 'Total', $data['maleCount'], $data['femaleCount'], $data['totalCount'], '100%']);
             fputcsv($f, []);
         }
 

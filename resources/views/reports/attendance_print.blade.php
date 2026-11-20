@@ -39,8 +39,6 @@
     <meta charset="UTF-8">
     <title>{{ $pageTitle }} - {{ $libraryName }}</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;600;700&display=swap');
-
         @font-face {
             font-family: 'NotoSansEthiopic';
             font-style: normal;
@@ -494,37 +492,37 @@
         <table class="formal-table">
             <thead>
                 <tr>
-                    <th style="width: 45%;">{{ $isAmharic ? 'የተጠቃሚ ምድብ' : 'Patron Category' }}</th>
+                    <th style="width: 45%;">{{ $isAmharic ? 'የተጠቃሚ ምድብ' : 'User Type' }}</th>
                     <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'ወንድ' : 'Male' }}</th>
                     <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'ሴት' : 'Female' }}</th>
-                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'ጠቅላላ ድምር' : 'Subtotal' }}</th>
-                    <th class="text-right" style="width: 16%;">{{ $isAmharic ? 'የድርሻ መጠን (%)' : 'Traffic Share (%)' }}</th>
+                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'ጠቅላላ' : 'Total' }}</th>
+                    <th class="text-right" style="width: 16%;">{{ $isAmharic ? 'ድርሻ (%)' : 'Share (%)' }}</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><b>{{ $isAmharic ? 'ተማሪዎች (ቅድመ-ምረቃና ድህረ-ምረቃ)' : 'Students (Undergraduate & Postgraduate)' }}</b></td>
+                    <td><b>{{ $isAmharic ? 'ተማሪ' : 'Student' }}</b></td>
                     <td class="text-right">{{ number_format($demographics['student']['male']) }}</td>
                     <td class="text-right">{{ number_format($demographics['student']['female']) }}</td>
                     <td class="text-right" style="font-weight: bold;">{{ number_format($demographics['student']['total']) }}</td>
                     <td class="text-right">{{ $demographics['student']['percent'] }}%</td>
                 </tr>
                 <tr>
-                    <td><b>{{ $isAmharic ? 'መምህራንና ተመራማሪዎች' : 'Faculty & Research Scholars' }}</b></td>
+                    <td><b>{{ $isAmharic ? 'መምህር' : 'Teacher' }}</b></td>
                     <td class="text-right">{{ number_format($demographics['teacher']['male']) }}</td>
                     <td class="text-right">{{ number_format($demographics['teacher']['female']) }}</td>
                     <td class="text-right" style="font-weight: bold;">{{ number_format($demographics['teacher']['total']) }}</td>
                     <td class="text-right">{{ $demographics['teacher']['percent'] }}%</td>
                 </tr>
                 <tr>
-                    <td><b>{{ $isAmharic ? 'የአስተዳደርና ቴክኒክ ሠራተኞች' : 'Administrative & Technical Staff' }}</b></td>
+                    <td><b>{{ $isAmharic ? 'ሠራተኛ' : 'Staff' }}</b></td>
                     <td class="text-right">{{ number_format($demographics['staff']['male']) }}</td>
                     <td class="text-right">{{ number_format($demographics['staff']['female']) }}</td>
                     <td class="text-right" style="font-weight: bold;">{{ number_format($demographics['staff']['total']) }}</td>
                     <td class="text-right">{{ $demographics['staff']['percent'] }}%</td>
                 </tr>
                 <tr class="total-row">
-                    <td><b>{{ $isAmharic ? 'አጠቃላይ ድምር' : 'Grand Total' }}</b></td>
+                    <td><b>{{ $isAmharic ? 'ጠቅላላ' : 'Total' }}</b></td>
                     <td class="text-right">{{ number_format($maleCount) }}</td>
                     <td class="text-right">{{ number_format($femaleCount) }}</td>
                     <td class="text-right" style="font-size: 11px;">{{ number_format($totalCount) }}</td>

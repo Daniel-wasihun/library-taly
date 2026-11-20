@@ -4,6 +4,7 @@ import { attendanceApi } from '@/api';
 import { useToastStore } from './toastStore';
 import { useAuthStore } from './authStore';
 import { useLanguageStore } from './languageStore';
+import { useLibraryStore } from './libraryStore';
 import type { Attendance, AttendanceStats } from '@/types';
 
 export const useAttendanceStore = defineStore('attendance', () => {
@@ -190,14 +191,32 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
         const scopeNames: Record<string, string> = {
             patron_types: 'Patron_Demographics',
-            branches: 'Branch_Comparison',
-            day_of_week: 'Day_Influx_Profile',
-            intra_month: 'IntraMonth_Cycles',
-            full: 'Official_Attendance_Executive_Audit',
+            branches: 'Campus_Facilities_Comparison',
+            day_of_week: 'Day_Of_Week_Influx_Profile',
+            intra_month: 'Intra_Month_Cycles',
+            full: 'Executive_Attendance_Audit',
         };
-        const scopePrefix = scopeNames[scope] || 'Attendance_Audit';
+        const scopeSlug = scopeNames[scope] || 'Attendance_Audit';
+
+        let facilitySlug = '';
+        if (params.library_id) {
+            const libraryStore = useLibraryStore();
+            const lib = libraryStore.libraries.find(l => Number(l.id) === Number(params.library_id));
+            if (lib) {
+                const clean = lib.name.replace(/[^A-Za-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+                if (clean) facilitySlug = clean + '_';
+            }
+        } else if (scope === 'full' || scope === 'patron_types') {
+            facilitySlug = 'All_Libraries_';
+        }
+
+        const dateFrom = params.date_from || new Date().toISOString().split('T')[0];
+        const dateTo = params.date_to || dateFrom;
+        const dateSuffix = (dateFrom === dateTo) ? dateFrom : `${dateFrom}_to_${dateTo}`;
+
         const ext = format;
-        const filename = `WDU_${scopePrefix}_${Date.now()}.${ext}`;
+        const filename = `WDU_${facilitySlug}${scopeSlug}_${dateSuffix}.${ext}`;
+        const auditId = `WDU-${scope.toUpperCase().substring(0, 4)}-${dateSuffix.replace(/-/g, '')}`;
 
         const mimeMap: Record<string, string> = {
             pdf: 'application/pdf',
@@ -249,7 +268,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
                 : (scopeLabelsEn[scope] || scope);
 
             exportHistory.value.unshift({
-                id: `EXP-${Math.floor(100 + Math.random() * 900)}`,
+                id: auditId,
                 name: filename.replace(`.${ext}`, ''),
                 format,
                 date: langStore.isAmharic() ? 'ዛሬ' : 'Today',

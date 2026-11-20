@@ -477,52 +477,47 @@ class AttendanceController extends Controller
         $params['scope'] = $scope;
         $reportData = $this->reportService->compileReportData($user, $params, $lang);
 
-        $timestamp = now()->format('Y_m_d_His');
-        $scopePrefix = match ($scope) {
-            'patron_types' => 'Patron_Demographic_Usage',
-            'branches' => 'Branch_Facility_Comparison',
-            'day_of_week' => 'DayOfWeek_Influx_Profile',
-            'intra_month' => 'IntraMonth_Weekly_Cycles',
-            default => 'Official_Attendance_Executive_Audit',
-        };
-
         if ($format === 'xlsx' || $format === 'excel') {
+            $filename = $this->reportService->generateReportFilename($reportData, 'xlsx');
             $content = $this->reportService->generateExcelXml($reportData);
             return response($content, 200, [
                 'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="WDU_' . $scopePrefix . '_' . $timestamp . '.xlsx"',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
                 'Pragma' => 'no-cache',
                 'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             ]);
         }
 
         if ($format === 'doc' || $format === 'docx' || $format === 'word') {
+            $filename = $this->reportService->generateReportFilename($reportData, 'doc');
             $content = $this->reportService->generateWordDoc($reportData);
             return response($content, 200, [
                 'Content-Type' => 'application/msword; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="WDU_' . $scopePrefix . '_' . $timestamp . '.doc"',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
                 'Pragma' => 'no-cache',
                 'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             ]);
         }
 
         if ($format === 'csv') {
+            $filename = $this->reportService->generateReportFilename($reportData, 'csv');
             $content = $this->reportService->generateCsv($reportData);
             return response($content, 200, [
                 'Content-Type' => 'text/csv; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="WDU_' . $scopePrefix . '_' . $timestamp . '.csv"',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
                 'Pragma' => 'no-cache',
                 'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             ]);
         }
 
         if ($format === 'pdf') {
+            $filename = $this->reportService->generateReportFilename($reportData, 'pdf');
             $reportData['isPdf'] = true;
             $html = view('reports.attendance_print', $reportData)->render();
 
             $options = new \Dompdf\Options();
             $options->set('isFontSubsettingEnabled', true);
-            $options->set('isRemoteEnabled', true);
+            $options->set('isRemoteEnabled', false);
             $options->set('isHtml5ParserEnabled', true);
             $options->set('defaultFont', 'NotoSansEthiopic');
             $options->set('fontDir', storage_path('fonts'));
@@ -541,7 +536,7 @@ class AttendanceController extends Controller
 
             return response($dompdf->output(), 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="WDU_' . $scopePrefix . '_' . $timestamp . '.pdf"',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
                 'Pragma' => 'no-cache',
                 'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             ]);

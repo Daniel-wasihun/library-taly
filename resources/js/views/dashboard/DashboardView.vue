@@ -97,8 +97,8 @@
         </div>
       </div>
 
-      <!-- Metric Insight Cards Skeleton -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <!-- Metric Insight Cards Skeleton (Guarded by Permission) -->
+      <div v-if="authStore.canManageAttendanceAnalytics" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div v-for="i in 6" :key="`metric-skel-${i}`" class="bg-card-bg border border-card-border rounded-md p-4 space-y-2 shadow-2xs">
           <div class="flex justify-between items-center">
             <div class="h-3 w-16 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
@@ -106,6 +106,16 @@
           </div>
           <div class="h-7 w-20 bg-slate-200 dark:bg-slate-700 rounded"></div>
           <div class="h-2.5 w-24 bg-slate-200 dark:bg-slate-700/40 rounded"></div>
+        </div>
+      </div>
+      <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div v-for="i in 3" :key="`op-skel-${i}`" class="bg-card-bg border border-card-border rounded-md p-4 space-y-2 shadow-2xs">
+          <div class="flex justify-between items-center">
+            <div class="h-3 w-24 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+            <div class="w-3.5 h-3.5 rounded bg-slate-200 dark:bg-slate-700/60"></div>
+          </div>
+          <div class="h-6 w-32 bg-slate-200 dark:bg-slate-700 rounded"></div>
+          <div class="h-2.5 w-20 bg-slate-200 dark:bg-slate-700/40 rounded"></div>
         </div>
       </div>
 
@@ -145,9 +155,9 @@
         </div>
       </div>
 
-      <!-- Bottom Tier Skeleton -->
-      <div class="grid grid-cols-1" :class="authStore.canManageAttendanceAnalytics ? 'lg:grid-cols-3 gap-5' : 'gap-5'">
-        <div v-if="authStore.canManageAttendanceAnalytics" class="lg:col-span-2 bg-card-bg border border-card-border rounded-md p-5 space-y-3 shadow-2xs">
+      <!-- Bottom Tier Skeleton (Feed & Duty Shifts) -->
+      <div class="grid grid-cols-1" :class="authStore.canManageAttendanceAnalytics ? 'lg:grid-cols-3 2xl:grid-cols-4 gap-5' : 'gap-5'">
+        <div v-if="authStore.canManageAttendanceAnalytics" class="lg:col-span-2 2xl:col-span-2 bg-card-bg border border-card-border rounded-md p-5 space-y-3 shadow-2xs">
           <div class="flex justify-between items-center border-b border-card-border pb-3">
             <div class="h-4 w-36 bg-slate-200 dark:bg-slate-700 rounded"></div>
             <div class="h-3 w-24 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
@@ -157,7 +167,7 @@
           </div>
         </div>
 
-        <div :class="authStore.canManageAttendanceAnalytics ? 'bg-card-bg border border-card-border rounded-md p-5 space-y-3 shadow-2xs' : 'lg:col-span-3 bg-card-bg border border-card-border rounded-md p-5 shadow-2xs space-y-4'">
+        <div :class="authStore.canManageAttendanceAnalytics ? 'lg:col-span-1 2xl:col-span-2 bg-card-bg border border-card-border rounded-md p-5 space-y-3 shadow-2xs' : 'lg:col-span-3 bg-card-bg border border-card-border rounded-md p-5 shadow-2xs space-y-4'">
           <div class="flex justify-between items-center border-b border-card-border pb-3">
             <div class="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded"></div>
             <div class="h-3 w-24 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
@@ -236,8 +246,8 @@
                   <CheckCircle2 class="w-3 h-3" />
                   {{ langStore.isAmharic() ? '100% ሙሉ ተገዢነት' : '100% Duty Compliant' }}
                 </span>
-                <span v-if="currentInactivityAlerts?.evaluated_at_formatted" class="text-[10px] font-mono opacity-60">
-                  ({{ currentInactivityAlerts.evaluated_at_formatted }})
+                <span v-if="evaluatedAtDisplay" class="text-[10px] font-mono opacity-70">
+                  ({{ evaluatedAtDisplay }})
                 </span>
               </div>
               <p
@@ -309,13 +319,22 @@
               </button>
             </div>
 
-            <!-- Date Picker -->
-            <input
-              type="date"
-              v-model="alertFilterDate"
-              @change="fetchInactivityAlerts"
-              class="px-2.5 py-1 rounded-md border border-card-border bg-card-bg text-xs text-main-text focus:ring-1 focus:ring-brand-blue"
-            />
+            <!-- Date Picker & Converted Ethiopian Calendar Badge -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <input
+                type="date"
+                v-model="alertFilterDate"
+                @change="fetchInactivityAlerts"
+                class="px-2.5 py-1 rounded-md border border-card-border bg-card-bg text-xs text-main-text focus:ring-1 focus:ring-brand-blue font-mono"
+              />
+              <span
+                v-if="langStore.isAmharic() && alertFilterEthiopianDate"
+                class="px-2 py-0.5 rounded text-[11px] font-bold bg-brand-blue/10 text-brand-blue dark:text-brand-yellow border border-brand-blue/20 whitespace-nowrap shadow-2xs"
+                title="የኢትዮጵያ ቀን አቆጣጠር"
+              >
+                📅 {{ alertFilterEthiopianDate }}
+              </span>
+            </div>
 
             <!-- Shift Dropdown -->
             <div class="flex items-center gap-1">
@@ -350,12 +369,39 @@
           </div>
         </div>
 
-        <!-- Mini Loading State for Alert Inspection -->
-        <div v-if="loadingAlerts" class="p-6 text-center space-y-2">
-          <RefreshCw class="w-5 h-5 mx-auto animate-spin text-brand-blue dark:text-brand-yellow" />
-          <p class="text-xs text-main-text/60">
-            {{ langStore.isAmharic() ? 'የተመረጠውን ቀን እና ፈረቃ መረጃ በመጫን ላይ...' : 'Loading compliance records for selected date and shift...' }}
-          </p>
+        <!-- CARD CONTENT LOADING SKELETON (Shown when date or shift filter is changed) -->
+        <div v-if="loadingAlerts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-3 animate-pulse">
+          <div
+            v-for="i in 4"
+            :key="`alert-filter-skel-${i}`"
+            class="p-3.5 rounded-md bg-card-bg border border-card-border/60 space-y-2.5 shadow-2xs"
+          >
+            <div class="flex items-center justify-between gap-2 border-b border-card-border/60 pb-2">
+              <div class="space-y-1">
+                <div class="h-3.5 w-28 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                <div class="h-2.5 w-16 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+              </div>
+              <div class="h-5 w-20 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+            </div>
+            <div class="space-y-1.5 p-2 rounded bg-main-bg/60 border border-card-border/40">
+              <div class="flex justify-between items-center">
+                <div class="h-2.5 w-20 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+                <div class="h-2.5 w-24 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="h-2.5 w-20 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+                <div class="h-2.5 w-24 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="h-2.5 w-16 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+                <div class="h-2.5 w-8 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="h-2.5 w-32 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+              <div class="h-8 bg-slate-200 dark:bg-slate-700/40 rounded"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Inactive Branches Cards Grid (Ongoing Non-Working Branches) -->
@@ -1181,14 +1227,22 @@
             </div>
 
             <!-- Custom Date Input -->
-            <div class="flex items-center gap-1.5 bg-card-bg px-2 py-1 rounded border border-card-border">
-              <Calendar class="w-3.5 h-3.5 text-main-text/50" />
-              <input
-                type="date"
-                v-model="auditFilterDate"
-                @change="fetchInactivityReport"
-                class="border-none bg-transparent text-main-text font-mono text-xs focus:ring-0 p-0 cursor-pointer"
-              />
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <div class="flex items-center gap-1.5 bg-card-bg px-2 py-1 rounded border border-card-border">
+                <Calendar class="w-3.5 h-3.5 text-main-text/50" />
+                <input
+                  type="date"
+                  v-model="auditFilterDate"
+                  @change="fetchInactivityReport"
+                  class="border-none bg-transparent text-main-text font-mono text-xs focus:ring-0 p-0 cursor-pointer"
+                />
+              </div>
+              <span
+                v-if="langStore.isAmharic() && auditFilterEthiopianDate"
+                class="px-2 py-0.5 rounded text-[11px] font-bold bg-brand-blue/10 text-brand-blue dark:text-brand-yellow border border-brand-blue/20 whitespace-nowrap shadow-2xs"
+              >
+                📅 {{ auditFilterEthiopianDate }}
+              </span>
             </div>
 
             <!-- Shift Dropdown Filter -->
@@ -1514,6 +1568,29 @@ const currentInactivityAlerts = computed(() => {
   return liveInactivityAlerts.value || stats.value?.inactivity_alerts;
 });
 
+const alertFilterEthiopianDate = computed(() => {
+  if (!alertFilterDate.value) return '';
+  const dt = formatDT(alertFilterDate.value, true);
+  return dt.date ? `${dt.date} ዓ.ም` : '';
+});
+
+const auditFilterEthiopianDate = computed(() => {
+  if (!auditFilterDate.value) return '';
+  const dt = formatDT(auditFilterDate.value, true);
+  return dt.date ? `${dt.date} ዓ.ም` : '';
+});
+
+const evaluatedAtDisplay = computed(() => {
+  const isAm = langStore.currentLanguage === 'am';
+  const iso = currentInactivityAlerts.value?.evaluated_at;
+  if (!iso) return currentInactivityAlerts.value?.evaluated_at_formatted || '—';
+  const dt = formatDT(iso, isAm);
+  if (isAm) {
+    return `${dt.date} ዓ.ም ${dt.time}`;
+  }
+  return `${dt.date} ${dt.time}`;
+});
+
 const isAlertToday = computed(() => {
   const today = new Date().toISOString().split('T')[0];
   return alertFilterDate.value === today;
@@ -1676,7 +1753,8 @@ const fetchInactivityReport = async () => {
 };
 
 const todayDate = computed(() => {
-  return formatDT(new Date(), langStore.isAmharic()).full;
+  const isAm = langStore.currentLanguage === 'am';
+  return formatDT(new Date(), isAm).full;
 });
 
 const formatDate = (d: string) => {

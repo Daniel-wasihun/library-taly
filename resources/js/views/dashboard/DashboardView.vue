@@ -169,21 +169,21 @@
 
         <div class="flex items-center gap-2 shrink-0">
           <button
-            @click="openInactivityModal"
+            @click="openInactivityModal('table')"
             type="button"
             class="px-3 py-1.5 rounded-md text-xs font-bold bg-rose-700 hover:bg-rose-800 text-white shadow-2xs transition flex items-center gap-1.5 cursor-pointer active:scale-95"
           >
             <FileText class="w-3.5 h-3.5" />
             <span>{{ langStore.isAmharic() ? 'ይፋዊ የኦዲት ሪፖርት' : 'Inactivity Audit Report' }}</span>
           </button>
-          <a
-            :href="printAuditUrl"
-            target="_blank"
+          <button
+            @click="openInactivityModal('print')"
+            type="button"
             class="px-3 py-1.5 rounded-md text-xs font-bold border border-rose-500/40 bg-card-bg hover:bg-rose-500/10 text-rose-800 dark:text-rose-200 shadow-2xs transition flex items-center gap-1.5 cursor-pointer active:scale-95"
           >
             <Printer class="w-3.5 h-3.5" />
-            <span>{{ langStore.isAmharic() ? 'አትም' : 'Print Document' }}</span>
-          </a>
+            <span>{{ langStore.isAmharic() ? 'ይፋዊ ሰነድ አትም / ቅድመ-እይታ' : 'Print Document' }}</span>
+          </button>
         </div>
       </div>
 
@@ -877,7 +877,7 @@
       @close="showInactivityModal = false"
     >
       <div class="space-y-4 text-xs">
-        <!-- Filter bar -->
+        <!-- Top Control Bar -->
         <div class="flex flex-wrap items-center justify-between gap-3 bg-main-bg p-3 rounded-md border border-card-border">
           <div class="flex items-center gap-3">
             <div class="flex items-center gap-1.5">
@@ -897,23 +897,46 @@
             </button>
           </div>
 
-          <div class="flex items-center gap-2">
-            <a
-              :href="printAuditUrl"
-              target="_blank"
-              class="px-3 py-1.5 rounded border border-card-border bg-card-bg font-bold text-main-text hover:bg-nav-accent/10 transition flex items-center gap-1.5 cursor-pointer"
+          <!-- View Mode & Action Buttons -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="inline-flex p-0.5 rounded-md bg-card-bg border border-card-border">
+              <button
+                type="button"
+                @click="auditViewMode = 'table'"
+                class="px-2.5 py-1 rounded text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
+                :class="auditViewMode === 'table' ? 'bg-brand-blue text-white shadow-2xs font-extrabold' : 'text-main-text/60 hover:text-main-text'"
+              >
+                <BarChart3 class="w-3.5 h-3.5" />
+                <span>{{ langStore.isAmharic() ? 'ሠንጠረዥ' : 'Table View' }}</span>
+              </button>
+              <button
+                type="button"
+                @click="auditViewMode = 'print'"
+                class="px-2.5 py-1 rounded text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
+                :class="auditViewMode === 'print' ? 'bg-brand-blue text-white shadow-2xs font-extrabold' : 'text-main-text/60 hover:text-main-text'"
+              >
+                <FileText class="w-3.5 h-3.5" />
+                <span>{{ langStore.isAmharic() ? 'የሰነድ ቅድመ-እይታ' : 'Document Preview' }}</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              @click="handlePrintAudit"
+              class="px-3 py-1.5 rounded border border-card-border bg-card-bg font-bold text-main-text hover:bg-nav-accent/10 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
             >
               <Printer class="w-3.5 h-3.5" />
               <span>{{ langStore.isAmharic() ? 'ይፋዊ ሰነድ አትም' : 'Print Official Document' }}</span>
-            </a>
-            <a
-              :href="exportCsvUrl"
-              target="_blank"
-              class="px-3 py-1.5 rounded bg-brand-blue font-bold text-white hover:bg-blue-900 transition flex items-center gap-1.5 cursor-pointer"
+            </button>
+            <button
+              type="button"
+              @click="handleExportCsv"
+              :disabled="exportingCsv"
+              class="px-3 py-1.5 rounded bg-brand-blue font-bold text-white hover:bg-blue-900 transition flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
             >
               <Download class="w-3.5 h-3.5" />
-              <span>{{ langStore.isAmharic() ? 'CSV ላክ' : 'Export CSV' }}</span>
-            </a>
+              <span>{{ exportingCsv ? (langStore.isAmharic() ? 'በመላክ ላይ...' : 'Exporting...') : (langStore.isAmharic() ? 'CSV ላክ' : 'Export CSV') }}</span>
+            </button>
           </div>
         </div>
 
@@ -923,80 +946,92 @@
         </div>
 
         <template v-else>
-          <!-- Summary KPIs -->
-          <div v-if="auditReport?.summary" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <div class="p-2.5 rounded border border-card-border bg-card-bg text-center">
-              <div class="text-base font-extrabold font-mono text-main-text">{{ auditReport.summary.total_monitored_shifts }}</div>
-              <div class="text-[9px] uppercase tracking-wider text-main-text/50 font-bold">{{ langStore.isAmharic() ? 'የተመረመሩ ፈረቃዎች' : 'Monitored Shifts' }}</div>
-            </div>
-            <div class="p-2.5 rounded border border-rose-500/30 bg-rose-500/10 text-center">
-              <div class="text-base font-extrabold font-mono text-rose-700 dark:text-rose-400">{{ auditReport.summary.total_incidents }}</div>
-              <div class="text-[9px] uppercase tracking-wider text-rose-600 font-bold">{{ langStore.isAmharic() ? 'የማቆም ክስተቶች (>30ደ)' : 'Inactivity Incidents (>30m)' }}</div>
-            </div>
-            <div class="p-2.5 rounded border border-amber-500/30 bg-amber-500/10 text-center">
-              <div class="text-base font-extrabold font-mono text-amber-700 dark:text-amber-400">{{ auditReport.summary.total_inactive_hours }}h</div>
-              <div class="text-[9px] uppercase tracking-wider text-amber-600 font-bold">{{ langStore.isAmharic() ? 'የባከነ ሰዓት' : 'Total Inactive Hours' }}</div>
-            </div>
-            <div class="p-2.5 rounded border border-card-border bg-card-bg text-center">
-              <div class="text-base font-extrabold font-mono text-brand-blue dark:text-brand-yellow">{{ auditReport.summary.compliance_rate }}%</div>
-              <div class="text-[9px] uppercase tracking-wider text-main-text/50 font-bold">{{ langStore.isAmharic() ? 'የፈረቃ ተገዢነት' : 'Duty Compliance' }}</div>
-            </div>
+          <!-- Document Preview Mode (Embedded Printable A4 Report with authentication) -->
+          <div v-if="auditViewMode === 'print'" class="w-full h-[540px] rounded border border-card-border overflow-hidden bg-white shadow-inner">
+            <iframe
+              :src="printAuditUrl"
+              class="w-full h-full border-none"
+              title="Inactivity Audit Document Preview"
+            ></iframe>
           </div>
 
-          <!-- Incidents Table -->
-          <div class="overflow-x-auto rounded border border-card-border max-h-[420px] overflow-y-auto">
-            <table class="w-full border-collapse text-left">
-              <thead class="sticky top-0 bg-main-bg border-b border-card-border z-10">
-                <tr class="text-[10px] uppercase font-bold text-main-text/60">
-                  <th class="p-2">ID</th>
-                  <th class="p-2">{{ langStore.isAmharic() ? 'ቅርንጫፍ' : 'Branch' }}</th>
-                  <th class="p-2">{{ langStore.isAmharic() ? 'ፈረቃና ቡድን' : 'Shift & Group' }}</th>
-                  <th class="p-2">{{ langStore.isAmharic() ? 'የተመደቡ ሠራተኞች' : 'Scheduled Attendants' }}</th>
-                  <th class="p-2">{{ langStore.isAmharic() ? 'የማቆም ክፍተት' : 'Inactive Interval' }}</th>
-                  <th class="p-2">{{ langStore.isAmharic() ? 'ቆይታ' : 'Duration' }}</th>
-                  <th class="p-2">{{ langStore.isAmharic() ? 'ሁኔታ' : 'Status' }}</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-card-border/60">
-                <tr
-                  v-for="inc in auditReport?.incidents || []"
-                  :key="inc.incident_id"
-                  class="hover:bg-main-bg/50 text-[11px]"
-                >
-                  <td class="p-2 font-mono font-bold text-main-text/60">{{ inc.incident_id }}</td>
-                  <td class="p-2 font-bold text-main-text">{{ langStore.isAmharic() ? inc.branch_name_am : inc.branch_name }}</td>
-                  <td class="p-2">
-                    <div class="font-bold text-brand-blue">{{ langStore.isAmharic() ? inc.shift_name_am : inc.shift_name }}</div>
-                    <div class="text-[10px] text-main-text/50">{{ inc.shift_group_name }}</div>
-                  </td>
-                  <td class="p-2">
-                    <div class="space-y-0.5">
-                      <div v-for="att in inc.attendants" :key="att.id" class="text-[10px]">
-                        <strong>{{ att.name }}</strong> <span class="text-main-text/50">(@{{ att.username }})</span>
+          <!-- Table View Mode -->
+          <div v-else class="space-y-4">
+            <!-- Summary KPIs -->
+            <div v-if="auditReport?.summary" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div class="p-2.5 rounded border border-card-border bg-card-bg text-center">
+                <div class="text-base font-extrabold font-mono text-main-text">{{ auditReport.summary.total_monitored_shifts }}</div>
+                <div class="text-[9px] uppercase tracking-wider text-main-text/50 font-bold">{{ langStore.isAmharic() ? 'የተመረመሩ ፈረቃዎች' : 'Monitored Shifts' }}</div>
+              </div>
+              <div class="p-2.5 rounded border border-rose-500/30 bg-rose-500/10 text-center">
+                <div class="text-base font-extrabold font-mono text-rose-700 dark:text-rose-400">{{ auditReport.summary.total_incidents }}</div>
+                <div class="text-[9px] uppercase tracking-wider text-rose-600 font-bold">{{ langStore.isAmharic() ? 'የማቆም ክስተቶች (>30ደ)' : 'Inactivity Incidents (>30m)' }}</div>
+              </div>
+              <div class="p-2.5 rounded border border-amber-500/30 bg-amber-500/10 text-center">
+                <div class="text-base font-extrabold font-mono text-amber-700 dark:text-amber-400">{{ auditReport.summary.total_inactive_hours }}h</div>
+                <div class="text-[9px] uppercase tracking-wider text-amber-600 font-bold">{{ langStore.isAmharic() ? 'የባከነ ሰዓት' : 'Total Inactive Hours' }}</div>
+              </div>
+              <div class="p-2.5 rounded border border-card-border bg-card-bg text-center">
+                <div class="text-base font-extrabold font-mono text-brand-blue dark:text-brand-yellow">{{ auditReport.summary.compliance_rate }}%</div>
+                <div class="text-[9px] uppercase tracking-wider text-main-text/50 font-bold">{{ langStore.isAmharic() ? 'የፈረቃ ተገዢነት' : 'Duty Compliance' }}</div>
+              </div>
+            </div>
+
+            <!-- Incidents Table -->
+            <div class="overflow-x-auto rounded border border-card-border max-h-[420px] overflow-y-auto">
+              <table class="w-full border-collapse text-left">
+                <thead class="sticky top-0 bg-main-bg border-b border-card-border z-10">
+                  <tr class="text-[10px] uppercase font-bold text-main-text/60">
+                    <th class="p-2">ID</th>
+                    <th class="p-2">{{ langStore.isAmharic() ? 'ቅርንጫፍ' : 'Branch' }}</th>
+                    <th class="p-2">{{ langStore.isAmharic() ? 'ፈረቃና ቡድን' : 'Shift & Group' }}</th>
+                    <th class="p-2">{{ langStore.isAmharic() ? 'የተመደቡ ሠራተኞች' : 'Scheduled Attendants' }}</th>
+                    <th class="p-2">{{ langStore.isAmharic() ? 'የማቆም ክፍተት' : 'Inactive Interval' }}</th>
+                    <th class="p-2">{{ langStore.isAmharic() ? 'ቆይታ' : 'Duration' }}</th>
+                    <th class="p-2">{{ langStore.isAmharic() ? 'ሁኔታ' : 'Status' }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-card-border/60">
+                  <tr
+                    v-for="inc in auditReport?.incidents || []"
+                    :key="inc.incident_id"
+                    class="hover:bg-main-bg/50 text-[11px]"
+                  >
+                    <td class="p-2 font-mono font-bold text-main-text/60">{{ inc.incident_id }}</td>
+                    <td class="p-2 font-bold text-main-text">{{ langStore.isAmharic() ? inc.branch_name_am : inc.branch_name }}</td>
+                    <td class="p-2">
+                      <div class="font-bold text-brand-blue">{{ langStore.isAmharic() ? inc.shift_name_am : inc.shift_name }}</div>
+                      <div class="text-[10px] text-main-text/50">{{ inc.shift_group_name }}</div>
+                    </td>
+                    <td class="p-2">
+                      <div class="space-y-0.5">
+                        <div v-for="att in inc.attendants" :key="att.id" class="text-[10px]">
+                          <strong>{{ att.name }}</strong> <span class="text-main-text/50">(@{{ att.username }})</span>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td class="p-2">
-                    <div class="font-bold font-mono">{{ inc.interval_formatted }}</div>
-                    <div class="text-[10px] text-emerald-600 dark:text-emerald-400">{{ inc.interval_ethiopian }}</div>
-                  </td>
-                  <td class="p-2 font-bold font-mono text-rose-700 dark:text-rose-400">{{ inc.duration_human }}</td>
-                  <td class="p-2">
-                    <span
-                      class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase"
-                      :class="inc.is_ongoing ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30' : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'"
-                    >
-                      {{ inc.is_ongoing ? (langStore.isAmharic() ? '🔴 አሁን አልሰሩም' : '🔴 Active Non-Working') : (langStore.isAmharic() ? '⚠️ ክፍተት' : '⚠️ Past Gap') }}
-                    </span>
-                  </td>
-                </tr>
-                <tr v-if="!auditReport?.incidents?.length">
-                  <td colspan="7" class="p-6 text-center text-emerald-600 dark:text-emerald-400 font-bold">
-                    ✓ {{ langStore.isAmharic() ? 'በተመረጠው ቀን ምንም የሥራ ማቆም ክፍተት አልተገኘም። 100% የፈረቃ ተገዢነት።' : 'No inactivity incidents detected for this period. 100% duty compliance.' }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    </td>
+                    <td class="p-2">
+                      <div class="font-bold font-mono">{{ inc.interval_formatted }}</div>
+                      <div class="text-[10px] text-emerald-600 dark:text-emerald-400">{{ inc.interval_ethiopian }}</div>
+                    </td>
+                    <td class="p-2 font-bold font-mono text-rose-700 dark:text-rose-400">{{ inc.duration_human }}</td>
+                    <td class="p-2">
+                      <span
+                        class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase"
+                        :class="inc.is_ongoing ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30' : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'"
+                      >
+                        {{ inc.is_ongoing ? (langStore.isAmharic() ? '🔴 አሁን አልሰሩም' : '🔴 Active Non-Working') : (langStore.isAmharic() ? '⚠️ ክፍተት' : '⚠️ Past Gap') }}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr v-if="!auditReport?.incidents?.length">
+                    <td colspan="7" class="p-6 text-center text-emerald-600 dark:text-emerald-400 font-bold">
+                      ✓ {{ langStore.isAmharic() ? 'በተመረጠው ቀን ምንም የሥራ ማቆም ክፍተት አልተገኘም። 100% የፈረቃ ተገዢነት።' : 'No inactivity incidents detected for this period. 100% duty compliance.' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </template>
       </div>
@@ -1008,6 +1043,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useLanguageStore } from '@/stores/languageStore';
+import { useToastStore } from '@/stores/toastStore';
 import { dashboardApi, shiftInactivityApi } from '@/api';
 import { formatDT } from '@/utils/ethiopianDate';
 import Modal from '@/components/ui/Modal.vue';
@@ -1036,6 +1072,7 @@ import {
 
 const authStore = useAuthStore();
 const langStore = useLanguageStore();
+const toast = useToastStore();
 
 const loading = ref(true);
 const stats = ref<any>(null);
@@ -1051,6 +1088,8 @@ const showInactivityModal = ref(false);
 const loadingAudit = ref(false);
 const auditReport = ref<any>(null);
 const auditFilterDate = ref(new Date().toISOString().split('T')[0]);
+const auditViewMode = ref<'table' | 'print'>('table');
+const exportingCsv = ref(false);
 
 const printAuditUrl = computed(() => {
   return shiftInactivityApi.exportUrl({
@@ -1068,9 +1107,47 @@ const exportCsvUrl = computed(() => {
   });
 });
 
-const openInactivityModal = () => {
+const openInactivityModal = (mode: 'table' | 'print' = 'table') => {
+  auditViewMode.value = mode;
   showInactivityModal.value = true;
   fetchInactivityReport();
+};
+
+const handlePrintAudit = () => {
+  const url = printAuditUrl.value;
+  const printWin = window.open(url, '_blank');
+  if (!printWin) {
+    toast.error(langStore.isAmharic() ? 'ብቅ-ባይ መስኮት ታግዷል፤ እባክዎ ይፍቀዱለት።' : 'Pop-up blocked. Please allow pop-ups for this site.');
+  }
+};
+
+const handleExportCsv = async () => {
+  try {
+    exportingCsv.value = true;
+    toast.info(langStore.isAmharic() ? 'የCSV ፋይል በመዘጋጀት ላይ ነው...' : 'Generating CSV export, please wait...');
+    const response = await shiftInactivityApi.exportBlob({
+      date: auditFilterDate.value,
+      format: 'csv',
+      lang: langStore.isAmharic() ? 'am' : 'en',
+    });
+
+    const blob = new Blob([response.data], { type: 'text/csv; charset=UTF-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `shift_inactivity_audit_${auditFilterDate.value || 'today'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    toast.success(langStore.isAmharic() ? 'የCSV ሪፖርት በተሳካ ሁኔታ ወርዷል።' : 'Shift inactivity CSV report downloaded successfully.');
+  } catch (err) {
+    console.error('Failed to export CSV:', err);
+    toast.error(langStore.isAmharic() ? 'የCSV ሪፖርት ማውረድ አልተቻለም።' : 'Failed to export shift inactivity CSV report.');
+  } finally {
+    exportingCsv.value = false;
+  }
 };
 
 const fetchInactivityReport = async () => {
@@ -1082,6 +1159,7 @@ const fetchInactivityReport = async () => {
     auditReport.value = data?.data || null;
   } catch (err) {
     console.error('Failed to load shift inactivity report:', err);
+    toast.error(langStore.isAmharic() ? 'የኦዲት ሪፖርት መጫን አልተቻለም።' : 'Failed to load shift inactivity audit data.');
   } finally {
     loadingAudit.value = false;
   }

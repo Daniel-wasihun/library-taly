@@ -16,12 +16,25 @@ class ShiftInactivityController extends Controller
         protected ShiftInactivityMonitorService $monitorService
     ) {}
 
+    protected function resolveUser(Request $request)
+    {
+        $user = $request->user();
+        if (!$user && ($request->filled('token') || $request->filled('api_token'))) {
+            $rawToken = $request->query('token') ?: $request->query('api_token');
+            $personalToken = \Laravel\Sanctum\PersonalAccessToken::findToken($rawToken);
+            if ($personalToken) {
+                $user = $personalToken->tokenable;
+            }
+        }
+        return $user;
+    }
+
     /**
      * Get real-time shift inactivity alerts for currently active shift.
      */
     public function alerts(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $this->resolveUser($request);
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
@@ -46,7 +59,7 @@ class ShiftInactivityController extends Controller
      */
     public function report(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $this->resolveUser($request);
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
@@ -74,7 +87,7 @@ class ShiftInactivityController extends Controller
      */
     public function export(Request $request): Response|StreamedResponse|JsonResponse
     {
-        $user = $request->user();
+        $user = $this->resolveUser($request);
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }

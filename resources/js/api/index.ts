@@ -1,4 +1,4 @@
-import api from './client';
+import api, { getStoredToken } from './client';
 import type { User, DutySchedule, DashboardStats, ApiRole, Library, Attendance, AttendanceStats, AcademicYear } from '@/types';
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -247,6 +247,15 @@ export const shiftInactivityApi = {
         if (params?.shift_id) query.set('shift_id', String(params.shift_id));
         if (params?.format) query.set('format', params.format);
         if (params?.lang) query.set('lang', params.lang);
+        const token = getStoredToken();
+        if (token) query.set('token', token);
         return `/api/shifts/inactivity-report/export?${query.toString()}`;
+    },
+
+    exportBlob: (params?: { date?: string; library_id?: number; shift_id?: number; format?: string; lang?: string }) => {
+        return api.get('/shifts/inactivity-report/export', {
+            params,
+            responseType: 'blob',
+        });
     },
 };

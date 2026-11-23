@@ -237,8 +237,8 @@ const handleLog = async (gender: 'male' | 'female', count = 1) => {
   }
 
   // Pre-flight check: ensure active shift duty
-  if (!authStore.isAdmin && !authStore.isSuperAdmin && dutyStatus.value && !dutyStatus.value.allowed) {
-    toast.error(dutyStatus.value.reason || 'You can only record attendance during your assigned shift date and time.');
+  if (!authStore.isAdmin && !authStore.isSuperAdmin && (!dutyStatus.value || !dutyStatus.value.allowed)) {
+    toast.error(dutyStatus.value?.reason || 'Usage counter is locked: you can only record during your active shift time.');
     return;
   }
 
@@ -435,6 +435,7 @@ watch(
         :selectedLibrary="selectedLibrary"
         v-model:selectedUserType="selectedUserType"
         :dutyStatus="dutyStatus"
+        :loading="checkingDuty"
         @log="handleLog"
       />
 

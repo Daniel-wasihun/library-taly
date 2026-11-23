@@ -73,10 +73,16 @@
       </span>
     </div>
 
-    <!-- Holidays Table / Grid -->
-    <div v-if="loading" class="p-8 text-center text-xs text-main-text/50">
-      <div class="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-      {{ langStore.t('common.loading', 'Loading holidays...') }}
+    <!-- Holidays Grid Skeleton -->
+    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 animate-pulse">
+      <div v-for="i in 3" :key="i" class="p-4 rounded-sm bg-card-bg border border-card-border space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+          <div class="h-4 w-12 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+        </div>
+        <div class="h-3 bg-slate-200 dark:bg-slate-700/50 rounded w-3/4"></div>
+        <div class="h-6 bg-slate-200 dark:bg-slate-700/30 rounded w-full"></div>
+      </div>
     </div>
 
     <div v-else-if="holidaysList.length === 0" class="p-8 rounded-sm bg-card-bg border border-card-border text-center text-xs text-main-text/60">

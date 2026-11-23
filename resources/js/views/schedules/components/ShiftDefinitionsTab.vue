@@ -23,10 +23,25 @@
       </Button>
     </div>
 
-    <!-- Shifts Grid -->
-    <div v-if="shiftStore.loading" class="p-8 text-center text-xs text-main-text/50">
-      <div class="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-      {{ langStore.t('common.loading', 'Loading shifts...') }}
+    <!-- Shifts Grid Skeleton -->
+    <div v-if="shiftStore.loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+      <div v-for="i in 3" :key="i" class="bg-card-bg border border-card-border rounded-sm p-4 space-y-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-sm bg-slate-200 dark:bg-slate-700"></div>
+          <div class="space-y-1.5 w-1/2">
+            <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
+            <div class="h-2.5 bg-slate-200 dark:bg-slate-700/60 rounded w-2/3"></div>
+          </div>
+        </div>
+        <div class="space-y-2 pt-2">
+          <div class="h-3 bg-slate-200 dark:bg-slate-700/50 rounded w-full"></div>
+          <div class="h-3 bg-slate-200 dark:bg-slate-700/50 rounded w-4/5"></div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-card-border">
+          <div class="h-7 w-16 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+          <div class="h-7 w-16 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+        </div>
+      </div>
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

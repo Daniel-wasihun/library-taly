@@ -231,3 +231,22 @@ export const attendanceApi = {
     destroy: (slug: string) =>
         api.delete(`/physical/attendance/${slug}`),
 };
+
+// ── Shift Inactivity & Duty Compliance Monitoring ────────────────────────────
+export const shiftInactivityApi = {
+    alerts: (params?: { library_id?: number }) =>
+        api.get<{ success: boolean; data: any }>('/shifts/inactivity-alerts', { params }),
+
+    report: (params?: { date?: string; library_id?: number; shift_id?: number }) =>
+        api.get<{ success: boolean; data: any }>('/shifts/inactivity-report', { params }),
+
+    exportUrl: (params?: { date?: string; library_id?: number; shift_id?: number; format?: string; lang?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.date) query.set('date', params.date);
+        if (params?.library_id) query.set('library_id', String(params.library_id));
+        if (params?.shift_id) query.set('shift_id', String(params.shift_id));
+        if (params?.format) query.set('format', params.format);
+        if (params?.lang) query.set('lang', params.lang);
+        return `/api/shifts/inactivity-report/export?${query.toString()}`;
+    },
+};

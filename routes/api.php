@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\LibraryController;
 use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\ShiftController;
 use App\Http\Controllers\Api\ShiftGroupController;
+use App\Http\Controllers\Api\ShiftInactivityController;
 use App\Http\Controllers\Api\TranslationController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
@@ -89,6 +90,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/shift-schedules/holidays/{holiday}', [GroupShiftScheduleController::class, 'destroyHoliday']);
     Route::get('/shift-schedules/check-overlap', [GroupShiftScheduleController::class, 'checkOverlap']);
     Route::delete('/shift-schedules/{groupShiftSchedule}', [GroupShiftScheduleController::class, 'destroy']);
+
+    // Attendant Shift Inactivity Monitoring & Compliance Audit Reporting (> 30 Mins Inactive)
+    Route::get('/shifts/inactivity-alerts', [ShiftInactivityController::class, 'alerts']);
+    Route::get('/shifts/inactivity-report', [ShiftInactivityController::class, 'report']);
+    Route::get('/shifts/inactivity-report/export', [ShiftInactivityController::class, 'export']);
 
     // Physical Library Attendance / Usage Counter (LMS Pattern)
     Route::prefix('physical/attendance')->group(function () {

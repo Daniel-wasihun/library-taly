@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\DutySchedule;
+use App\Models\GroupShiftSchedule;
 use App\Models\Library;
 use App\Models\LibraryAttendance;
 use App\Models\User;
 use App\Services\DutyScheduleService;
+use App\Services\EthiopianCalendarService;
+use App\Services\ShiftInactivityMonitorService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +19,8 @@ use Illuminate\Support\Facades\Cache;
 class DashboardController extends Controller
 {
     public function __construct(
-        protected DutyScheduleService $dutyService
+        protected DutyScheduleService $dutyService,
+        protected ShiftInactivityMonitorService $inactivityService
     ) {}
 
     /**
@@ -81,10 +85,117 @@ class DashboardController extends Controller
             $weekAgo = Carbon::today()->subDays(6)->toDateString();
             $weekTotal = (int) (clone $baseAttendance)->whereBetween('entry_at', [$weekAgo . ' 00:00:00', $today . ' 23:59:59'])->sum('visitor_count');
 
-            // Staff on duty today
+            // Staff on duty today (combines Ethiopian calendar GroupShiftSchedule and individual DutySchedule)
+            $todayCarbon = Carbon::parse($today, 'Africa/Addis_Ababa');
+            [$ey, $em, $ed] = EthiopianCalendarService::gregorianToEthiopian((int) $todayCarbon->year, (int) $todayCarbon->month, (int) $todayCarbon->day);
+            $currentTimeStr = Carbon::now('Africa/Addis_Ababa')->format('H:i');
+
+            $groupSchedules = GroupShiftSchedule::with(['shift', 'group.users.library', 'group.users.roles'])
+                ->where('ethiopian_year', $ey)
+                ->where('ethiopian_month', $em)
+                ->where('status', 'active')
+                ->get()
+                ->filter(function ($sched) use ($ed) {
+                    $days = is_array($sched->days) ? $sched->days : [];
+                    return in_array((int) $ed, array_map('intval', $days), true);
+                });
+
+            $todayShiftGroups = [];
+            $allOnDutyStaff = collect();
+            $currentShiftStaffCount = 0;
+
+            foreach ($groupSchedules as $sched) {
+                $shift = $sched->shift;
+                $group = $sched->group;
+                if (!$shift || !$group) {
+                    continue;
+                }
+
+                $isOvernight = ($shift->start_time > $shift->end_time);
+                $isCurrentShift = false;
+                if (!$isOvernight) {
+                    $isCurrentShift = ($currentTimeStr >= $shift->start_time && $currentTimeStr <= $shift->end_time);
+                } else {
+                    $isCurrentShift = ($currentTimeStr >= $shift->start_time || $currentTimeStr <= $shift->end_time);
+                }
+
+                $groupUsers = $group->users;
+                if (!$user->canManageAllLibraries() && $user->library_id) {
+                    $groupUsers = $groupUsers->filter(fn ($u) => (int) $u->library_id === (int) $user->library_id);
+                }
+
+                $branchStaffMap = [];
+                foreach ($groupUsers as $u) {
+                    $branchId = $u->library_id ?? 0;
+                    $branchName = $u->library?->name ?? 'All Branches';
+                    $branchNameAm = $u->library?->name_am ?? $branchName;
+                    $branchCode = $u->library?->code ?? '—';
+
+                    if (!isset($branchStaffMap[$branchId])) {
+                        $branchStaffMap[$branchId] = [
+                            'branch_id' => $branchId,
+                            'branch_name' => $branchName,
+                            'branch_name_am' => $branchNameAm,
+                            'branch_code' => $branchCode,
+                            'attendants' => [],
+                        ];
+                    }
+
+                    $staffData = [
+                        'user_id' => $u->id,
+                        'user_name' => $u->name,
+                        'user_username' => $u->username ?? '',
+                        'email' => $u->email,
+                        'phone' => $u->phone ?? '—',
+                        'role' => $u->roles->first()?->name ?? 'Attendant',
+                        'library_id' => $branchId,
+                        'library_name' => $branchName,
+                        'library_code' => $branchCode,
+                        'shift_id' => $shift->id,
+                        'shift_name' => $shift->name,
+                        'shift_name_am' => $shift->name_am ?? $shift->name,
+                        'shift_group_id' => $group->id,
+                        'shift_group_name' => $group->name,
+                        'task_key' => 'attendance_desk',
+                        'task_name' => 'Physical Attendance & Desk Logging',
+                        'start_time' => $shift->start_time,
+                        'end_time' => $shift->end_time,
+                        'ethiopian_start_time' => $shift->ethiopian_start_time,
+                        'ethiopian_end_time' => $shift->ethiopian_end_time,
+                        'is_current_shift' => $isCurrentShift,
+                    ];
+
+                    $branchStaffMap[$branchId]['attendants'][] = $staffData;
+                    $allOnDutyStaff->push($staffData);
+
+                    if ($isCurrentShift) {
+                        $currentShiftStaffCount++;
+                    }
+                }
+
+                $todayShiftGroups[] = [
+                    'shift_id' => $shift->id,
+                    'shift_name' => $shift->name,
+                    'shift_name_am' => $shift->name_am ?? $shift->name,
+                    'shift_code' => $shift->code,
+                    'start_time' => $shift->start_time,
+                    'end_time' => $shift->end_time,
+                    'ethiopian_start_time' => $shift->ethiopian_start_time,
+                    'ethiopian_end_time' => $shift->ethiopian_end_time,
+                    'time_window' => "{$shift->start_time} - {$shift->end_time}",
+                    'ethiopian_time_window' => "{$shift->ethiopian_start_time} - {$shift->ethiopian_end_time}",
+                    'group_id' => $group->id,
+                    'group_name' => $group->name,
+                    'is_current_shift' => $isCurrentShift,
+                    'total_staff_count' => $groupUsers->count(),
+                    'branches' => array_values($branchStaffMap),
+                ];
+            }
+
+            // Also merge any individual DutySchedule records
             $onDutyStaffQuery = DutySchedule::where('shift_date', $today)
                 ->whereIn('status', ['scheduled', 'active'])
-                ->with(['user:id,name,username,email', 'library:id,name,code']);
+                ->with(['user:id,name,username,email,phone', 'library:id,name,code']);
 
             if (!$user->canManageAllLibraries() && $user->library_id) {
                 $onDutyStaffQuery->where(function ($q) use ($user) {
@@ -92,17 +203,36 @@ class DashboardController extends Controller
                 });
             }
 
-            $onDutyStaff = $onDutyStaffQuery->get()
-                ->map(fn ($shift) => [
-                    'user_id' => $shift->user_id,
-                    'user_name' => $shift->user?->name ?? 'Staff',
-                    'user_username' => $shift->user?->username ?? '',
-                    'library_name' => $shift->library?->name ?? 'All Branches',
-                    'task_key' => $shift->task_key,
-                    'task_name' => DutyScheduleService::TASKS[$shift->task_key] ?? $shift->task_key,
-                    'start_time' => $shift->start_time,
-                    'end_time' => $shift->end_time,
-                ]);
+            $individualDutySchedules = $onDutyStaffQuery->get();
+            foreach ($individualDutySchedules as $indiv) {
+                if (!$allOnDutyStaff->contains('user_id', $indiv->user_id)) {
+                    $staffData = [
+                        'user_id' => $indiv->user_id,
+                        'user_name' => $indiv->user?->name ?? 'Staff',
+                        'user_username' => $indiv->user?->username ?? '',
+                        'email' => $indiv->user?->email ?? '',
+                        'phone' => $indiv->user?->phone ?? '—',
+                        'role' => $indiv->user?->roles->first()?->name ?? 'Staff',
+                        'library_id' => $indiv->library_id,
+                        'library_name' => $indiv->library?->name ?? 'All Branches',
+                        'library_code' => $indiv->library?->code ?? '',
+                        'shift_id' => null,
+                        'shift_name' => 'Individual Duty',
+                        'shift_name_am' => 'የግል ተረኝነት',
+                        'shift_group_id' => null,
+                        'shift_group_name' => 'Individual',
+                        'task_key' => $indiv->task_key,
+                        'task_name' => DutyScheduleService::TASKS[$indiv->task_key] ?? $indiv->task_key,
+                        'start_time' => $indiv->start_time,
+                        'end_time' => $indiv->end_time,
+                        'ethiopian_start_time' => null,
+                        'ethiopian_end_time' => null,
+                        'is_current_shift' => true,
+                    ];
+                    $allOnDutyStaff->push($staffData);
+                    $currentShiftStaffCount++;
+                }
+            }
 
             return [
                 'today_total' => $todayTotal,
@@ -121,7 +251,10 @@ class DashboardController extends Controller
                 'busiest_branch' => $busiestBranch,
                 'branches_traffic' => $branchesTraffic,
                 'week_total' => $weekTotal,
-                'on_duty_staff_today' => $onDutyStaff,
+                'on_duty_staff_today' => $allOnDutyStaff->values()->all(),
+                'today_shift_groups' => $todayShiftGroups,
+                'current_shift_staff_count' => $currentShiftStaffCount,
+                'total_staff_on_duty_today' => $allOnDutyStaff->count(),
             ];
         });
 
@@ -138,10 +271,15 @@ class DashboardController extends Controller
 
         $recentEntries = $recentEntriesQuery->get();
 
+        // Real-time shift inactivity alerts (> 30 minutes without counting)
+        $branchId = (!$user->canManageAllLibraries() && $user->library_id) ? $user->library_id : null;
+        $inactivityAlerts = $this->inactivityService->getCurrentShiftInactivityAlerts($branchId);
+
         return response()->json([
             'success' => true,
             'stats' => $stats,
             'recent_entries' => $recentEntries,
+            'inactivity_alerts' => $inactivityAlerts,
             'current_user_duty' => [
                 'is_admin' => $user->hasAdminPrivilege(),
                 'authorized' => $deskDuty['allowed'],

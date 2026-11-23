@@ -35,13 +35,15 @@ class EthiopianShiftScheduleTest extends TestCase
         Carbon::setTestNow(Carbon::create(2026, 11, 18, 10, 0, 0, 'Africa/Addis_Ababa'));
 
         // Setup roles & permissions
-        $role = Role::create(['name' => 'Admin']);
-        $attendantRole = Role::create(['name' => 'Attendant']);
+        $role = Role::firstOrCreate(['name' => 'Admin']);
+        $attendantRole = Role::firstOrCreate(['name' => 'Attendant']);
 
-        $permManage = Permission::create(['name' => 'libraries.manage']);
-        $permAttend = Permission::create(['name' => 'attendance.record']);
-        $role->syncPermissions([$permManage, $permAttend]);
-        $attendantRole->syncPermissions([$permAttend]);
+        $permManage = Permission::firstOrCreate(['name' => 'libraries.manage']);
+        $permAttend = Permission::firstOrCreate(['name' => 'attendance.record']);
+        $permSchedManage = Permission::firstOrCreate(['name' => 'schedules.manage']);
+        $permSchedView = Permission::firstOrCreate(['name' => 'schedules.view']);
+        $role->syncPermissions([$permManage, $permAttend, $permSchedManage, $permSchedView]);
+        $attendantRole->syncPermissions([$permAttend, $permSchedView]);
 
         // Libraries
         $this->mainLibrary = Library::create([

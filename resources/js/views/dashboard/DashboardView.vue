@@ -49,6 +49,112 @@
       </div>
     </div>
 
+    <!-- CRITICAL SHIFT INACTIVITY ALERT BANNER (> 30 Mins Inactive) -->
+    <div
+      v-if="stats?.inactivity_alerts?.has_active_incidents && (authStore.isAdmin || authStore.canManageAttendanceAnalytics)"
+      class="rounded-md border p-4 sm:p-5 bg-rose-500/10 dark:bg-rose-950/30 border-rose-500/40 text-rose-950 dark:text-rose-100 shadow-sm space-y-4"
+    >
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-rose-500/20 pb-3">
+        <div class="flex items-start gap-3">
+          <div class="p-2 rounded-md bg-rose-500/20 text-rose-700 dark:text-rose-400 shrink-0 mt-0.5">
+            <AlertOctagon class="w-6 h-6 animate-pulse" />
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-sm sm:text-base font-extrabold text-rose-800 dark:text-rose-300 tracking-tight flex items-center gap-1.5">
+                <span>{{ langStore.isAmharic() ? 'የፈረቃ ሠራተኞች የሥራ ማቆም ክትትል ማስጠንቀቂያ (>30 ደቂቃ)' : 'Critical Compliance Alert: Attendant Shift Inactivity (>30 Mins)' }}</span>
+              </h3>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-600 text-white shadow-2xs">
+                {{ stats.inactivity_alerts.incident_count }} {{ langStore.isAmharic() ? 'ቅርንጫፎች ተቋርጠዋል' : 'Branches Inactive' }}
+              </span>
+            </div>
+            <p class="text-xs text-rose-700/90 dark:text-rose-300/80 mt-1">
+              <strong>{{ stats.inactivity_alerts.active_shift?.name }}</strong> ({{ stats.inactivity_alerts.active_shift?.time_window }} / {{ stats.inactivity_alerts.active_shift?.time_window_ethiopian }}) · {{ stats.inactivity_alerts.active_shift?.group_name }} —
+              {{ langStore.isAmharic() ? 'በቤተ-መጻሕፍት ደንብ መሠረት፣ በቅርንጫፍ ከተመደቡት ሠራተኞች መካከል ቢያንስ አንዱ በ30 ደቂቃ ውስጥ ሲቆጥር ቅርንጫፉ ንቁ እንደሆነ ይቆጠራል። ከዚህ በታች የተዘረዘሩት ቅርንጫፎች የተጠቆሙት ማናቸውም በፈረቃው የተመደቡ ሠራተኞች ላለፉት ከ 30 ደቂቃ በላይ ምንም ዓይነት የተጠቃሚ ቆጠራ ስላላከናወኑ ብቻ ነው።' : 'Per library policy, if ANY attendant on duty records visitor counts within 30 minutes, the branch is compliant. The branches below are currently flagged because NONE of their scheduled attendants have recorded any counts for over 30 consecutive minutes.' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button
+            @click="openInactivityModal"
+            type="button"
+            class="px-3 py-1.5 rounded-md text-xs font-bold bg-rose-700 hover:bg-rose-800 text-white shadow-2xs transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            <FileText class="w-3.5 h-3.5" />
+            <span>{{ langStore.isAmharic() ? 'ይፋዊ የኦዲት ሪፖርት' : 'Inactivity Audit Report' }}</span>
+          </button>
+          <a
+            :href="printAuditUrl"
+            target="_blank"
+            class="px-3 py-1.5 rounded-md text-xs font-bold border border-rose-500/40 bg-card-bg hover:bg-rose-500/10 text-rose-800 dark:text-rose-200 shadow-2xs transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            <Printer class="w-3.5 h-3.5" />
+            <span>{{ langStore.isAmharic() ? 'አትም' : 'Print Document' }}</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Inactive Branches Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div
+          v-for="alert in stats.inactivity_alerts.alerts"
+          :key="alert.branch_id"
+          class="p-3.5 rounded-md bg-card-bg border border-rose-500/30 dark:bg-card-bg/80 space-y-2.5 shadow-2xs"
+        >
+          <div class="flex items-center justify-between gap-2 border-b border-card-border pb-2">
+            <div>
+              <h4 class="font-bold text-xs text-main-text flex items-center gap-1">
+                <Building2 class="w-3.5 h-3.5 text-brand-blue" />
+                <span>{{ langStore.isAmharic() ? alert.branch_name_am : alert.branch_name }}</span>
+              </h4>
+              <span class="text-[9px] font-mono text-main-text/50">Code: [{{ alert.branch_code }}]</span>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/30">
+              ⏱️ {{ alert.inactive_duration_human }} inactive
+            </span>
+          </div>
+
+          <div class="text-[11px] space-y-1 bg-main-bg/50 p-2 rounded border border-card-border/60">
+            <div class="flex items-center justify-between text-[10px] text-main-text/70">
+              <span>{{ langStore.isAmharic() ? 'የማቆም ክፍተት (የፈረንጅ)' : 'Inactive Interval (EAT)' }}:</span>
+              <strong class="font-mono text-rose-700 dark:text-rose-300">{{ alert.interval_formatted }}</strong>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-main-text/70">
+              <span>{{ langStore.isAmharic() ? 'የማቆም ክፍተት (የኢትዮጵያ)' : 'Inactive Interval (Eth)' }}:</span>
+              <strong class="text-emerald-700 dark:text-emerald-400">{{ alert.interval_ethiopian }}</strong>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-main-text/70">
+              <span>{{ langStore.isAmharic() ? 'የተመዘገበ ተጠቃሚ' : 'Logged this shift' }}:</span>
+              <strong class="font-mono">{{ alert.total_entries_recorded }}</strong>
+            </div>
+          </div>
+
+          <!-- On-Duty Attendants who are Not Working -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">
+              <span>{{ langStore.isAmharic() ? 'በፈረቃው የተመደቡ ሠራተኞች' : 'Scheduled Attendants On Duty' }} ({{ alert.attendants.length }}):</span>
+              <span class="text-[9px] font-semibold text-rose-600 dark:text-rose-400">🔴 {{ langStore.isAmharic() ? 'አልሰሩም' : 'Not Counting' }}</span>
+            </div>
+            <div class="grid grid-cols-1 gap-1">
+              <div
+                v-for="att in alert.attendants"
+                :key="att.id"
+                class="flex items-center justify-between p-1.5 rounded text-[11px] bg-rose-500/8 dark:bg-rose-950/20 border border-rose-500/20"
+              >
+                <div class="flex items-center gap-1.5 truncate">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                  <span class="font-bold text-main-text truncate">{{ att.name }}</span>
+                  <span class="text-[10px] text-main-text/50 font-mono">(@{{ att.username }})</span>
+                </div>
+                <span class="text-[9px] text-main-text/60 font-mono truncate max-w-[120px]">{{ att.phone && att.phone !== '—' ? att.phone : att.email }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Duty Turn Notification Banner (For Non-Admin Attendants when Off-Duty) -->
     <div
       v-if="!authStore.isAdmin && !authStore.canLogAttendance"
@@ -146,10 +252,10 @@
           <ShieldCheck class="w-3.5 h-3.5 text-emerald-500" />
         </div>
         <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-          {{ loading ? '—' : (stats?.stats?.on_duty_staff_today?.length ?? 0) }}
+          {{ loading ? '—' : (stats?.stats?.current_shift_staff_count ?? stats?.stats?.on_duty_staff_today?.length ?? 0) }}
         </div>
         <div class="text-[10px] text-emerald-700/70 dark:text-emerald-300/70 font-mono">
-          {{ langStore.isAmharic() ? 'በስራ ላይ ያሉ' : 'Assigned active' }}
+          {{ langStore.isAmharic() ? `${stats?.stats?.current_shift_staff_count ?? 0} አሁን በስራ ላይ (${stats?.stats?.total_staff_on_duty_today ?? 0} ዛሬ)` : `${stats?.stats?.current_shift_staff_count ?? 0} active now (${stats?.stats?.total_staff_on_duty_today ?? 0} today)` }}
         </div>
       </div>
     </div>
@@ -370,50 +476,250 @@
         </div>
       </div>
 
-      <!-- On-Duty Staff Deployment Today (1 Col) -->
+      <!-- Today's Duty Shifts & Group Deployments (1 Col) -->
       <div class="bg-card-bg border border-card-border rounded-md p-5 shadow-2xs space-y-4">
         <div class="flex items-center justify-between border-b border-card-border pb-3">
-          <h3 class="text-xs font-bold text-main-text uppercase tracking-wider flex items-center gap-2">
+          <div class="flex items-center gap-2">
             <Users class="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>{{ langStore.t('duty.shifts_today', 'On Duty Staff Today') }}</span>
-          </h3>
+            <h3 class="text-xs font-bold text-main-text uppercase tracking-wider">
+              {{ langStore.t('duty.shifts_today', "Today's Duty Shifts & Groups") }}
+            </h3>
+          </div>
           <span class="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-            {{ stats?.stats?.on_duty_staff_today?.length ?? 0 }} Active
+            {{ stats?.stats?.current_shift_staff_count ?? 0 }} Active Now ({{ stats?.stats?.total_staff_on_duty_today ?? 0 }} Total)
           </span>
         </div>
 
-        <div v-if="loading" class="space-y-2">
-          <div v-for="i in 3" :key="i" class="h-14 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse" />
+        <div v-if="loading" class="space-y-3">
+          <div v-for="i in 2" :key="i" class="h-24 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse" />
         </div>
 
-        <div v-else-if="!stats?.stats?.on_duty_staff_today?.length" class="py-10 text-center space-y-2">
+        <div v-else-if="!stats?.stats?.today_shift_groups?.length && !stats?.stats?.on_duty_staff_today?.length" class="py-10 text-center space-y-2">
           <CalendarOff class="w-8 h-8 text-main-text/30 mx-auto" />
           <p class="text-xs text-main-text/40">
-            {{ langStore.isAmharic() ? 'ለዛሬ የተመደበ የቤተ-መጻሕፍት ተረኛ ሠራተኛ የለም።' : 'No librarians scheduled on duty today.' }}
+            {{ langStore.isAmharic() ? 'ለዛሬ የተመደበ የቤተ-መጻሕፍት ተረኛ ፈረቃ የለም።' : 'No shift groups scheduled on duty today.' }}
           </p>
         </div>
 
-        <div v-else class="space-y-2.5">
+        <!-- Shift Groups Cards -->
+        <div v-else class="space-y-3">
           <div
-            v-for="entry in stats?.stats?.on_duty_staff_today"
-            :key="`${entry.user_id}-${entry.task_key}`"
-            class="p-2.5 rounded border border-emerald-500/25 bg-emerald-500/8 dark:bg-emerald-950/30 text-xs space-y-1"
+            v-for="shiftGroup in stats?.stats?.today_shift_groups"
+            :key="`${shiftGroup.shift_id}-${shiftGroup.group_id}`"
+            class="rounded-md border transition-all duration-200 overflow-hidden cursor-pointer"
+            :class="shiftGroup.is_current_shift
+              ? 'border-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-950/20 shadow-2xs'
+              : 'border-card-border bg-card-bg/60 hover:border-card-border/90'"
+            @click="toggleShiftExpand(shiftGroup.shift_id)"
           >
-            <div class="flex items-center justify-between gap-2">
-              <p class="font-bold text-emerald-800 dark:text-emerald-300 truncate">{{ entry.user_name }}</p>
-              <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 uppercase flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Active
-              </span>
+            <!-- Card Header -->
+            <div class="p-3 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-sm font-bold text-main-text">
+                    {{ langStore.isAmharic() ? shiftGroup.shift_name_am : shiftGroup.shift_name }}
+                  </span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-brand-blue/10 text-brand-blue dark:bg-brand-yellow/15 dark:text-brand-yellow border border-brand-blue/20">
+                    {{ shiftGroup.group_name }}
+                  </span>
+                </div>
+                <span
+                  class="px-2 py-0.5 rounded text-[9.5px] font-bold uppercase flex items-center gap-1 shrink-0"
+                  :class="shiftGroup.is_current_shift
+                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                    : 'bg-slate-500/10 text-main-text/60 border border-card-border'"
+                >
+                  <span v-if="shiftGroup.is_current_shift" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  {{ shiftGroup.is_current_shift ? (langStore.isAmharic() ? 'አሁን በስራ ላይ' : 'Active Now') : (langStore.isAmharic() ? 'የቀጣይ ፈረቃ' : 'Later Today') }}
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-main-text/60 font-mono">
+                <span>🕒 {{ shiftGroup.time_window }} ({{ shiftGroup.ethiopian_time_window }})</span>
+                <span class="font-bold text-main-text">{{ shiftGroup.total_staff_count }} {{ langStore.isAmharic() ? 'ሠራተኞች' : 'staff' }}</span>
+              </div>
+
+              <!-- Click prompt -->
+              <div class="flex items-center justify-between pt-1 border-t border-card-border/60 text-[10px] text-brand-blue dark:text-brand-yellow font-semibold">
+                <span>{{ expandedShiftId === shiftGroup.shift_id ? (langStore.isAmharic() ? 'ዝርዝሩን ደብቅ ▲' : 'Hide Staff ▲') : (langStore.isAmharic() ? 'በስራ ላይ ያሉትን ሠራተኞች ተመልከት ▼' : 'Click to view attendants on duty ▼') }}</span>
+                <ChevronDown class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': expandedShiftId === shiftGroup.shift_id }" />
+              </div>
             </div>
-            <p class="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">{{ entry.task_name }}</p>
-            <p class="text-[10px] text-main-text/50 font-mono">
-              {{ entry.library_name }} · {{ formatTimeStr12(entry.start_time) }} – {{ formatTimeStr12(entry.end_time) }}
-            </p>
+
+            <!-- Expanded Attendants List by Branch -->
+            <div
+              v-if="expandedShiftId === shiftGroup.shift_id"
+              class="border-t border-card-border/80 bg-main-bg/50 p-3 space-y-3 text-xs"
+              @click.stop
+            >
+              <div
+                v-for="branch in shiftGroup.branches"
+                :key="branch.branch_id"
+                class="space-y-1.5"
+              >
+                <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-main-text/70 border-b border-card-border pb-1">
+                  <span class="flex items-center gap-1">
+                    <Building2 class="w-3 h-3 text-brand-blue" />
+                    {{ langStore.isAmharic() ? branch.branch_name_am : branch.branch_name }} [{{ branch.branch_code }}]
+                  </span>
+                  <span>{{ branch.attendants.length }} {{ langStore.isAmharic() ? 'ተረኞች' : 'on duty' }}</span>
+                </div>
+
+                <div class="grid grid-cols-1 gap-1">
+                  <div
+                    v-for="att in branch.attendants"
+                    :key="att.user_id"
+                    class="flex items-center justify-between p-1.5 rounded text-[11px] bg-card-bg border border-card-border/80 hover:border-brand-blue/30 transition"
+                  >
+                    <div class="flex items-center gap-1.5 truncate">
+                      <div class="w-5 h-5 rounded-full bg-brand-blue/10 text-brand-blue dark:text-brand-yellow font-bold flex items-center justify-center text-[9px] shrink-0">
+                        {{ att.user_name.charAt(0) }}
+                      </div>
+                      <span class="font-bold text-main-text truncate">{{ att.user_name }}</span>
+                      <span class="text-[10px] text-main-text/50 font-mono">(@{{ att.user_username }})</span>
+                    </div>
+                    <span class="text-[9px] text-main-text/50 font-mono truncate max-w-[100px]">{{ att.phone !== '—' ? att.phone : att.email }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Shift Inactivity Compliance Audit Report Modal -->
+    <Modal
+      :show="showInactivityModal"
+      :title="langStore.isAmharic() ? 'የፈረቃ ሠራተኞች የሥራ ማቆም ኦዲት ሪፖርት' : 'Attendant Shift Inactivity & Compliance Audit Report'"
+      size="xl"
+      @close="showInactivityModal = false"
+    >
+      <div class="space-y-4 text-xs">
+        <!-- Filter bar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-main-bg p-3 rounded-md border border-card-border">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5">
+              <span class="font-bold text-main-text/70">{{ langStore.isAmharic() ? 'ቀን' : 'Date' }}:</span>
+              <input
+                type="date"
+                v-model="auditFilterDate"
+                @change="fetchInactivityReport"
+                class="px-2 py-1 rounded border border-card-border bg-card-bg text-main-text font-mono text-xs focus:ring-1 focus:ring-brand-blue"
+              />
+            </div>
+            <button
+              @click="fetchInactivityReport"
+              class="px-2.5 py-1 rounded bg-brand-blue text-white font-bold hover:bg-blue-900 transition cursor-pointer"
+            >
+              {{ langStore.t('common.refresh', 'Refresh') }}
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <a
+              :href="printAuditUrl"
+              target="_blank"
+              class="px-3 py-1.5 rounded border border-card-border bg-card-bg font-bold text-main-text hover:bg-nav-accent/10 transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Printer class="w-3.5 h-3.5" />
+              <span>{{ langStore.isAmharic() ? 'ይፋዊ ሰነድ አትም' : 'Print Official Document' }}</span>
+            </a>
+            <a
+              :href="exportCsvUrl"
+              target="_blank"
+              class="px-3 py-1.5 rounded bg-brand-blue font-bold text-white hover:bg-blue-900 transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Download class="w-3.5 h-3.5" />
+              <span>{{ langStore.isAmharic() ? 'CSV ላክ' : 'Export CSV' }}</span>
+            </a>
+          </div>
+        </div>
+
+        <div v-if="loadingAudit" class="py-12 text-center space-y-2">
+          <div class="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin mx-auto" />
+          <p class="text-main-text/60 font-medium">{{ langStore.isAmharic() ? 'የኦዲት መረጃዎችን በማዘጋጀት ላይ...' : 'Compiling shift compliance audit data...' }}</p>
+        </div>
+
+        <template v-else>
+          <!-- Summary KPIs -->
+          <div v-if="auditReport?.summary" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div class="p-2.5 rounded border border-card-border bg-card-bg text-center">
+              <div class="text-base font-extrabold font-mono text-main-text">{{ auditReport.summary.total_monitored_shifts }}</div>
+              <div class="text-[9px] uppercase tracking-wider text-main-text/50 font-bold">{{ langStore.isAmharic() ? 'የተመረመሩ ፈረቃዎች' : 'Monitored Shifts' }}</div>
+            </div>
+            <div class="p-2.5 rounded border border-rose-500/30 bg-rose-500/10 text-center">
+              <div class="text-base font-extrabold font-mono text-rose-700 dark:text-rose-400">{{ auditReport.summary.total_incidents }}</div>
+              <div class="text-[9px] uppercase tracking-wider text-rose-600 font-bold">{{ langStore.isAmharic() ? 'የማቆም ክስተቶች (>30ደ)' : 'Inactivity Incidents (>30m)' }}</div>
+            </div>
+            <div class="p-2.5 rounded border border-amber-500/30 bg-amber-500/10 text-center">
+              <div class="text-base font-extrabold font-mono text-amber-700 dark:text-amber-400">{{ auditReport.summary.total_inactive_hours }}h</div>
+              <div class="text-[9px] uppercase tracking-wider text-amber-600 font-bold">{{ langStore.isAmharic() ? 'የባከነ ሰዓት' : 'Total Inactive Hours' }}</div>
+            </div>
+            <div class="p-2.5 rounded border border-card-border bg-card-bg text-center">
+              <div class="text-base font-extrabold font-mono text-brand-blue dark:text-brand-yellow">{{ auditReport.summary.compliance_rate }}%</div>
+              <div class="text-[9px] uppercase tracking-wider text-main-text/50 font-bold">{{ langStore.isAmharic() ? 'የፈረቃ ተገዢነት' : 'Duty Compliance' }}</div>
+            </div>
+          </div>
+
+          <!-- Incidents Table -->
+          <div class="overflow-x-auto rounded border border-card-border max-h-[420px] overflow-y-auto">
+            <table class="w-full border-collapse text-left">
+              <thead class="sticky top-0 bg-main-bg border-b border-card-border z-10">
+                <tr class="text-[10px] uppercase font-bold text-main-text/60">
+                  <th class="p-2">ID</th>
+                  <th class="p-2">{{ langStore.isAmharic() ? 'ቅርንጫፍ' : 'Branch' }}</th>
+                  <th class="p-2">{{ langStore.isAmharic() ? 'ፈረቃና ቡድን' : 'Shift & Group' }}</th>
+                  <th class="p-2">{{ langStore.isAmharic() ? 'የተመደቡ ሠራተኞች' : 'Scheduled Attendants' }}</th>
+                  <th class="p-2">{{ langStore.isAmharic() ? 'የማቆም ክፍተት' : 'Inactive Interval' }}</th>
+                  <th class="p-2">{{ langStore.isAmharic() ? 'ቆይታ' : 'Duration' }}</th>
+                  <th class="p-2">{{ langStore.isAmharic() ? 'ሁኔታ' : 'Status' }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-card-border/60">
+                <tr
+                  v-for="inc in auditReport?.incidents || []"
+                  :key="inc.incident_id"
+                  class="hover:bg-main-bg/50 text-[11px]"
+                >
+                  <td class="p-2 font-mono font-bold text-main-text/60">{{ inc.incident_id }}</td>
+                  <td class="p-2 font-bold text-main-text">{{ langStore.isAmharic() ? inc.branch_name_am : inc.branch_name }}</td>
+                  <td class="p-2">
+                    <div class="font-bold text-brand-blue">{{ langStore.isAmharic() ? inc.shift_name_am : inc.shift_name }}</div>
+                    <div class="text-[10px] text-main-text/50">{{ inc.shift_group_name }}</div>
+                  </td>
+                  <td class="p-2">
+                    <div class="space-y-0.5">
+                      <div v-for="att in inc.attendants" :key="att.id" class="text-[10px]">
+                        <strong>{{ att.name }}</strong> <span class="text-main-text/50">(@{{ att.username }})</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="p-2">
+                    <div class="font-bold font-mono">{{ inc.interval_formatted }}</div>
+                    <div class="text-[10px] text-emerald-600 dark:text-emerald-400">{{ inc.interval_ethiopian }}</div>
+                  </td>
+                  <td class="p-2 font-bold font-mono text-rose-700 dark:text-rose-400">{{ inc.duration_human }}</td>
+                  <td class="p-2">
+                    <span
+                      class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase"
+                      :class="inc.is_ongoing ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30' : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'"
+                    >
+                      {{ inc.is_ongoing ? (langStore.isAmharic() ? '🔴 አሁን አልሰሩም' : '🔴 Active Non-Working') : (langStore.isAmharic() ? '⚠️ ክፍተት' : '⚠️ Past Gap') }}
+                    </span>
+                  </td>
+                </tr>
+                <tr v-if="!auditReport?.incidents?.length">
+                  <td colspan="7" class="p-6 text-center text-emerald-600 dark:text-emerald-400 font-bold">
+                    ✓ {{ langStore.isAmharic() ? 'በተመረጠው ቀን ምንም የሥራ ማቆም ክፍተት አልተገኘም። 100% የፈረቃ ተገዢነት።' : 'No inactivity incidents detected for this period. 100% duty compliance.' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -421,11 +727,13 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useLanguageStore } from '@/stores/languageStore';
-import { dashboardApi } from '@/api';
+import { dashboardApi, shiftInactivityApi } from '@/api';
 import { formatDT } from '@/utils/ethiopianDate';
+import Modal from '@/components/ui/Modal.vue';
 import {
   LayoutDashboard,
   AlertTriangle,
+  AlertOctagon,
   Activity,
   Building2,
   Users,
@@ -437,6 +745,10 @@ import {
   Briefcase,
   TrendingUp,
   BarChart3,
+  FileText,
+  Printer,
+  Download,
+  ChevronDown,
 } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
@@ -444,6 +756,53 @@ const langStore = useLanguageStore();
 
 const loading = ref(true);
 const stats = ref<any>(null);
+
+// Shift Group Accordion in Today's Duty Shifts
+const expandedShiftId = ref<number | null>(null);
+const toggleShiftExpand = (shiftId: number) => {
+  expandedShiftId.value = expandedShiftId.value === shiftId ? null : shiftId;
+};
+
+// Inactivity Audit Modal & Data
+const showInactivityModal = ref(false);
+const loadingAudit = ref(false);
+const auditReport = ref<any>(null);
+const auditFilterDate = ref(new Date().toISOString().split('T')[0]);
+
+const printAuditUrl = computed(() => {
+  return shiftInactivityApi.exportUrl({
+    date: auditFilterDate.value,
+    format: 'print',
+    lang: langStore.isAmharic() ? 'am' : 'en',
+  });
+});
+
+const exportCsvUrl = computed(() => {
+  return shiftInactivityApi.exportUrl({
+    date: auditFilterDate.value,
+    format: 'csv',
+    lang: langStore.isAmharic() ? 'am' : 'en',
+  });
+});
+
+const openInactivityModal = () => {
+  showInactivityModal.value = true;
+  fetchInactivityReport();
+};
+
+const fetchInactivityReport = async () => {
+  try {
+    loadingAudit.value = true;
+    const { data } = await shiftInactivityApi.report({
+      date: auditFilterDate.value,
+    });
+    auditReport.value = data?.data || null;
+  } catch (err) {
+    console.error('Failed to load shift inactivity report:', err);
+  } finally {
+    loadingAudit.value = false;
+  }
+};
 
 const todayDate = computed(() => {
   return formatDT(new Date(), langStore.isAmharic()).full;
@@ -474,6 +833,13 @@ onMounted(async () => {
   try {
     const { data } = await dashboardApi.stats();
     stats.value = data;
+    // Auto-expand current active shift
+    const active = data?.stats?.today_shift_groups?.find((s: any) => s.is_current_shift);
+    if (active) {
+      expandedShiftId.value = active.shift_id;
+    } else if (data?.stats?.today_shift_groups?.length) {
+      expandedShiftId.value = data.stats.today_shift_groups[0].shift_id;
+    }
   } finally {
     loading.value = false;
   }

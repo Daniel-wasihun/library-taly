@@ -16,23 +16,33 @@
       ></div>
     </transition>
 
-    <!-- Sidebar: off-canvas drawer on mobile (< lg), standard static column on desktop (lg+) with collapse support -->
+    <!-- Sidebar Container: Resizable on desktop, off-canvas on mobile -->
     <div
-      class="fixed inset-y-0 left-0 z-50 transform lg:static lg:translate-x-0 transition-all duration-300 ease-in-out shrink-0"
+      class="fixed inset-y-0 left-0 z-50 transform lg:static lg:translate-x-0 shrink-0 relative flex"
       :class="[
         isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0',
-        isSidebarCollapsed ? 'w-18' : 'w-60'
+        isResizing ? '' : 'transition-all duration-300 ease-in-out'
       ]"
+      :style="{ width: isSidebarCollapsed ? '4.5rem' : `${sidebarWidth}px` }"
     >
       <Sidebar
         :is-collapsed="isSidebarCollapsed"
-        @toggle="toggleSidebar"
       />
+
+      <!-- Drag Handle for Resizing Sidebar (Desktop only, when expanded) -->
+      <div
+        v-if="!isSidebarCollapsed"
+        @mousedown="startResize"
+        class="hidden lg:block absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-brand-blue/30 active:bg-brand-blue/50 transition-colors z-40 select-none group"
+        title="Drag to resize sidebar"
+      >
+        <div class="h-8 w-1 bg-card-border group-hover:bg-brand-blue/80 rounded-full absolute top-1/2 -translate-y-1/2 right-0.5 transition-colors"></div>
+      </div>
     </div>
 
     <!-- Main Content Area -->
     <div class="flex flex-col flex-1 min-w-0 overflow-hidden bg-main-bg">
-      <!-- Navbar with mobile drawer toggle and desktop sidebar toggle -->
+      <!-- Navbar with mobile drawer toggle and desktop sidebar toggle (Toggle only in Navbar) -->
       <Navbar
         :is-collapsed="isSidebarCollapsed"
         @toggleSidebar="toggleSidebar"
@@ -60,11 +70,39 @@ import Toast from '@/components/Toast.vue';
 
 const isMobileMenuOpen = ref(false);
 const isSidebarCollapsed = ref(localStorage.getItem('sidebar_collapsed') === 'true');
+const storedWidth = Number(localStorage.getItem('sidebar_width'));
+const sidebarWidth = ref(storedWidth && storedWidth >= 200 && storedWidth <= 420 ? storedWidth : 240);
+const isResizing = ref(false);
 const route = useRoute();
 
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value;
   localStorage.setItem('sidebar_collapsed', isSidebarCollapsed.value.toString());
+};
+
+const startResize = (e: MouseEvent) => {
+  e.preventDefault();
+  isResizing.value = true;
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+
+  const onMouseMove = (moveEvent: MouseEvent) => {
+    if (!isResizing.value) return;
+    const newWidth = Math.max(200, Math.min(420, moveEvent.clientX));
+    sidebarWidth.value = newWidth;
+  };
+
+  const onMouseUp = () => {
+    isResizing.value = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    localStorage.setItem('sidebar_width', sidebarWidth.value.toString());
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onMouseUp);
+  };
+
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
 };
 
 // Auto-close mobile drawer when route changes

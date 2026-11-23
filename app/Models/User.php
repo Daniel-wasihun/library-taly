@@ -218,6 +218,17 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine if user can manage (create, update, or delete) user accounts.
+     */
+    public function canManageUsers(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->canCreateUsers()
+            || $this->canUpdateUsers()
+            || $this->canDeleteUsers();
+    }
+
+    /**
      * Determine if user can view roles and permissions.
      */
     public function canViewRoles(): bool

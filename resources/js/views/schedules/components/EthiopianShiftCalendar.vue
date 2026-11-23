@@ -223,10 +223,24 @@
       </div>
     </div>
 
-    <!-- Active Loading Spinner -->
-    <div v-if="shiftStore.loading" class="p-12 text-center text-xs text-main-text/50 space-y-2">
-      <div class="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p>Loading Ethiopian calendar shift matrix...</p>
+    <!-- Active Loading Skeleton Matrix -->
+    <div v-if="shiftStore.loading" class="space-y-6 animate-pulse">
+      <div v-for="s in 2" :key="s" class="bg-card-bg border border-card-border rounded-sm p-4 sm:p-5 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-card-border">
+          <div class="flex items-center gap-3 w-1/3">
+            <div class="w-10 h-10 rounded-sm bg-slate-200 dark:bg-slate-700 shrink-0"></div>
+            <div class="space-y-1.5 w-full">
+              <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+              <div class="h-2.5 bg-slate-200 dark:bg-slate-700/60 rounded w-1/2"></div>
+            </div>
+          </div>
+          <div class="h-6 w-24 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+        </div>
+        <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-1.5 sm:gap-2">
+          <div v-for="d in 30" :key="d" class="h-14 sm:h-16 bg-slate-200 dark:bg-slate-700/40 rounded-sm"></div>
+        </div>
+        <div class="h-10 bg-slate-200 dark:bg-slate-700/30 rounded-sm w-full"></div>
+      </div>
     </div>
 
     <!-- No Group Selected Prompt -->

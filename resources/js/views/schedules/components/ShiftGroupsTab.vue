@@ -25,10 +25,24 @@
       </div>
     </div>
 
-    <!-- Groups Grid / Cards -->
-    <div v-if="shiftStore.loading" class="p-8 text-center text-xs text-main-text/50">
-      <div class="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-      {{ langStore.t('common.loading', 'Loading shift groups...') }}
+    <!-- Groups Grid Skeleton -->
+    <div v-if="shiftStore.loading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 animate-pulse">
+      <div v-for="i in 4" :key="i" class="bg-card-bg border border-card-border rounded-sm p-4 space-y-3">
+        <div class="flex items-start justify-between">
+          <div class="space-y-1.5 w-2/3">
+            <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+            <div class="h-2.5 bg-slate-200 dark:bg-slate-700/60 rounded w-1/2"></div>
+          </div>
+          <div class="h-5 w-16 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+        </div>
+        <div class="space-y-1.5 pt-2">
+          <div v-for="j in 3" :key="j" class="h-6 bg-slate-200 dark:bg-slate-700/40 rounded"></div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-card-border">
+          <div class="h-7 w-16 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+          <div class="h-7 w-16 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+        </div>
+      </div>
     </div>
 
     <div v-else-if="shiftStore.groups.length === 0" class="p-8 rounded-sm bg-card-bg border border-card-border text-center text-xs text-main-text/60">

@@ -136,11 +136,13 @@ const handleSort = (col: ColumnDef) => {
 
           <tbody class="divide-y divide-card-border/60">
             <!-- Loading Skeletons -->
-            <tr v-if="loading" v-for="i in 5" :key="`skel-${i}`" class="animate-pulse">
-              <td :colspan="columns.length" class="px-4 py-3">
-                <div class="h-4 bg-slate-200 dark:bg-slate-700/60 rounded w-full"></div>
-              </td>
-            </tr>
+            <template v-if="loading">
+              <tr v-for="i in 5" :key="`skel-${i}`" class="animate-pulse">
+                <td v-for="col in columns" :key="col.key" class="px-4 py-3.5">
+                  <div class="h-3.5 bg-slate-200 dark:bg-slate-700/60 rounded-xs w-3/4"></div>
+                </td>
+              </tr>
+            </template>
 
             <!-- Empty State -->
             <tr v-else-if="!rawItems.length">

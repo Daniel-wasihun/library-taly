@@ -1,12 +1,11 @@
 <template>
   <aside
-    class="h-full bg-card-bg text-main-text flex flex-col shrink-0 border-r border-card-border transition-all duration-300 select-none z-30"
-    :class="isCollapsed ? 'w-18' : 'w-60'"
+    class="w-full h-full bg-card-bg text-main-text flex flex-col shrink-0 border-r border-card-border select-none z-30"
   >
-    <!-- Brand Header matching Senbet / Gibi-Gubae with Senebt Toggle Button -->
+    <!-- Brand Header matching Senbet / Gibi-Gubae standard -->
     <div
       class="h-16 flex items-center border-b border-card-border shrink-0 transition-all duration-300"
-      :class="isCollapsed ? 'justify-center px-2' : 'justify-between px-4'"
+      :class="isCollapsed ? 'justify-center px-2' : 'justify-start px-4'"
     >
       <!-- Brand Logo & Title -->
       <router-link
@@ -27,18 +26,6 @@
           </span>
         </div>
       </router-link>
-
-      <!-- Senebt System-style Sidebar Toggler (inside header) -->
-      <button
-        v-if="!isCollapsed"
-        type="button"
-        @click="emit('toggle')"
-        class="hidden lg:flex p-1.5 rounded text-main-text/50 hover:text-brand-blue hover:bg-brand-blue/10 transition cursor-pointer shrink-0"
-        :title="langStore.t('nav.collapse_sidebar', 'Collapse Sidebar')"
-        aria-label="Toggle Sidebar"
-      >
-        <PanelLeftClose class="w-4 h-4" />
-      </button>
     </div>
 
     <!-- Navigation Menu with Groups (Only options are visible) -->
@@ -295,8 +282,6 @@ import {
   CalendarDays,
   CalendarRange,
   Landmark,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from 'lucide-vue-next';
 
 withDefaults(

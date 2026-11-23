@@ -158,11 +158,19 @@ const getDateDisplay = (dateStr: string) => {
           </tr>
         </thead>
         <tbody class="divide-y divide-card-border/60">
-          <tr v-if="loading && logs.length === 0">
-            <td colspan="8" class="px-4 py-12 text-center text-main-text/40">
-              {{ langStore.t('common.loading', 'Loading recent entries...') }}
-            </td>
-          </tr>
+          <!-- Skeleton Loading Rows -->
+          <template v-if="loading && logs.length === 0">
+            <tr v-for="i in 6" :key="`skel-${i}`" class="animate-pulse">
+              <td class="py-3 px-3 text-center"><div class="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 mx-auto"></div></td>
+              <td class="py-3 px-4"><div class="h-3.5 bg-slate-200 dark:bg-slate-700/60 rounded w-28"></div></td>
+              <td class="py-3 px-4"><div class="h-5 bg-slate-200 dark:bg-slate-700/60 rounded-full w-18"></div></td>
+              <td class="py-3 px-4 text-center"><div class="h-4 bg-slate-200 dark:bg-slate-700/60 rounded w-12 mx-auto"></div></td>
+              <td class="py-3 px-4 text-center"><div class="h-5 bg-slate-200 dark:bg-slate-700/60 rounded-md w-8 mx-auto"></div></td>
+              <td class="py-3 px-4"><div class="h-3.5 bg-slate-200 dark:bg-slate-700/60 rounded w-20"></div></td>
+              <td class="py-3 px-4"><div class="h-3.5 bg-slate-200 dark:bg-slate-700/60 rounded w-16"></div></td>
+              <td class="py-3 px-4 text-right"><div class="h-6 bg-slate-200 dark:bg-slate-700/60 rounded w-16 ml-auto"></div></td>
+            </tr>
+          </template>
           <tr v-else-if="logs.length === 0">
             <td colspan="8" class="px-4 py-12 text-center text-main-text/40">
               {{ langStore.t('common.no_records', 'No attendance records logged for today yet.') }}

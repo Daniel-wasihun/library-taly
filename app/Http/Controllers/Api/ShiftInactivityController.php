@@ -126,9 +126,14 @@ class ShiftInactivityController extends Controller
                         'የፈረቃ ስም',
                         'የፈረቃ ቡድን',
                         'በፈረቃው የተመደቡ ሠራተኞች',
+                        'የክስተቱ ምድብ',
+                        'የክስተቱ ዓይነት',
                         'የሥራ ማቆም ክፍተት (የፈረንጅ ሰዓት)',
                         'የሥራ ማቆም ክፍተት (የኢትዮጵያ ሰዓት)',
                         'የቆይታ ጊዜ (ደቂቃ)',
+                        'የቆይታ ጊዜ',
+                        'ቆጠራ የተጀመረበት ሰዓት (የፈረንጅ)',
+                        'ቆጠራ የተጀመረበት ሰዓት (የኢትዮጵያ)',
                         'ሁኔታ',
                         'ክብደት',
                         'የተመዘገበ ተጠቃሚ ብዛት',
@@ -140,9 +145,14 @@ class ShiftInactivityController extends Controller
                         'Shift Name',
                         'Duty Group',
                         'Scheduled Attendants',
+                        'Incident Category',
+                        'Incident Type',
                         'Inactive Interval (EAT)',
                         'Inactive Interval (Ethiopian)',
                         'Duration (Minutes)',
+                        'Duration (Human)',
+                        'Resumed At (EAT)',
+                        'Resumed At (Ethiopian)',
                         'Status',
                         'Severity',
                         'Visitor Counts Logged',
@@ -156,6 +166,12 @@ class ShiftInactivityController extends Controller
 
                     $branchName = $isAmharic ? $inc['branch_name_am'] : $inc['branch_name'];
                     $shiftName = $isAmharic ? $inc['shift_name_am'] : $inc['shift_name'];
+                    $category = $inc['is_ongoing'] 
+                        ? ($isAmharic ? '🔴 አሁን አልሰሩም' : '🔴 Active Non-Working')
+                        : ($isAmharic ? '⚠️ ያለፈ ክፍተት' : '⚠️ Resolved Past Lapse');
+                    $typeLabel = $isAmharic ? ($inc['type_label_am'] ?? $inc['gap_type']) : ($inc['type_label'] ?? $inc['gap_type']);
+                    $resumedAtFormatted = $inc['resumed_at_formatted'] ?? ($isAmharic ? 'አልተጀመረም' : 'Not Resumed');
+                    $resumedAtEthiopian = $inc['resumed_at_ethiopian'] ?? ($isAmharic ? 'አልተጀመረም' : 'Not Resumed');
 
                     fputcsv($file, [
                         $inc['incident_id'],
@@ -163,9 +179,14 @@ class ShiftInactivityController extends Controller
                         $shiftName,
                         $inc['shift_group_name'],
                         $attendantNames,
+                        $category,
+                        $typeLabel,
                         $inc['interval_formatted'],
                         $inc['interval_ethiopian'],
                         $inc['duration_minutes'],
+                        $inc['duration_human'],
+                        $resumedAtFormatted,
+                        $resumedAtEthiopian,
                         $inc['status'],
                         $inc['severity'],
                         $inc['total_shift_entries'],

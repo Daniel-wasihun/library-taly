@@ -11,7 +11,7 @@ interface Props {
   title?: string;
   description?: string;
   icon?: Component;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,6 +27,7 @@ const SIZES: Record<NonNullable<Props['size']>, string> = {
   md: 'max-w-3xl',
   lg: 'max-w-5xl',
   xl: 'max-w-7xl',
+  '2xl': 'max-w-[1600px] w-full',
 };
 
 watch(

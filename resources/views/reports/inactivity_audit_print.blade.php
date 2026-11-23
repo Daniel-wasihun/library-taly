@@ -338,8 +338,16 @@
                             </span>
                         @else
                             <span class="badge badge-warning">
-                                ⚠️ {{ $isAmharic ? 'የቀድሞ ክፍተት' : 'Past Gap' }}
+                                ⚠️ {{ $isAmharic ? 'የቀድሞ ክፍተት' : 'Resolved Past Lapse' }}
                             </span>
+                        @endif
+                        <div style="font-size: 7.5pt; font-weight: 600; color: #b45309; margin-top: 2px;">
+                            {{ $isAmharic ? ($inc['type_label_am'] ?? '') : ($inc['type_label'] ?? '') }}
+                        </div>
+                        @if(!$inc['is_ongoing'] && !empty($inc['resumed_at_formatted']))
+                            <div style="font-size: 7pt; color: #0284c7; margin-top: 1px;">
+                                {{ $isAmharic ? 'ተጀምሯል' : 'Resumed' }}: {{ $inc['resumed_at_formatted'] }}
+                            </div>
                         @endif
                         <div style="font-size: 7.5pt; color: #64748b; margin-top: 2px;">
                             {{ $inc['total_shift_entries'] }} {{ $isAmharic ? 'ተመዝግቧል' : 'logged' }}

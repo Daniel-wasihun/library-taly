@@ -116,6 +116,7 @@ class ShiftInactivityMonitorService
         $shiftElapsedMinutes = $shiftStartDateTime->diffInMinutes($evalTime);
         $alerts = [];
         $activeBranches = [];
+        $pastLapseAlerts = [];
         $criticalCount = 0;
         $warningCount = 0;
 
@@ -159,7 +160,57 @@ class ShiftInactivityMonitorService
 
             $totalShiftEntries = (int) $records->sum('visitor_count');
 
-            // Evaluate inactivity:
+            // Compute any resolved past inactivity lapses (>= 30 mins) earlier in this shift
+            $pastLapses = [];
+            if ($records->isNotEmpty()) {
+                // 1. Shift Start Delay: Did attendants delay >= 30m before first recording?
+                $firstRecord = $records->first();
+                $firstRecordAt = Carbon::parse($firstRecord->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                $startGap = (int) $shiftStartDateTime->diffInMinutes($firstRecordAt);
+                if ($startGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
+                    $pastLapses[] = [
+                        'type' => 'SHIFT_START_DELAY',
+                        'type_label' => 'Shift Start Delay',
+                        'type_label_am' => 'የፈረቃ መጀመሪያ መዘግየት',
+                        'from' => $shiftStartDateTime->toIso8601String(),
+                        'to' => $firstRecordAt->toIso8601String(),
+                        'from_formatted' => $shiftStartDateTime->format('H:i'),
+                        'to_formatted' => $firstRecordAt->format('H:i'),
+                        'interval_formatted' => "{$shiftStartDateTime->format('H:i')} – {$firstRecordAt->format('H:i')}",
+                        'interval_ethiopian' => "{$this->formatEthiopianTime($shiftStartDateTime)} – {$this->formatEthiopianTime($firstRecordAt)}",
+                        'duration_minutes' => $startGap,
+                        'duration_human' => $this->formatDurationHuman($startGap),
+                        'resumed_at' => $firstRecordAt->format('H:i (h:i A)'),
+                        'resumed_at_ethiopian' => $this->formatEthiopianTime($firstRecordAt),
+                    ];
+                }
+
+                // 2. Intermittent Inactivity: Gaps >= 30m between consecutive counts
+                for ($i = 0; $i < count($records) - 1; $i++) {
+                    $currAt = Carbon::parse($records[$i]->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                    $nextAt = Carbon::parse($records[$i + 1]->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                    $midGap = (int) $currAt->diffInMinutes($nextAt);
+                    if ($midGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
+                        $pastLapses[] = [
+                            'type' => 'INTERMITTENT_INACTIVITY',
+                            'type_label' => 'Intermittent Inactivity Lapse',
+                            'type_label_am' => 'በቆጠራዎች መካከል የነበረ ክፍተት',
+                            'from' => $currAt->toIso8601String(),
+                            'to' => $nextAt->toIso8601String(),
+                            'from_formatted' => $currAt->format('H:i'),
+                            'to_formatted' => $nextAt->format('H:i'),
+                            'interval_formatted' => "{$currAt->format('H:i')} – {$nextAt->format('H:i')}",
+                            'interval_ethiopian' => "{$this->formatEthiopianTime($currAt)} – {$this->formatEthiopianTime($nextAt)}",
+                            'duration_minutes' => $midGap,
+                            'duration_human' => $this->formatDurationHuman($midGap),
+                            'resumed_at' => $nextAt->format('H:i (h:i A)'),
+                            'resumed_at_ethiopian' => $this->formatEthiopianTime($nextAt),
+                        ];
+                    }
+                }
+            }
+
+            // Evaluate current inactivity:
             // Shift must have run for at least 30 minutes to trigger inactivity
             if ($shiftElapsedMinutes < self::INACTIVITY_THRESHOLD_MINUTES) {
                 if ($records->isNotEmpty()) {
@@ -250,7 +301,26 @@ class ShiftInactivityMonitorService
                     'total_entries_recorded' => $totalShiftEntries,
                     'status' => $statusType,
                     'severity' => $severity,
+                    'has_past_lapses' => count($pastLapses) > 0,
+                    'past_lapses_count' => count($pastLapses),
+                    'past_lapses' => $pastLapses,
                 ];
+
+                if (count($pastLapses) > 0) {
+                    $pastLapseAlerts[] = [
+                        'branch_id' => $branch->id,
+                        'branch_name' => $branch->name,
+                        'branch_name_am' => $branch->name_am ?? $branch->name,
+                        'branch_code' => $branch->code,
+                        'shift_name' => $activeShift->name,
+                        'lapses' => $pastLapses,
+                        'total_lapses' => count($pastLapses),
+                        'total_lapse_minutes' => array_sum(array_column($pastLapses, 'duration_minutes')),
+                        'total_lapse_human' => $this->formatDurationHuman(array_sum(array_column($pastLapses, 'duration_minutes'))),
+                        'attendants' => $attendantList,
+                        'is_currently_active' => false,
+                    ];
+                }
             } elseif ($records->isNotEmpty()) {
                 // Branch is ACTIVE & COMPLIANT: At least one attendant has logged counts within the 30-min window!
                 $lastRecord = $records->last();
@@ -330,8 +400,27 @@ class ShiftInactivityMonitorService
                     'scheduled_attendants_count' => count($scheduledAttendantList),
                     'scheduled_attendants' => $scheduledAttendantList,
                     'other_scheduled_attendants' => $otherScheduledAttendants,
+                    'has_past_lapses' => count($pastLapses) > 0,
+                    'past_lapses_count' => count($pastLapses),
+                    'past_lapses' => $pastLapses,
                     'status' => 'ACTIVE_COMPLIANT',
                 ];
+
+                if (count($pastLapses) > 0) {
+                    $pastLapseAlerts[] = [
+                        'branch_id' => $branch->id,
+                        'branch_name' => $branch->name,
+                        'branch_name_am' => $branch->name_am ?? $branch->name,
+                        'branch_code' => $branch->code,
+                        'shift_name' => $activeShift->name,
+                        'lapses' => $pastLapses,
+                        'total_lapses' => count($pastLapses),
+                        'total_lapse_minutes' => array_sum(array_column($pastLapses, 'duration_minutes')),
+                        'total_lapse_human' => $this->formatDurationHuman(array_sum(array_column($pastLapses, 'duration_minutes'))),
+                        'attendants' => $scheduledAttendantList,
+                        'is_currently_active' => true,
+                    ];
+                }
             }
         }
 
@@ -346,6 +435,9 @@ class ShiftInactivityMonitorService
             'incident_count' => count($alerts),
             'critical_count' => $criticalCount,
             'warning_count' => $warningCount,
+            'has_past_lapses' => count($pastLapseAlerts) > 0,
+            'past_lapses_count' => count($pastLapseAlerts),
+            'past_lapse_alerts' => $pastLapseAlerts,
             'has_active_branches' => count($activeBranches) > 0,
             'active_branches_count' => count($activeBranches),
             'total_branches_monitored' => $branches->count(),
@@ -491,6 +583,7 @@ class ShiftInactivityMonitorService
                             'to' => $evalEnd,
                             'duration_minutes' => $duration,
                             'is_ongoing' => ($evalEnd == $now && $now->lt($shiftEnd)),
+                            'resumed_at' => null,
                         ];
                     }
                 } else {
@@ -504,6 +597,7 @@ class ShiftInactivityMonitorService
                             'to' => $firstLogAt,
                             'duration_minutes' => $startGap,
                             'is_ongoing' => false,
+                            'resumed_at' => $firstLogAt,
                         ];
                     }
 
@@ -520,6 +614,7 @@ class ShiftInactivityMonitorService
                                 'to' => $next,
                                 'duration_minutes' => $midGap,
                                 'is_ongoing' => false,
+                                'resumed_at' => $next,
                             ];
                         }
                     }
@@ -534,6 +629,7 @@ class ShiftInactivityMonitorService
                             'to' => $evalEnd,
                             'duration_minutes' => $tailGap,
                             'is_ongoing' => ($evalEnd == $now && $now->lt($shiftEnd)),
+                            'resumed_at' => null,
                         ];
                     }
                 }
@@ -557,6 +653,9 @@ class ShiftInactivityMonitorService
                             'attendants' => $attendantsList,
                             'attendants_count' => count($attendantsList),
                             'gap_type' => $inc['gap_type'],
+                            'gap_category' => $inc['is_ongoing'] ? 'ONGOING_LAPSE' : 'RESOLVED_PAST_LAPSE',
+                            'type_label' => $this->getGapTypeLabel($inc['gap_type'], false),
+                            'type_label_am' => $this->getGapTypeLabel($inc['gap_type'], true),
                             'from_time' => $inc['from']->format('H:i'),
                             'to_time' => $inc['to']->format('H:i'),
                             'interval_formatted' => "{$inc['from']->format('H:i')} – {$inc['to']->format('H:i')}",
@@ -566,6 +665,8 @@ class ShiftInactivityMonitorService
                             'is_ongoing' => $inc['is_ongoing'],
                             'status' => $inc['is_ongoing'] ? 'ACTIVE_NON_WORKING' : 'PAST_UNATTENDED_GAP',
                             'severity' => ($inc['duration_minutes'] >= 60) ? 'CRITICAL' : 'WARNING',
+                            'resumed_at_formatted' => isset($inc['resumed_at']) && $inc['resumed_at'] ? $inc['resumed_at']->format('H:i (h:i A)') : null,
+                            'resumed_at_ethiopian' => isset($inc['resumed_at']) && $inc['resumed_at'] ? $this->formatEthiopianTime($inc['resumed_at']) : null,
                             'total_shift_entries' => $totalCount,
                         ];
                     }
@@ -591,8 +692,22 @@ class ShiftInactivityMonitorService
                 'non_compliant_shifts' => $nonCompliantShifts,
                 'compliance_rate' => $complianceRate,
                 'total_incidents' => count($incidents),
+                'ongoing_incidents_count' => count(array_filter($incidents, fn ($i) => $i['is_ongoing'])),
+                'resolved_past_lapses_count' => count(array_filter($incidents, fn ($i) => !$i['is_ongoing'])),
                 'total_inactive_minutes' => $totalInactiveMinutes,
                 'total_inactive_hours' => round($totalInactiveMinutes / 60, 1),
+                'available_shifts' => $shifts->map(fn ($s) => [
+                    'id' => $s->id,
+                    'name' => $s->name,
+                    'name_am' => $s->name_am ?? $s->name,
+                    'time_window' => "{$s->start_time} – {$s->end_time}",
+                ]),
+                'available_branches' => $branches->map(fn ($b) => [
+                    'id' => $b->id,
+                    'name' => $b->name,
+                    'name_am' => $b->name_am ?? $b->name,
+                    'code' => $b->code,
+                ]),
             ],
             'incidents' => $incidents,
         ];
@@ -638,5 +753,19 @@ class ShiftInactivityMonitorService
         $hrs = intdiv($minutes, 60);
         $remMin = $minutes % 60;
         return $remMin > 0 ? "{$hrs}h {$remMin}m" : "{$hrs}h";
+    }
+
+    /**
+     * Helper for localized gap type labels.
+     */
+    protected function getGapTypeLabel(string $gapType, bool $isAmharic = false): string
+    {
+        return match ($gapType) {
+            'SHIFT_START_DELAY' => $isAmharic ? 'የፈረቃ መጀመሪያ መዘግየት' : 'Shift Start Delay',
+            'INTERMITTENT_INACTIVITY' => $isAmharic ? 'በፈረቃ መካከል የተፈጠረ ክፍተት' : 'Intermittent Lapse',
+            'TRAILING_INACTIVITY' => $isAmharic ? 'የቅርብ ጊዜ የሥራ ማቆም ክፍተት' : 'Trailing Inactivity',
+            'COMPLETE_SHIFT_INACTIVITY' => $isAmharic ? 'በሙሉ ፈረቃው ምንም ቆጠራ አልተካሄደም' : 'Complete Shift Absence',
+            default => $gapType,
+        };
     }
 }

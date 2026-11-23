@@ -446,8 +446,10 @@
                 <span class="text-[8.5px] font-mono">{{ alert.past_lapses[0].duration_human }}</span>
               </div>
               <div class="font-mono text-[9.5px] flex items-center justify-between text-main-text/70">
-                <span>{{ alert.past_lapses[0].interval_formatted }}</span>
-                <span class="text-emerald-700 dark:text-emerald-300">{{ langStore.isAmharic() ? 'ተጀምሯል' : 'Resumed' }}: {{ alert.past_lapses[0].resumed_at }}</span>
+                <span>{{ langStore.isAmharic() ? alert.past_lapses[0].interval_ethiopian : alert.past_lapses[0].interval_formatted }}</span>
+                <span class="text-emerald-700 dark:text-emerald-300 font-semibold">
+                  {{ langStore.isAmharic() ? 'ተጀምሯል' : 'Resumed' }}: {{ langStore.isAmharic() ? (alert.past_lapses[0].resumed_at_ethiopian || alert.past_lapses[0].resumed_at) : alert.past_lapses[0].resumed_at }}
+                </span>
               </div>
             </div>
 
@@ -491,31 +493,45 @@
           </p>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-2">
             <div
-              v-for="(lapse, idx) in currentInactivityAlerts.past_lapse_alerts"
+              v-for="(item, idx) in currentInactivityAlerts.past_lapse_alerts"
               :key="`past-lapse-alert-${idx}`"
-              class="p-2.5 rounded bg-card-bg border border-amber-500/30 shadow-2xs space-y-1.5"
+              class="p-3 rounded-md bg-card-bg border border-amber-500/30 shadow-2xs space-y-2"
             >
-              <div class="flex items-center justify-between text-xs font-bold">
-                <span class="text-main-text flex items-center gap-1">
-                  <Building2 class="w-3.5 h-3.5 text-brand-blue" />
-                  {{ langStore.isAmharic() ? lapse.branch_name_am : lapse.branch_name }}
+              <div class="flex items-center justify-between text-xs font-bold border-b border-card-border/60 pb-1.5">
+                <span class="text-main-text flex items-center gap-1.5 truncate">
+                  <Building2 class="w-3.5 h-3.5 text-brand-blue shrink-0" />
+                  <span class="truncate">{{ langStore.isAmharic() ? item.branch_name_am : item.branch_name }}</span>
                 </span>
-                <span class="text-[9.5px] font-mono px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25">
-                  {{ lapse.duration_human }}
+                <span class="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25 shrink-0">
+                  ⏱️ {{ (item.lapses?.[0]?.duration_human || item.duration_human || item.total_lapse_human) }}
                 </span>
               </div>
-              <div class="text-[10px] text-main-text/70 space-y-0.5 font-mono">
-                <div class="flex justify-between">
-                  <span>{{ langStore.isAmharic() ? 'ክፍተት' : 'Interval' }}:</span>
-                  <strong>{{ lapse.interval_formatted }}</strong>
+
+              <!-- Lapse Details with Authentic Language & Time Conversion -->
+              <div class="text-[10px] space-y-1 font-mono bg-main-bg/50 p-2 rounded border border-card-border/50">
+                <div class="flex justify-between items-center text-main-text/80">
+                  <span>{{ langStore.isAmharic() ? 'የማቆም ክፍተት (ኢትዮ)' : 'Inactive Interval (EAT)' }}:</span>
+                  <strong class="font-bold" :class="langStore.isAmharic() ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300'">
+                    {{ langStore.isAmharic() ? (item.lapses?.[0]?.interval_ethiopian || item.interval_ethiopian || item.lapses?.[0]?.interval_formatted || item.interval_formatted) : (item.lapses?.[0]?.interval_formatted || item.interval_formatted) }}
+                  </strong>
                 </div>
-                <div class="flex justify-between text-emerald-600 dark:text-emerald-400">
-                  <span>{{ langStore.isAmharic() ? 'ኢትዮጵያ' : 'Eth' }}:</span>
-                  <span>{{ lapse.interval_ethiopian }}</span>
+
+                <div class="flex justify-between items-center text-[9px] text-main-text/60">
+                  <span>{{ langStore.isAmharic() ? 'የፈረንጅ ሰዓት' : 'Ethiopian Clock' }}:</span>
+                  <span>{{ langStore.isAmharic() ? (item.lapses?.[0]?.interval_formatted || item.interval_formatted) : (item.lapses?.[0]?.interval_ethiopian || item.interval_ethiopian) }}</span>
                 </div>
-                <div class="flex justify-between text-brand-blue dark:text-brand-yellow font-bold pt-0.5 border-t border-card-border/60">
-                  <span>{{ langStore.isAmharic() ? 'ቆጠራ ተጀምሯል' : 'Resumed At' }}:</span>
-                  <span>{{ lapse.resumed_at }} ({{ lapse.resumed_at_ethiopian }})</span>
+
+                <div class="flex justify-between items-center text-brand-blue dark:text-brand-yellow font-bold pt-1 border-t border-card-border/60">
+                  <span>{{ langStore.isAmharic() ? 'ቆጠራ የተጀመረው' : 'Resumed At' }}:</span>
+                  <span v-if="langStore.isAmharic()">
+                    {{ item.lapses?.[0]?.resumed_at_ethiopian || item.resumed_at_ethiopian || item.lapses?.[0]?.resumed_at || item.resumed_at || '—' }}
+                  </span>
+                  <span v-else>
+                    {{ item.lapses?.[0]?.resumed_at || item.resumed_at || '—' }}
+                    <span v-if="item.lapses?.[0]?.resumed_at_ethiopian || item.resumed_at_ethiopian" class="text-[9px] font-normal text-emerald-600 dark:text-emerald-400">
+                      ({{ item.lapses?.[0]?.resumed_at_ethiopian || item.resumed_at_ethiopian }})
+                    </span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -645,13 +661,19 @@
                 class="text-[10px] flex items-center justify-between bg-card-bg/80 p-1.5 rounded border border-amber-500/20 font-mono"
               >
                 <div>
-                  <span class="font-bold">{{ lapse.interval_formatted }}</span>
+                  <span class="font-bold">{{ langStore.isAmharic() ? lapse.interval_ethiopian : lapse.interval_formatted }}</span>
                   <span class="text-main-text/60 ml-1">({{ lapse.duration_human }})</span>
-                  <div class="text-[9px] text-emerald-600 dark:text-emerald-400">{{ lapse.interval_ethiopian }}</div>
+                  <div class="text-[9px]" :class="langStore.isAmharic() ? 'text-main-text/50' : 'text-emerald-600 dark:text-emerald-400'">
+                    {{ langStore.isAmharic() ? lapse.interval_formatted : lapse.interval_ethiopian }}
+                  </div>
                 </div>
                 <div class="text-right text-[9.5px]">
-                  <span class="text-emerald-700 dark:text-emerald-300 font-semibold">{{ langStore.isAmharic() ? 'ተጀምሯል' : 'Resumed' }}: {{ lapse.resumed_at }}</span>
-                  <div class="text-[8.5px] text-main-text/50">({{ lapse.resumed_at_ethiopian }})</div>
+                  <span class="text-emerald-700 dark:text-emerald-300 font-semibold">
+                    {{ langStore.isAmharic() ? 'ተጀምሯል' : 'Resumed' }}: {{ langStore.isAmharic() ? (lapse.resumed_at_ethiopian || lapse.resumed_at) : lapse.resumed_at }}
+                  </span>
+                  <div v-if="!langStore.isAmharic() && lapse.resumed_at_ethiopian" class="text-[8.5px] text-main-text/50">
+                    ({{ lapse.resumed_at_ethiopian }})
+                  </div>
                 </div>
               </div>
             </div>

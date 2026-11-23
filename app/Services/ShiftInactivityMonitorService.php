@@ -352,6 +352,7 @@ class ShiftInactivityMonitorService
                 ];
 
                 if (count($pastLapses) > 0) {
+                    $firstLapse = $pastLapses[0];
                     $pastLapseAlerts[] = [
                         'branch_id' => $branch->id,
                         'branch_name' => $branch->name,
@@ -362,6 +363,14 @@ class ShiftInactivityMonitorService
                         'total_lapses' => count($pastLapses),
                         'total_lapse_minutes' => array_sum(array_column($pastLapses, 'duration_minutes')),
                         'total_lapse_human' => $this->formatDurationHuman(array_sum(array_column($pastLapses, 'duration_minutes'))),
+                        'duration_human' => $firstLapse['duration_human'] ?? $this->formatDurationHuman(array_sum(array_column($pastLapses, 'duration_minutes'))),
+                        'duration_minutes' => $firstLapse['duration_minutes'] ?? 0,
+                        'interval_formatted' => $firstLapse['interval_formatted'] ?? '—',
+                        'interval_ethiopian' => $firstLapse['interval_ethiopian'] ?? '—',
+                        'resumed_at' => $firstLapse['resumed_at'] ?? '—',
+                        'resumed_at_ethiopian' => $firstLapse['resumed_at_ethiopian'] ?? '—',
+                        'type_label' => $firstLapse['type_label'] ?? 'Inactivity Lapse',
+                        'type_label_am' => $firstLapse['type_label_am'] ?? 'የሥራ ማቆም ክፍተት',
                         'attendants' => $attendantList,
                         'is_currently_active' => false,
                     ];
@@ -454,6 +463,7 @@ class ShiftInactivityMonitorService
                 ];
 
                 if (count($pastLapses) > 0) {
+                    $firstLapse = $pastLapses[0];
                     $pastLapseAlerts[] = [
                         'branch_id' => $branch->id,
                         'branch_name' => $branch->name,
@@ -464,6 +474,14 @@ class ShiftInactivityMonitorService
                         'total_lapses' => count($pastLapses),
                         'total_lapse_minutes' => array_sum(array_column($pastLapses, 'duration_minutes')),
                         'total_lapse_human' => $this->formatDurationHuman(array_sum(array_column($pastLapses, 'duration_minutes'))),
+                        'duration_human' => $firstLapse['duration_human'] ?? $this->formatDurationHuman(array_sum(array_column($pastLapses, 'duration_minutes'))),
+                        'duration_minutes' => $firstLapse['duration_minutes'] ?? 0,
+                        'interval_formatted' => $firstLapse['interval_formatted'] ?? '—',
+                        'interval_ethiopian' => $firstLapse['interval_ethiopian'] ?? '—',
+                        'resumed_at' => $firstLapse['resumed_at'] ?? '—',
+                        'resumed_at_ethiopian' => $firstLapse['resumed_at_ethiopian'] ?? '—',
+                        'type_label' => $firstLapse['type_label'] ?? 'Inactivity Lapse',
+                        'type_label_am' => $firstLapse['type_label_am'] ?? 'የሥራ ማቆም ክፍተት',
                         'attendants' => $scheduledAttendantList,
                         'is_currently_active' => true,
                     ];

@@ -58,16 +58,19 @@ const getDateDisplay = (dateStr: string) => {
         <div class="flex items-center gap-2 sm:hidden text-[10px] font-bold">
           <span class="inline-flex items-center gap-0.5 text-brand-blue">
             <span>{{ langStore.localizeGender('male') }}:</span>
-            <span class="font-mono">{{ dailyStats.male }}</span>
+            <span v-if="loading" class="h-3 w-5 bg-slate-200 dark:bg-slate-700 rounded animate-pulse inline-block"></span>
+            <span v-else class="font-mono">{{ dailyStats.male }}</span>
           </span>
           <span class="text-card-border">|</span>
           <span class="inline-flex items-center gap-0.5 text-brand-yellow">
             <span>{{ langStore.localizeGender('female') }}:</span>
-            <span class="font-mono">{{ dailyStats.female }}</span>
+            <span v-if="loading" class="h-3 w-5 bg-slate-200 dark:bg-slate-700 rounded animate-pulse inline-block"></span>
+            <span v-else class="font-mono">{{ dailyStats.female }}</span>
           </span>
           <span class="text-card-border">|</span>
           <span class="inline-flex items-center gap-0.5 text-main-text">
-            <span class="font-mono">{{ dailyStats.total }}</span>
+            <span v-if="loading" class="h-3 w-6 bg-slate-200 dark:bg-slate-700 rounded animate-pulse inline-block"></span>
+            <span v-else class="font-mono">{{ dailyStats.total }}</span>
           </span>
         </div>
       </div>
@@ -81,7 +84,8 @@ const getDateDisplay = (dateStr: string) => {
             <span class="text-[10px] font-bold text-brand-blue uppercase tracking-wider">
               {{ langStore.localizeGender('male') }}
             </span>
-            <div class="text-sm sm:text-base font-bold text-brand-blue font-mono leading-none mt-0.5">
+            <div v-if="loading" class="h-4 w-10 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mt-1 ml-auto"></div>
+            <div v-else class="text-sm sm:text-base font-bold text-brand-blue font-mono leading-none mt-0.5">
               {{ dailyStats.male }}
             </div>
           </div>
@@ -93,7 +97,8 @@ const getDateDisplay = (dateStr: string) => {
             <span class="text-[10px] font-bold text-brand-yellow uppercase tracking-wider">
               {{ langStore.localizeGender('female') }}
             </span>
-            <div class="text-sm sm:text-base font-bold text-brand-yellow font-mono leading-none mt-0.5">
+            <div v-if="loading" class="h-4 w-10 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mt-1 ml-auto"></div>
+            <div v-else class="text-sm sm:text-base font-bold text-brand-yellow font-mono leading-none mt-0.5">
               {{ dailyStats.female }}
             </div>
           </div>
@@ -105,7 +110,8 @@ const getDateDisplay = (dateStr: string) => {
             <span class="text-[10px] font-bold text-main-text/60 uppercase tracking-wider">
               {{ langStore.t('attendance.total_label', 'Total Today') }}
             </span>
-            <div class="text-base sm:text-lg font-bold text-brand-blue font-mono leading-none mt-0.5">
+            <div v-if="loading" class="h-4 w-12 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mt-1 ml-auto"></div>
+            <div v-else class="text-base sm:text-lg font-bold text-brand-blue font-mono leading-none mt-0.5">
               {{ dailyStats.total }}
             </div>
           </div>
@@ -159,7 +165,7 @@ const getDateDisplay = (dateStr: string) => {
         </thead>
         <tbody class="divide-y divide-card-border/60">
           <!-- Skeleton Loading Rows -->
-          <template v-if="loading && logs.length === 0">
+          <template v-if="loading">
             <tr v-for="i in 6" :key="`skel-${i}`" class="animate-pulse">
               <td class="py-3 px-3 text-center"><div class="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 mx-auto"></div></td>
               <td class="py-3 px-4"><div class="h-3.5 bg-slate-200 dark:bg-slate-700/60 rounded w-28"></div></td>

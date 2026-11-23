@@ -67,7 +67,7 @@ export const useAuthStore = defineStore(
             return isSuperAdmin.value || hasPermission('attendance.record');
         });
         const canManageAttendanceAnalytics = computed(() => {
-            return isSuperAdmin.value || hasPermission('attendance.analytics') || hasPermission('libraries.manage');
+            return isSuperAdmin.value || (user.value as any)?.can_manage_reporting || hasPermission('attendance.analytics') || hasPermission('libraries.manage');
         });
         const userRoles = computed(() => user.value?.roles ?? []);
         const isOnDutyToday = computed(() => isSuperAdmin.value || (user.value?.duty_status?.has_active_shift_today ?? false));

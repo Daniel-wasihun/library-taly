@@ -38,19 +38,111 @@
           <TrendingUp class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
           <span>{{ langStore.t('attendance.analytics', 'Analytics & Reports') }}</span>
         </router-link>
-
-        <router-link
-          to="/my-turns"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold border border-card-border bg-card-bg hover:bg-nav-accent/10 hover:border-nav-accent text-main-text shadow-2xs transition active:scale-95 cursor-pointer"
-        >
-          <Clock class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
-          <span>{{ langStore.t('nav.my_turns', 'My Shifts') }}</span>
-        </router-link>
       </div>
     </div>
 
-    <!-- CRITICAL SHIFT INACTIVITY ALERT BANNER (> 30 Mins Inactive) -->
-    <div
+    <!-- COMPREHENSIVE DASHBOARD LOADING SKELETON -->
+    <div v-if="loading" class="space-y-6 animate-pulse">
+      <!-- Live Status Skeleton Banner -->
+      <div class="rounded-md border p-4 sm:p-5 bg-card-bg border-card-border space-y-3 shadow-2xs">
+        <div class="flex items-center justify-between gap-3 border-b border-card-border/60 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-md bg-slate-200 dark:bg-slate-700"></div>
+            <div class="space-y-1.5">
+              <div class="h-4 w-52 bg-slate-200 dark:bg-slate-700 rounded"></div>
+              <div class="h-3 w-80 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+            </div>
+          </div>
+          <div class="h-7 w-28 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+          <div v-for="i in 3" :key="`banner-skel-${i}`" class="p-3.5 rounded bg-main-bg/60 border border-card-border/50 space-y-2.5">
+            <div class="flex justify-between items-center">
+              <div class="h-4 w-28 bg-slate-200 dark:bg-slate-700 rounded"></div>
+              <div class="h-4 w-16 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+            </div>
+            <div class="h-12 bg-slate-200 dark:bg-slate-700/30 rounded"></div>
+            <div class="h-10 bg-slate-200 dark:bg-slate-700/40 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric Insight Cards Skeleton -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div v-for="i in 6" :key="`metric-skel-${i}`" class="bg-card-bg border border-card-border rounded-md p-4 space-y-2 shadow-2xs">
+          <div class="flex justify-between items-center">
+            <div class="h-3 w-16 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+            <div class="w-3.5 h-3.5 rounded bg-slate-200 dark:bg-slate-700/60"></div>
+          </div>
+          <div class="h-7 w-20 bg-slate-200 dark:bg-slate-700 rounded"></div>
+          <div class="h-2.5 w-24 bg-slate-200 dark:bg-slate-700/40 rounded"></div>
+        </div>
+      </div>
+
+      <!-- Mid-Tier Analytics Skeleton (2 Cards) -->
+      <div v-if="authStore.canManageAttendanceAnalytics" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="bg-card-bg border border-card-border rounded-md p-5 space-y-4 shadow-2xs">
+          <div class="flex justify-between items-center border-b border-card-border pb-3">
+            <div class="h-4 w-44 bg-slate-200 dark:bg-slate-700 rounded"></div>
+            <div class="h-3 w-20 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+          </div>
+          <div class="h-3 w-full bg-slate-200 dark:bg-slate-700/60 rounded-full"></div>
+          <div class="space-y-3 pt-2">
+            <div v-for="i in 3" :key="`demo-skel-${i}`" class="space-y-1">
+              <div class="flex justify-between">
+                <div class="h-3 w-20 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+                <div class="h-3 w-14 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+              </div>
+              <div class="h-1.5 w-full bg-slate-200 dark:bg-slate-700/40 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-card-bg border border-card-border rounded-md p-5 space-y-4 shadow-2xs">
+          <div class="flex justify-between items-center border-b border-card-border pb-3">
+            <div class="h-4 w-40 bg-slate-200 dark:bg-slate-700 rounded"></div>
+            <div class="h-3 w-24 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+          </div>
+          <div class="space-y-3">
+            <div v-for="i in 3" :key="`branch-skel-${i}`" class="p-2.5 rounded border border-card-border/60 space-y-1.5">
+              <div class="flex justify-between items-center">
+                <div class="h-3.5 w-28 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                <div class="h-3.5 w-16 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+              </div>
+              <div class="h-1.5 w-full bg-slate-200 dark:bg-slate-700/40 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Tier Skeleton -->
+      <div class="grid grid-cols-1" :class="authStore.canManageAttendanceAnalytics ? 'lg:grid-cols-3 gap-5' : 'gap-5'">
+        <div v-if="authStore.canManageAttendanceAnalytics" class="lg:col-span-2 bg-card-bg border border-card-border rounded-md p-5 space-y-3 shadow-2xs">
+          <div class="flex justify-between items-center border-b border-card-border pb-3">
+            <div class="h-4 w-36 bg-slate-200 dark:bg-slate-700 rounded"></div>
+            <div class="h-3 w-24 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+          </div>
+          <div class="space-y-2.5">
+            <div v-for="i in 4" :key="`feed-skel-${i}`" class="h-12 bg-slate-100 dark:bg-slate-800/60 rounded border border-card-border/40"></div>
+          </div>
+        </div>
+
+        <div :class="authStore.canManageAttendanceAnalytics ? 'bg-card-bg border border-card-border rounded-md p-5 space-y-3 shadow-2xs' : 'lg:col-span-3 bg-card-bg border border-card-border rounded-md p-5 shadow-2xs space-y-4'">
+          <div class="flex justify-between items-center border-b border-card-border pb-3">
+            <div class="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded"></div>
+            <div class="h-3 w-24 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+          </div>
+          <div :class="authStore.canManageAttendanceAnalytics ? 'space-y-2.5' : 'grid grid-cols-1 md:grid-cols-2 gap-4'">
+            <div v-for="i in 2" :key="`shift-skel-${i}`" class="h-24 bg-slate-100 dark:bg-slate-800/60 rounded border border-card-border/40"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE DASHBOARD CONTENT -->
+    <div v-else class="space-y-6">
+      <!-- CRITICAL SHIFT INACTIVITY ALERT BANNER (> 30 Mins Inactive) -->
+      <div
       v-if="stats?.inactivity_alerts?.has_active_incidents && (authStore.isAdmin || authStore.canManageAttendanceAnalytics)"
       class="rounded-md border p-4 sm:p-5 bg-rose-500/10 dark:bg-rose-950/30 border-rose-500/40 text-rose-950 dark:text-rose-100 shadow-sm space-y-4"
     >
@@ -317,8 +409,8 @@
       </div>
     </div>
 
-    <!-- Metric Insight Cards (6 Core Performance Indicators) -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <!-- Metric Insight Cards: Attendance Analytics KPIs (Authorized Users) -->
+    <div v-if="authStore.canManageAttendanceAnalytics" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       <!-- Total Patrons Today -->
       <div class="bg-card-bg border border-card-border rounded-md p-4 shadow-2xs space-y-1">
         <div class="flex items-center justify-between text-[10px] font-bold text-main-text/50 uppercase tracking-wider">
@@ -326,11 +418,11 @@
           <Activity class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
         </div>
         <div class="text-2xl font-bold text-brand-blue dark:text-brand-yellow font-mono">
-          {{ loading ? '—' : (stats?.stats?.today_total ?? 0).toLocaleString() }}
+          {{ (stats?.stats?.today_total ?? 0).toLocaleString() }}
         </div>
         <div class="text-[10px] text-main-text/50 flex items-center gap-1 font-mono">
           <span>7-day:</span>
-          <strong class="text-main-text">{{ loading ? '—' : (stats?.stats?.week_total ?? 0).toLocaleString() }}</strong>
+          <strong class="text-main-text">{{ (stats?.stats?.week_total ?? 0).toLocaleString() }}</strong>
         </div>
       </div>
 
@@ -341,7 +433,7 @@
           <GraduationCap class="w-3.5 h-3.5" />
         </div>
         <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-          {{ loading ? '—' : (stats?.stats?.today_student ?? 0).toLocaleString() }}
+          {{ (stats?.stats?.today_student ?? 0).toLocaleString() }}
         </div>
         <div class="text-[10px] text-emerald-700/70 dark:text-emerald-300/70 font-mono">
           {{ stats?.stats?.student_percent ?? 0 }}% {{ langStore.t('attendance.of_traffic', 'of total') }}
@@ -355,7 +447,7 @@
           <BookOpen class="w-3.5 h-3.5" />
         </div>
         <div class="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono">
-          {{ loading ? '—' : (stats?.stats?.today_teacher ?? 0).toLocaleString() }}
+          {{ (stats?.stats?.today_teacher ?? 0).toLocaleString() }}
         </div>
         <div class="text-[10px] text-blue-700/70 dark:text-blue-300/70 font-mono">
           {{ stats?.stats?.teacher_percent ?? 0 }}% {{ langStore.t('attendance.of_traffic', 'of total') }}
@@ -369,7 +461,7 @@
           <Briefcase class="w-3.5 h-3.5" />
         </div>
         <div class="text-2xl font-bold text-purple-600 dark:text-purple-400 font-mono">
-          {{ loading ? '—' : (stats?.stats?.today_staff ?? 0).toLocaleString() }}
+          {{ (stats?.stats?.today_staff ?? 0).toLocaleString() }}
         </div>
         <div class="text-[10px] text-purple-700/70 dark:text-purple-300/70 font-mono">
           {{ stats?.stats?.staff_percent ?? 0 }}% {{ langStore.t('attendance.of_traffic', 'of total') }}
@@ -383,7 +475,7 @@
           <Building2 class="w-3.5 h-3.5 text-brand-blue" />
         </div>
         <div class="text-2xl font-bold text-main-text font-mono">
-          {{ loading ? '—' : (stats?.stats?.total_branches ?? 0) }}
+          {{ stats?.stats?.total_branches ?? 0 }}
         </div>
         <div class="text-[10px] text-main-text/50 truncate">
           {{ langStore.isAmharic() ? 'ከፍተኛ:' : 'Top:' }} <span class="font-bold text-brand-blue truncate">{{ stats?.stats?.busiest_branch ?? 'Natural' }}</span>
@@ -397,7 +489,7 @@
           <ShieldCheck class="w-3.5 h-3.5 text-emerald-500" />
         </div>
         <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-          {{ loading ? '—' : (stats?.stats?.current_shift_staff_count ?? stats?.stats?.on_duty_staff_today?.length ?? 0) }}
+          {{ stats?.stats?.current_shift_staff_count ?? stats?.stats?.on_duty_staff_today?.length ?? 0 }}
         </div>
         <div class="text-[10px] text-emerald-700/70 dark:text-emerald-300/70 font-mono">
           {{ langStore.isAmharic() ? `${stats?.stats?.current_shift_staff_count ?? 0} አሁን በስራ ላይ (${stats?.stats?.total_staff_on_duty_today ?? 0} ዛሬ)` : `${stats?.stats?.current_shift_staff_count ?? 0} active now (${stats?.stats?.total_staff_on_duty_today ?? 0} today)` }}
@@ -405,8 +497,53 @@
       </div>
     </div>
 
-    <!-- Mid-Tier Analytics: Demographic Split & Branch Distribution -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <!-- Operational Staff Duty Cards for Non-Analytics Users (Attendants / Desk Operators) -->
+    <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <!-- Active Shift Indicator -->
+      <div class="bg-card-bg border border-card-border rounded-md p-4 shadow-2xs space-y-1">
+        <div class="flex items-center justify-between text-[10px] font-bold text-main-text/50 uppercase tracking-wider">
+          <span>{{ langStore.t('duty.current_shift', 'Current Duty Shift') }}</span>
+          <Clock class="w-3.5 h-3.5 text-brand-blue dark:text-brand-yellow" />
+        </div>
+        <div class="text-base sm:text-lg font-bold text-brand-blue dark:text-brand-yellow">
+          {{ stats?.inactivity_alerts?.active_shift?.name ?? 'Day Shift' }}
+        </div>
+        <div class="text-[10px] text-main-text/50 font-mono">
+          {{ stats?.inactivity_alerts?.active_shift?.time_window ?? '08:00 – 17:00' }} ({{ stats?.inactivity_alerts?.active_shift?.time_window_ethiopian ?? '02:00 ጠዋት – 11:00 ከሰዓት' }})
+        </div>
+      </div>
+
+      <!-- Campus Branch Assigned -->
+      <div class="bg-card-bg border border-card-border rounded-md p-4 shadow-2xs space-y-1">
+        <div class="flex items-center justify-between text-[10px] font-bold text-main-text/50 uppercase tracking-wider">
+          <span>{{ langStore.t('common.assigned_branch', 'Assigned Branch') }}</span>
+          <Building2 class="w-3.5 h-3.5 text-brand-blue" />
+        </div>
+        <div class="text-base sm:text-lg font-bold text-main-text truncate">
+          {{ authStore.user?.library?.name ?? (langStore.isAmharic() ? 'ወልድያ ዩኒቨርሲቲ' : 'All Branches') }}
+        </div>
+        <div class="text-[10px] text-main-text/50 font-mono">
+          Code: [{{ authStore.user?.library?.code ?? 'WLD' }}]
+        </div>
+      </div>
+
+      <!-- On-Duty Staff on Shift Today -->
+      <div class="bg-card-bg border border-card-border rounded-md p-4 shadow-2xs space-y-1">
+        <div class="flex items-center justify-between text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+          <span>{{ langStore.t('duty.shifts_today', 'On Duty Staff') }}</span>
+          <ShieldCheck class="w-3.5 h-3.5 text-emerald-500" />
+        </div>
+        <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+          {{ stats?.stats?.current_shift_staff_count ?? stats?.stats?.on_duty_staff_today?.length ?? 0 }}
+        </div>
+        <div class="text-[10px] text-emerald-700/70 dark:text-emerald-300/70 font-mono">
+          {{ langStore.isAmharic() ? `${stats?.stats?.current_shift_staff_count ?? 0} አሁን በስራ ላይ (${stats?.stats?.total_staff_on_duty_today ?? 0} ዛሬ)` : `${stats?.stats?.current_shift_staff_count ?? 0} active now (${stats?.stats?.total_staff_on_duty_today ?? 0} today)` }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Mid-Tier Analytics: Demographic Split & Branch Distribution (Guarded by Permission) -->
+    <div v-if="authStore.canManageAttendanceAnalytics" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <!-- Demographic Composition & Gender Proportions -->
       <div class="bg-card-bg border border-card-border rounded-md p-5 shadow-2xs space-y-4">
         <div class="flex items-center justify-between border-b border-card-border pb-3">
@@ -557,9 +694,12 @@
     </div>
 
     <!-- Bottom Tier: Live Gate Activity Feed & Today's Duty Deployment -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <!-- Recent Patron Usage Feed (2 Cols) -->
-      <div class="lg:col-span-2 bg-card-bg border border-card-border rounded-md p-5 shadow-2xs space-y-4">
+    <div class="grid grid-cols-1" :class="authStore.canManageAttendanceAnalytics ? 'lg:grid-cols-3 gap-5' : 'gap-5'">
+      <!-- Recent Patron Usage Feed (2 Cols) - Guarded by Permission -->
+      <div
+        v-if="authStore.canManageAttendanceAnalytics"
+        class="lg:col-span-2 bg-card-bg border border-card-border rounded-md p-5 shadow-2xs space-y-4"
+      >
         <div class="flex items-center justify-between border-b border-card-border pb-3">
           <h3 class="text-xs font-bold text-main-text uppercase tracking-wider flex items-center gap-2">
             <Activity class="w-4 h-4 text-brand-blue dark:text-brand-yellow" />
@@ -573,11 +713,7 @@
           </router-link>
         </div>
 
-        <div v-if="loading" class="space-y-2">
-          <div v-for="i in 5" :key="i" class="h-12 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse" />
-        </div>
-
-        <div v-else-if="!stats?.recent_entries?.length" class="py-10 text-center text-xs text-main-text/40">
+        <div v-if="!stats?.recent_entries?.length" class="py-10 text-center text-xs text-main-text/40">
           {{ langStore.t('common.no_records', 'No attendance entries logged yet today.') }}
         </div>
 
@@ -621,8 +757,11 @@
         </div>
       </div>
 
-      <!-- Today's Duty Shifts & Group Deployments (1 Col) -->
-      <div class="bg-card-bg border border-card-border rounded-md p-5 shadow-2xs space-y-4">
+      <!-- Today's Duty Shifts & Group Deployments -->
+      <div
+        class="bg-card-bg border border-card-border rounded-md p-5 shadow-2xs space-y-4"
+        :class="authStore.canManageAttendanceAnalytics ? 'lg:col-span-1' : 'lg:col-span-3'"
+      >
         <div class="flex items-center justify-between border-b border-card-border pb-3">
           <div class="flex items-center gap-2">
             <Users class="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -635,11 +774,7 @@
           </span>
         </div>
 
-        <div v-if="loading" class="space-y-3">
-          <div v-for="i in 2" :key="i" class="h-24 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse" />
-        </div>
-
-        <div v-else-if="!stats?.stats?.today_shift_groups?.length && !stats?.stats?.on_duty_staff_today?.length" class="py-10 text-center space-y-2">
+        <div v-if="!stats?.stats?.today_shift_groups?.length && !stats?.stats?.on_duty_staff_today?.length" class="py-10 text-center space-y-2">
           <CalendarOff class="w-8 h-8 text-main-text/30 mx-auto" />
           <p class="text-xs text-main-text/40">
             {{ langStore.isAmharic() ? 'ለዛሬ የተመደበ የቤተ-መጻሕፍት ተረኛ ፈረቃ የለም።' : 'No shift groups scheduled on duty today.' }}
@@ -647,7 +782,7 @@
         </div>
 
         <!-- Shift Groups Cards -->
-        <div v-else class="space-y-3">
+        <div v-else :class="authStore.canManageAttendanceAnalytics ? 'space-y-3' : 'grid grid-cols-1 md:grid-cols-2 gap-4'">
           <div
             v-for="shiftGroup in stats?.stats?.today_shift_groups"
             :key="`${shiftGroup.shift_id}-${shiftGroup.group_id}`"
@@ -731,6 +866,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
 
     <!-- Shift Inactivity Compliance Audit Report Modal -->

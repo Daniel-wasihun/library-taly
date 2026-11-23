@@ -75,11 +75,15 @@ class ShiftInactivityMonitorService
                 'incident_count' => 0,
                 'critical_count' => 0,
                 'warning_count' => 0,
+                'has_active_branches' => false,
+                'active_branches_count' => 0,
+                'total_branches_monitored' => 0,
                 'threshold_minutes' => self::INACTIVITY_THRESHOLD_MINUTES,
                 'evaluated_at' => $evalTime->toIso8601String(),
                 'evaluated_at_formatted' => $evalTime->format('M j, Y h:i A (T)'),
                 'active_shift' => null,
                 'alerts' => [],
+                'active_branches' => [],
             ];
         }
 
@@ -111,6 +115,7 @@ class ShiftInactivityMonitorService
 
         $shiftElapsedMinutes = $shiftStartDateTime->diffInMinutes($evalTime);
         $alerts = [];
+        $activeBranches = [];
         $criticalCount = 0;
         $warningCount = 0;
 
@@ -157,33 +162,39 @@ class ShiftInactivityMonitorService
             // Evaluate inactivity:
             // Shift must have run for at least 30 minutes to trigger inactivity
             if ($shiftElapsedMinutes < self::INACTIVITY_THRESHOLD_MINUTES) {
-                continue; // Grace period during shift startup (< 30 min)
-            }
-
-            $isInactive = false;
-            $inactiveSince = null;
-            $inactiveDurationMinutes = 0;
-            $statusType = 'COMPLIANT';
-            $lastEntryTimeStr = null;
-
-            if ($records->isEmpty()) {
-                // Zero records logged throughout the shift so far!
-                $isInactive = true;
-                $inactiveSince = $shiftStartDateTime;
-                $inactiveDurationMinutes = (int) $shiftStartDateTime->diffInMinutes($evalTime);
-                $statusType = 'CRITICAL_NO_COUNTS';
+                if ($records->isNotEmpty()) {
+                    // Already counting early in the shift - mark as active
+                    $isInactive = false;
+                } else {
+                    // Startup grace period without counts yet
+                    continue;
+                }
             } else {
-                // Records exist: check gap since the last recorded entry
-                $lastRecord = $records->last();
-                $lastEntryAt = Carbon::parse($lastRecord->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
-                $gapMinutes = (int) $lastEntryAt->diffInMinutes($evalTime);
-                $lastEntryTimeStr = $lastEntryAt->format('H:i');
+                $isInactive = false;
+                $inactiveSince = null;
+                $inactiveDurationMinutes = 0;
+                $statusType = 'COMPLIANT';
+                $lastEntryTimeStr = null;
 
-                if ($gapMinutes >= self::INACTIVITY_THRESHOLD_MINUTES) {
+                if ($records->isEmpty()) {
+                    // Zero records logged throughout the shift so far!
                     $isInactive = true;
-                    $inactiveSince = $lastEntryAt;
-                    $inactiveDurationMinutes = $gapMinutes;
-                    $statusType = 'INACTIVE_GAP';
+                    $inactiveSince = $shiftStartDateTime;
+                    $inactiveDurationMinutes = (int) $shiftStartDateTime->diffInMinutes($evalTime);
+                    $statusType = 'CRITICAL_NO_COUNTS';
+                } else {
+                    // Records exist: check gap since the last recorded entry
+                    $lastRecord = $records->last();
+                    $lastEntryAt = Carbon::parse($lastRecord->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                    $gapMinutes = (int) $lastEntryAt->diffInMinutes($evalTime);
+                    $lastEntryTimeStr = $lastEntryAt->format('H:i');
+
+                    if ($gapMinutes >= self::INACTIVITY_THRESHOLD_MINUTES) {
+                        $isInactive = true;
+                        $inactiveSince = $lastEntryAt;
+                        $inactiveDurationMinutes = $gapMinutes;
+                        $statusType = 'INACTIVE_GAP';
+                    }
                 }
             }
 
@@ -240,17 +251,104 @@ class ShiftInactivityMonitorService
                     'status' => $statusType,
                     'severity' => $severity,
                 ];
+            } elseif ($records->isNotEmpty()) {
+                // Branch is ACTIVE & COMPLIANT: At least one attendant has logged counts within the 30-min window!
+                $lastRecord = $records->last();
+                $lastEntryAt = Carbon::parse($lastRecord->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                $gapMinutes = (int) $lastEntryAt->diffInMinutes($evalTime);
+
+                // Group entries by staff_id to calculate activity per attendant
+                $staffActivity = $records->groupBy('staff_id');
+                $staffIds = $staffActivity->keys()->filter()->all();
+                $staffUsers = User::with('roles')->whereIn('id', $staffIds)->get()->keyBy('id');
+
+                $workingAttendants = [];
+                foreach ($staffActivity as $sId => $staffRecords) {
+                    $sUser = $staffUsers->get($sId);
+                    $sLastRecord = $staffRecords->last();
+                    $sLastAt = Carbon::parse($sLastRecord->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                    $sGapMinutes = (int) $sLastAt->diffInMinutes($evalTime);
+
+                    $workingAttendants[] = [
+                        'id' => (int) $sId,
+                        'name' => $sUser?->name ?? "Staff #{$sId}",
+                        'username' => $sUser?->username ?? '',
+                        'email' => $sUser?->email ?? '',
+                        'phone' => $sUser?->phone ?? '—',
+                        'role' => $sUser?->roles->first()?->name ?? 'Attendant',
+                        'counts_logged' => (int) $staffRecords->sum('visitor_count'),
+                        'batches_logged' => $staffRecords->count(),
+                        'last_entry_at' => $sLastAt->toIso8601String(),
+                        'last_entry_formatted' => $sLastAt->format('h:i A'),
+                        'last_entry_ethiopian' => $this->formatEthiopianTime($sLastAt),
+                        'last_entry_minutes_ago' => $sGapMinutes,
+                        'is_current_logger' => ((int) $sId === (int) $lastRecord->staff_id),
+                    ];
+                }
+
+                // Sort working attendants: most recently active first
+                usort($workingAttendants, fn ($a, $b) => $a['last_entry_minutes_ago'] <=> $b['last_entry_minutes_ago']);
+
+                $scheduledAttendantList = $scheduledAttendants->map(function ($u) {
+                    return [
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'username' => $u->username ?? '',
+                        'email' => $u->email,
+                        'phone' => $u->phone ?? '—',
+                        'role' => $u->roles->first()?->name ?? 'Attendant',
+                    ];
+                })->toArray();
+
+                // Non-working scheduled attendants (scheduled on duty but colleagues are handling counts)
+                $workingUserIds = array_column($workingAttendants, 'id');
+                $otherScheduledAttendants = array_values(array_filter(
+                    $scheduledAttendantList,
+                    fn ($att) => !in_array($att['id'], $workingUserIds, true)
+                ));
+
+                $activeBranches[] = [
+                    'branch_id' => $branch->id,
+                    'branch_name' => $branch->name,
+                    'branch_name_am' => $branch->name_am ?? $branch->name,
+                    'branch_code' => $branch->code,
+                    'shift_id' => $activeShift->id,
+                    'shift_name' => $activeShift->name,
+                    'shift_name_am' => $activeShift->name_am ?? $activeShift->name,
+                    'shift_time_window' => "{$activeShift->start_time} – {$activeShift->end_time}",
+                    'shift_time_ethiopian' => "{$activeShift->ethiopian_start_time} – {$activeShift->ethiopian_end_time}",
+                    'shift_group_id' => $activeGroupSchedule?->shift_group_id,
+                    'shift_group_name' => $activeGroupSchedule?->group?->name ?? 'Assigned Shift Group',
+                    'total_entries_recorded' => $totalShiftEntries,
+                    'total_batches_count' => $records->count(),
+                    'last_entry_at' => $lastEntryAt->toIso8601String(),
+                    'last_entry_formatted' => $lastEntryAt->format('h:i A'),
+                    'last_entry_ethiopian' => $this->formatEthiopianTime($lastEntryAt),
+                    'last_entry_minutes_ago' => $gapMinutes,
+                    'working_attendants_count' => count($workingAttendants),
+                    'working_attendants' => $workingAttendants,
+                    'scheduled_attendants_count' => count($scheduledAttendantList),
+                    'scheduled_attendants' => $scheduledAttendantList,
+                    'other_scheduled_attendants' => $otherScheduledAttendants,
+                    'status' => 'ACTIVE_COMPLIANT',
+                ];
             }
         }
 
         // Sort alerts by longest inactive duration descending
         usort($alerts, fn ($a, $b) => $b['inactive_duration_minutes'] <=> $a['inactive_duration_minutes']);
 
+        // Sort active branches by most recent activity ascending (lowest gap first)
+        usort($activeBranches, fn ($a, $b) => $a['last_entry_minutes_ago'] <=> $b['last_entry_minutes_ago']);
+
         return [
             'has_active_incidents' => count($alerts) > 0,
             'incident_count' => count($alerts),
             'critical_count' => $criticalCount,
             'warning_count' => $warningCount,
+            'has_active_branches' => count($activeBranches) > 0,
+            'active_branches_count' => count($activeBranches),
+            'total_branches_monitored' => $branches->count(),
             'threshold_minutes' => self::INACTIVITY_THRESHOLD_MINUTES,
             'evaluated_at' => $evalTime->toIso8601String(),
             'evaluated_at_formatted' => $evalTime->format('M j, Y h:i A (T)'),
@@ -263,6 +361,7 @@ class ShiftInactivityMonitorService
                 'group_name' => $activeGroupSchedule?->group?->name ?? 'Duty Group',
             ],
             'alerts' => $alerts,
+            'active_branches' => $activeBranches,
         ];
     }
 

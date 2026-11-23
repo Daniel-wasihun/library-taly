@@ -155,6 +155,151 @@
       </div>
     </div>
 
+    <!-- ACTIVE ON-DUTY BRANCHES & WORKING ATTENDANTS (GREEN COMPLIANCE CARD) -->
+    <div
+      v-if="stats?.inactivity_alerts?.has_active_branches && (authStore.isAdmin || authStore.canManageAttendanceAnalytics || authStore.canViewDashboard)"
+      class="rounded-md border p-4 sm:p-5 bg-emerald-500/10 dark:bg-emerald-950/30 border-emerald-500/40 text-emerald-950 dark:text-emerald-100 shadow-sm space-y-4"
+    >
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-500/20 pb-3">
+        <div class="flex items-start gap-3">
+          <div class="p-2 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shrink-0 mt-0.5">
+            <CheckCircle2 class="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-sm sm:text-base font-extrabold text-emerald-800 dark:text-emerald-300 tracking-tight flex items-center gap-1.5">
+                <span>{{ langStore.isAmharic() ? 'ንቁ እና ተጠቃሚዎችን በመመዝገብ ላይ ያሉ ቅርንጫፎች' : 'Active On-Duty Branches & Attendant Duty Execution' }}</span>
+              </h3>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-600 text-white shadow-2xs">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+                <span>{{ stats.inactivity_alerts.active_branches_count }} {{ langStore.isAmharic() ? 'ቅርንጫፍ ንቁ ነው' : 'Branches Active & Counting' }}</span>
+              </span>
+            </div>
+            <p class="text-xs text-emerald-850 dark:text-emerald-300/80 mt-1">
+              <strong>{{ stats.inactivity_alerts.active_shift?.name }}</strong> ({{ stats.inactivity_alerts.active_shift?.time_window }} / {{ stats.inactivity_alerts.active_shift?.time_window_ethiopian }}) · {{ stats.inactivity_alerts.active_shift?.group_name }} —
+              {{ langStore.isAmharic() ? 'የተመደቡት ሠራተኞች የተጠቃሚዎችን ቆጠራ በወቅቱ እያከናወኑ ያሉባቸው ቅርንጫፎች ዝርዝር እና አሁን እየመዘገቡ ያሉ ሠራተኞች።' : 'Branches where assigned attendants are actively recording patron usage within the 30-minute threshold. The attendants currently operating the counter are listed below.' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <router-link
+            to="/attendance"
+            class="px-3 py-1.5 rounded-md text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            <Activity class="w-3.5 h-3.5" />
+            <span>{{ langStore.isAmharic() ? 'ቀጥታ ቆጣሪ' : 'Live Counter' }}</span>
+          </router-link>
+        </div>
+      </div>
+
+      <!-- Active Branches Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div
+          v-for="branch in stats.inactivity_alerts.active_branches"
+          :key="branch.branch_id"
+          class="p-3.5 rounded-md bg-card-bg border border-emerald-500/30 dark:bg-card-bg/80 space-y-3 shadow-2xs"
+        >
+          <!-- Branch Header & Live Status -->
+          <div class="flex items-center justify-between gap-2 border-b border-card-border pb-2">
+            <div>
+              <h4 class="font-bold text-xs text-main-text flex items-center gap-1.5">
+                <Building2 class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{{ langStore.isAmharic() ? branch.branch_name_am : branch.branch_name }}</span>
+              </h4>
+              <span class="text-[9px] font-mono text-main-text/50">Code: [{{ branch.branch_code }}]</span>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>{{ branch.last_entry_minutes_ago === 0 ? (langStore.isAmharic() ? 'አሁን' : 'Just now') : `${branch.last_entry_minutes_ago}m ago` }}</span>
+            </span>
+          </div>
+
+          <!-- Activity Metrics Banner -->
+          <div class="text-[11px] space-y-1.5 bg-main-bg/50 p-2.5 rounded border border-card-border/60">
+            <div class="flex items-center justify-between text-[10px] text-main-text/70">
+              <span class="flex items-center gap-1">
+                <Clock class="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <span>{{ langStore.isAmharic() ? 'የመጨረሻ ቆጠራ (የፈረንጅ/ኢት)' : 'Last Recorded (EAT / Eth)' }}:</span>
+              </span>
+              <strong class="font-mono text-emerald-700 dark:text-emerald-300">
+                {{ branch.last_entry_formatted }} ({{ branch.last_entry_ethiopian }})
+              </strong>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-main-text/70">
+              <span class="flex items-center gap-1">
+                <Users class="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <span>{{ langStore.isAmharic() ? 'በዚህ ፈረቃ የተቆጠሩ ተጠቃሚዎች' : 'Patrons Counted this Shift' }}:</span>
+              </span>
+              <strong class="font-mono text-main-text bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                {{ branch.total_entries_recorded }} {{ langStore.isAmharic() ? 'ሰዎች' : 'patrons' }} ({{ branch.total_batches_count }} {{ langStore.isAmharic() ? 'ጊዜ' : 'batches' }})
+              </strong>
+            </div>
+          </div>
+
+          <!-- Active Working Attendant(s) - The Person(s) Currently Doing the Counting -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+              <span class="flex items-center gap-1">
+                <UserCheck class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{{ langStore.isAmharic() ? 'አሁን እየመዘገቡ ያሉ ሠራተኞች' : 'Attendant(s) Actively Logging' }} ({{ branch.working_attendants.length }}):</span>
+              </span>
+              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                🟢 {{ langStore.isAmharic() ? 'ንቁ ሠራተኛ' : 'Active Operator' }}
+              </span>
+            </div>
+
+            <div class="space-y-1.5">
+              <div
+                v-for="att in branch.working_attendants"
+                :key="att.id"
+                class="p-2 rounded text-[11px] bg-emerald-500/10 dark:bg-emerald-950/25 border border-emerald-500/25 space-y-1"
+              >
+                <div class="flex items-center justify-between gap-1.5">
+                  <div class="flex items-center gap-1.5 truncate">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span class="font-extrabold text-main-text truncate">{{ att.name }}</span>
+                    <span class="text-[10px] text-main-text/60 font-mono">(@{{ att.username }})</span>
+                  </div>
+                  <span class="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-emerald-600 text-white shrink-0">
+                    {{ att.counts_logged }} {{ langStore.isAmharic() ? 'ተጠቃሚ' : 'patrons' }}
+                  </span>
+                </div>
+
+                <div class="flex items-center justify-between text-[10px] text-main-text/60 pt-0.5 border-t border-emerald-500/15">
+                  <span class="font-mono truncate max-w-[140px]">{{ att.phone && att.phone !== '—' ? att.phone : att.email }}</span>
+                  <span class="text-emerald-700 dark:text-emerald-400 font-medium">
+                    {{ langStore.isAmharic() ? 'የመጨረሻ' : 'Last' }}: {{ att.last_entry_formatted }} ({{ att.last_entry_minutes_ago }}m ago)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Other Scheduled Attendants on Duty in this Branch -->
+          <div v-if="branch.other_scheduled_attendants?.length" class="pt-1.5 border-t border-card-border/60">
+            <div class="text-[9px] text-main-text/50 flex items-center justify-between">
+              <span>{{ langStore.isAmharic() ? 'ሌሎች በፈረቃው የተመደቡ ሠራተኞች' : 'Other Scheduled on Duty' }} ({{ branch.other_scheduled_attendants.length }}):</span>
+              <span class="text-emerald-600 dark:text-emerald-400 font-semibold text-[8.5px]">✓ {{ langStore.isAmharic() ? 'ቅርንጫፉ ንቁ ነው' : 'Branch Compliant' }}</span>
+            </div>
+            <div class="flex flex-wrap gap-1 mt-1">
+              <span
+                v-for="otherAtt in branch.other_scheduled_attendants"
+                :key="otherAtt.id"
+                class="px-1.5 py-0.5 rounded text-[9px] bg-main-bg border border-card-border/80 text-main-text/70 font-mono truncate"
+                :title="`${otherAtt.name} (@${otherAtt.username}) - ${otherAtt.phone}`"
+              >
+                {{ otherAtt.name }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Duty Turn Notification Banner (For Non-Admin Attendants when Off-Duty) -->
     <div
       v-if="!authStore.isAdmin && !authStore.canLogAttendance"
@@ -738,6 +883,8 @@ import {
   Building2,
   Users,
   ShieldCheck,
+  CheckCircle2,
+  UserCheck,
   Clock,
   CalendarOff,
   GraduationCap,

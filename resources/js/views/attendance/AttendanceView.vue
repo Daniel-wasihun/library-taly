@@ -27,6 +27,7 @@ const toast = useToastStore();
 const activeTab = ref<'counter' | 'analytics'>('counter');
 const selectedLibrary = ref<number | null>(null);
 const selectedUserType = ref<'student' | 'teacher' | 'staff'>('student');
+const isInitialMount = ref(true);
 
 const showNoLibraryModal = ref(false);
 const showDeleteConfirm = ref(false);
@@ -357,21 +358,22 @@ onMounted(async () => {
     selectedLibrary.value = Number(libraryStore.libraries[0].id);
   }
 
-  // Verify shift duty for selected library branch
-  await checkDutyStatus();
-
   attendanceStore.filters.library_id = selectedLibrary.value || '';
   attendanceStore.filters.date_from = todayStr;
   attendanceStore.filters.date_to = todayStr;
 
-  // Fetch logs, and only fetch stats if authorized and on analytics tab
+  // Run initial duty check and log fetch cleanly in parallel
   const initPromises: Promise<any>[] = [
+    checkDutyStatus(),
     attendanceStore.fetchLogs(1, undefined, false),
   ];
   if (authStore.canManageReporting && activeTab.value === 'analytics') {
     initPromises.push(attendanceStore.fetchStats(false));
   }
   await Promise.all(initPromises);
+
+  // Allow subsequent user interactions to trigger watchers smoothly
+  isInitialMount.value = false;
 });
 
 onUnmounted(() => {
@@ -381,6 +383,7 @@ onUnmounted(() => {
 });
 
 watch(selectedLibrary, (newVal) => {
+  if (isInitialMount.value) return;
   attendanceStore.filters.library_id = newVal ? String(newVal) : '';
   checkDutyStatus();
   if (activeTab.value === 'counter') {
@@ -392,6 +395,7 @@ watch(selectedLibrary, (newVal) => {
 });
 
 watch(activeTab, (newTab) => {
+  if (isInitialMount.value) return;
   if (newTab === 'analytics' && authStore.canManageReporting) {
     attendanceStore.filters.library_id = selectedLibrary.value ? String(selectedLibrary.value) : '';
     attendanceStore.fetchStats(true);

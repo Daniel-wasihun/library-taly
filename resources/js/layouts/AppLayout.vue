@@ -18,12 +18,13 @@
 
     <!-- Sidebar Container: Resizable on desktop, off-canvas on mobile -->
     <div
-      class="fixed inset-y-0 left-0 z-50 transform lg:static lg:translate-x-0 shrink-0 relative flex"
+      class="fixed inset-y-0 left-0 z-50 transform lg:static lg:translate-x-0 shrink-0 flex"
       :class="[
         isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0',
-        isResizing ? '' : 'transition-all duration-300 ease-in-out'
+        isResizing ? '' : 'transition-all duration-300 ease-in-out',
+        'w-64 lg:w-auto'
       ]"
-      :style="{ width: isSidebarCollapsed ? '4.5rem' : `${sidebarWidth}px` }"
+      :style="sidebarContainerStyle"
     >
       <Sidebar
         :is-collapsed="isSidebarCollapsed"
@@ -62,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import Sidebar from '@/components/Sidebar.vue';
 import Navbar from '@/components/Navbar.vue';
@@ -74,6 +75,34 @@ const storedWidth = Number(localStorage.getItem('sidebar_width'));
 const sidebarWidth = ref(storedWidth && storedWidth >= 200 && storedWidth <= 420 ? storedWidth : 240);
 const isResizing = ref(false);
 const route = useRoute();
+
+const isDesktop = ref(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+
+const onWindowResize = () => {
+  if (typeof window !== 'undefined') {
+    isDesktop.value = window.innerWidth >= 1024;
+  }
+};
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', onWindowResize);
+    isDesktop.value = window.innerWidth >= 1024;
+  }
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', onWindowResize);
+  }
+});
+
+const sidebarContainerStyle = computed(() => {
+  if (!isDesktop.value) {
+    return {};
+  }
+  return { width: isSidebarCollapsed.value ? '4.5rem' : `${sidebarWidth.value}px` };
+});
 
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value;

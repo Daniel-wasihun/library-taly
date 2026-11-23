@@ -46,7 +46,10 @@ class ShiftInactivityController extends Controller
             $branchId = (int) $request->library_id;
         }
 
-        $alerts = $this->monitorService->getCurrentShiftInactivityAlerts($branchId);
+        $date = $request->query('date');
+        $shiftId = $request->filled('shift_id') ? (int) $request->shift_id : null;
+
+        $alerts = $this->monitorService->getCurrentShiftInactivityAlerts($branchId, null, $date, $shiftId);
 
         return response()->json([
             'success' => true,

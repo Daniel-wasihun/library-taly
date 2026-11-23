@@ -168,7 +168,7 @@ const getDateDisplay = (dateStr: string) => {
             <th class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-main-text/60 uppercase text-[10px] text-right">{{ langStore.t('common.actions', 'Actions') }}</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-card-border/60 transition-opacity duration-150" :class="{ 'opacity-60 pointer-events-none': loading && logs.length > 0 }">
+        <tbody class="divide-y divide-card-border/60">
           <!-- Skeleton Loading Rows (Shown ONLY during initial load when there are no logs yet) -->
           <template v-if="loading && logs.length === 0">
             <tr v-for="i in 6" :key="`skel-${i}`" class="animate-pulse">

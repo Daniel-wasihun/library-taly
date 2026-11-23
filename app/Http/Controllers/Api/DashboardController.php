@@ -173,17 +173,20 @@ class DashboardController extends Controller
                     }
                 }
 
+                $startTime12 = Carbon::parse($shift->start_time)->format('h:i A');
+                $endTime12 = Carbon::parse($shift->end_time)->format('h:i A');
+
                 $todayShiftGroups[] = [
                     'shift_id' => $shift->id,
                     'shift_name' => $shift->name,
                     'shift_name_am' => $shift->name_am ?? $shift->name,
                     'shift_code' => $shift->code,
-                    'start_time' => $shift->start_time,
-                    'end_time' => $shift->end_time,
+                    'start_time' => $startTime12,
+                    'end_time' => $endTime12,
                     'ethiopian_start_time' => $shift->ethiopian_start_time,
                     'ethiopian_end_time' => $shift->ethiopian_end_time,
-                    'time_window' => "{$shift->start_time} - {$shift->end_time}",
-                    'ethiopian_time_window' => "{$shift->ethiopian_start_time} - {$shift->ethiopian_end_time}",
+                    'time_window' => "{$startTime12} – {$endTime12}",
+                    'ethiopian_time_window' => "{$shift->ethiopian_start_time} – {$shift->ethiopian_end_time}",
                     'group_id' => $group->id,
                     'group_name' => $group->name,
                     'is_current_shift' => $isCurrentShift,

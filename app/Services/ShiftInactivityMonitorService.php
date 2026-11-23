@@ -23,49 +23,82 @@ class ShiftInactivityMonitorService
      * @param Carbon|null $now Current time instance (defaults to Africa/Addis_Ababa now)
      * @return array
      */
-    public function getCurrentShiftInactivityAlerts(?int $libraryId = null, ?Carbon $now = null): array
+    public function getCurrentShiftInactivityAlerts(?int $libraryId = null, ?Carbon $now = null, ?string $targetDate = null, ?int $targetShiftId = null): array
     {
-        $evalTime = ($now ?? Carbon::now('Africa/Addis_Ababa'))->setTimezone('Africa/Addis_Ababa');
-        $currentTimeStr = $evalTime->format('H:i');
-        $todayDateStr = $evalTime->toDateString();
+        $nowInstance = ($now ?? Carbon::now('Africa/Addis_Ababa'))->setTimezone('Africa/Addis_Ababa');
+        $todayDateStr = $nowInstance->toDateString();
+        $targetSchedDate = $targetDate ?: $todayDateStr;
 
-        // 1. Determine currently active shift(s) based on time window
+        // 1. Determine shift to monitor (explicit target shift or auto-detected live shift)
         $allShifts = Shift::where('is_active', true)->get();
         $activeShift = null;
         $shiftStartDateTime = null;
         $shiftEndDateTime = null;
-        $targetSchedDate = $todayDateStr;
 
-        foreach ($allShifts as $shift) {
-            $isOvernight = ($shift->start_time > $shift->end_time);
+        if ($targetShiftId) {
+            $activeShift = $allShifts->firstWhere('id', (int) $targetShiftId);
+        }
 
-            if (!$isOvernight) {
-                // Daytime shift: e.g. 08:00 to 17:00
-                if ($currentTimeStr >= $shift->start_time && $currentTimeStr <= $shift->end_time) {
-                    $activeShift = $shift;
-                    $shiftStartDateTime = Carbon::parse("{$todayDateStr} {$shift->start_time}", 'Africa/Addis_Ababa');
-                    $shiftEndDateTime = Carbon::parse("{$todayDateStr} {$shift->end_time}", 'Africa/Addis_Ababa');
-                    $targetSchedDate = $todayDateStr;
-                    break;
+        if ($activeShift) {
+            $isOvernight = ($activeShift->start_time > $activeShift->end_time);
+            $shiftStartDateTime = Carbon::parse("{$targetSchedDate} {$activeShift->start_time}", 'Africa/Addis_Ababa');
+            $shiftEndDateTime = $isOvernight
+                ? Carbon::parse("{$targetSchedDate} {$activeShift->end_time}", 'Africa/Addis_Ababa')->addDay()
+                : Carbon::parse("{$targetSchedDate} {$activeShift->end_time}", 'Africa/Addis_Ababa');
+
+            if ($targetSchedDate === $todayDateStr) {
+                $evalTime = clone $nowInstance;
+                if ($evalTime->gt($shiftEndDateTime)) {
+                    $evalTime = clone $shiftEndDateTime;
+                }
+                if ($evalTime->lt($shiftStartDateTime)) {
+                    $evalTime = clone $shiftStartDateTime;
                 }
             } else {
-                // Overnight shift: e.g. 17:00 to 05:00
-                if ($currentTimeStr >= $shift->start_time) {
-                    // Evening portion: started today at 17:00, ends tomorrow at 05:00
-                    $activeShift = $shift;
-                    $shiftStartDateTime = Carbon::parse("{$todayDateStr} {$shift->start_time}", 'Africa/Addis_Ababa');
-                    $shiftEndDateTime = Carbon::parse("{$todayDateStr} {$shift->end_time}", 'Africa/Addis_Ababa')->addDay();
-                    $targetSchedDate = $todayDateStr;
-                    break;
-                } elseif ($currentTimeStr <= $shift->end_time) {
-                    // Early dawn portion: started yesterday at 17:00, ends today at 05:00
-                    $activeShift = $shift;
-                    $yesterdayDate = (clone $evalTime)->subDay()->toDateString();
-                    $shiftStartDateTime = Carbon::parse("{$yesterdayDate} {$shift->start_time}", 'Africa/Addis_Ababa');
-                    $shiftEndDateTime = Carbon::parse("{$todayDateStr} {$shift->end_time}", 'Africa/Addis_Ababa');
-                    $targetSchedDate = $yesterdayDate;
-                    break;
+                $evalTime = clone $shiftEndDateTime;
+            }
+        } else {
+            // Auto-detect based on current time window for today or target date
+            $evalTime = clone $nowInstance;
+            $currentTimeStr = $evalTime->format('H:i');
+
+            foreach ($allShifts as $shift) {
+                $isOvernight = ($shift->start_time > $shift->end_time);
+
+                if (!$isOvernight) {
+                    if ($currentTimeStr >= $shift->start_time && $currentTimeStr <= $shift->end_time) {
+                        $activeShift = $shift;
+                        $shiftStartDateTime = Carbon::parse("{$todayDateStr} {$shift->start_time}", 'Africa/Addis_Ababa');
+                        $shiftEndDateTime = Carbon::parse("{$todayDateStr} {$shift->end_time}", 'Africa/Addis_Ababa');
+                        $targetSchedDate = $todayDateStr;
+                        break;
+                    }
+                } else {
+                    if ($currentTimeStr >= $shift->start_time) {
+                        $activeShift = $shift;
+                        $shiftStartDateTime = Carbon::parse("{$todayDateStr} {$shift->start_time}", 'Africa/Addis_Ababa');
+                        $shiftEndDateTime = Carbon::parse("{$todayDateStr} {$shift->end_time}", 'Africa/Addis_Ababa')->addDay();
+                        $targetSchedDate = $todayDateStr;
+                        break;
+                    } elseif ($currentTimeStr <= $shift->end_time) {
+                        $activeShift = $shift;
+                        $yesterdayDate = (clone $evalTime)->subDay()->toDateString();
+                        $shiftStartDateTime = Carbon::parse("{$yesterdayDate} {$shift->start_time}", 'Africa/Addis_Ababa');
+                        $shiftEndDateTime = Carbon::parse("{$todayDateStr} {$shift->end_time}", 'Africa/Addis_Ababa');
+                        $targetSchedDate = $yesterdayDate;
+                        break;
+                    }
                 }
+            }
+
+            // Fallback: if no shift is currently running (e.g. between 05:00 and 08:00), default to the primary Day Shift
+            if (!$activeShift && $allShifts->isNotEmpty()) {
+                $activeShift = $allShifts->first();
+                $isOvernight = ($activeShift->start_time > $activeShift->end_time);
+                $shiftStartDateTime = Carbon::parse("{$targetSchedDate} {$activeShift->start_time}", 'Africa/Addis_Ababa');
+                $shiftEndDateTime = $isOvernight
+                    ? Carbon::parse("{$targetSchedDate} {$activeShift->end_time}", 'Africa/Addis_Ababa')->addDay()
+                    : Carbon::parse("{$targetSchedDate} {$activeShift->end_time}", 'Africa/Addis_Ababa');
             }
         }
 
@@ -161,6 +194,7 @@ class ShiftInactivityMonitorService
             $totalShiftEntries = (int) $records->sum('visitor_count');
 
             // Compute any resolved past inactivity lapses (>= 30 mins) earlier in this shift
+            // NOTE: Per requirement, the inactive duration counts ONLY the time AFTER 30 minutes (30m grace excluded)
             $pastLapses = [];
             if ($records->isNotEmpty()) {
                 // 1. Shift Start Delay: Did attendants delay >= 30m before first recording?
@@ -168,19 +202,21 @@ class ShiftInactivityMonitorService
                 $firstRecordAt = Carbon::parse($firstRecord->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
                 $startGap = (int) $shiftStartDateTime->diffInMinutes($firstRecordAt);
                 if ($startGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
+                    $countedStartGap = $startGap - self::INACTIVITY_THRESHOLD_MINUTES;
                     $pastLapses[] = [
                         'type' => 'SHIFT_START_DELAY',
                         'type_label' => 'Shift Start Delay',
                         'type_label_am' => 'የፈረቃ መጀመሪያ መዘግየት',
                         'from' => $shiftStartDateTime->toIso8601String(),
                         'to' => $firstRecordAt->toIso8601String(),
-                        'from_formatted' => $shiftStartDateTime->format('H:i'),
-                        'to_formatted' => $firstRecordAt->format('H:i'),
-                        'interval_formatted' => "{$shiftStartDateTime->format('H:i')} – {$firstRecordAt->format('H:i')}",
+                        'from_formatted' => $shiftStartDateTime->format('h:i A'),
+                        'to_formatted' => $firstRecordAt->format('h:i A'),
+                        'interval_formatted' => "{$shiftStartDateTime->format('h:i A')} – {$firstRecordAt->format('h:i A')}",
                         'interval_ethiopian' => "{$this->formatEthiopianTime($shiftStartDateTime)} – {$this->formatEthiopianTime($firstRecordAt)}",
-                        'duration_minutes' => $startGap,
-                        'duration_human' => $this->formatDurationHuman($startGap),
-                        'resumed_at' => $firstRecordAt->format('H:i (h:i A)'),
+                        'duration_minutes' => $countedStartGap,
+                        'duration_human' => $this->formatDurationHuman($countedStartGap),
+                        'raw_gap_minutes' => $startGap,
+                        'resumed_at' => $firstRecordAt->format('h:i A'),
                         'resumed_at_ethiopian' => $this->formatEthiopianTime($firstRecordAt),
                     ];
                 }
@@ -191,19 +227,21 @@ class ShiftInactivityMonitorService
                     $nextAt = Carbon::parse($records[$i + 1]->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
                     $midGap = (int) $currAt->diffInMinutes($nextAt);
                     if ($midGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
+                        $countedMidGap = $midGap - self::INACTIVITY_THRESHOLD_MINUTES;
                         $pastLapses[] = [
                             'type' => 'INTERMITTENT_INACTIVITY',
                             'type_label' => 'Intermittent Inactivity Lapse',
                             'type_label_am' => 'በቆጠራዎች መካከል የነበረ ክፍተት',
                             'from' => $currAt->toIso8601String(),
                             'to' => $nextAt->toIso8601String(),
-                            'from_formatted' => $currAt->format('H:i'),
-                            'to_formatted' => $nextAt->format('H:i'),
-                            'interval_formatted' => "{$currAt->format('H:i')} – {$nextAt->format('H:i')}",
+                            'from_formatted' => $currAt->format('h:i A'),
+                            'to_formatted' => $nextAt->format('h:i A'),
+                            'interval_formatted' => "{$currAt->format('h:i A')} – {$nextAt->format('h:i A')}",
                             'interval_ethiopian' => "{$this->formatEthiopianTime($currAt)} – {$this->formatEthiopianTime($nextAt)}",
-                            'duration_minutes' => $midGap,
-                            'duration_human' => $this->formatDurationHuman($midGap),
-                            'resumed_at' => $nextAt->format('H:i (h:i A)'),
+                            'duration_minutes' => $countedMidGap,
+                            'duration_human' => $this->formatDurationHuman($countedMidGap),
+                            'raw_gap_minutes' => $midGap,
+                            'resumed_at' => $nextAt->format('h:i A'),
                             'resumed_at_ethiopian' => $this->formatEthiopianTime($nextAt),
                         ];
                     }
@@ -224,6 +262,7 @@ class ShiftInactivityMonitorService
                 $isInactive = false;
                 $inactiveSince = null;
                 $inactiveDurationMinutes = 0;
+                $rawInactiveGap = 0;
                 $statusType = 'COMPLIANT';
                 $lastEntryTimeStr = null;
 
@@ -231,19 +270,22 @@ class ShiftInactivityMonitorService
                     // Zero records logged throughout the shift so far!
                     $isInactive = true;
                     $inactiveSince = $shiftStartDateTime;
-                    $inactiveDurationMinutes = (int) $shiftStartDateTime->diffInMinutes($evalTime);
+                    $rawGap = (int) $shiftStartDateTime->diffInMinutes($evalTime);
+                    $inactiveDurationMinutes = max(0, $rawGap - self::INACTIVITY_THRESHOLD_MINUTES);
+                    $rawInactiveGap = $rawGap;
                     $statusType = 'CRITICAL_NO_COUNTS';
                 } else {
                     // Records exist: check gap since the last recorded entry
                     $lastRecord = $records->last();
                     $lastEntryAt = Carbon::parse($lastRecord->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
                     $gapMinutes = (int) $lastEntryAt->diffInMinutes($evalTime);
-                    $lastEntryTimeStr = $lastEntryAt->format('H:i');
+                    $lastEntryTimeStr = $lastEntryAt->format('h:i A');
 
                     if ($gapMinutes >= self::INACTIVITY_THRESHOLD_MINUTES) {
                         $isInactive = true;
                         $inactiveSince = $lastEntryAt;
-                        $inactiveDurationMinutes = $gapMinutes;
+                        $inactiveDurationMinutes = max(0, $gapMinutes - self::INACTIVITY_THRESHOLD_MINUTES);
+                        $rawInactiveGap = $gapMinutes;
                         $statusType = 'INACTIVE_GAP';
                     }
                 }
@@ -257,9 +299,9 @@ class ShiftInactivityMonitorService
                     $warningCount++;
                 }
 
-                $sinceGregorian = $inactiveSince->format('H:i');
-                $nowGregorian = $evalTime->format('H:i');
-                $intervalFormatted = "{$sinceGregorian} – {$nowGregorian} (Addis Ababa Time)";
+                $sinceGregorian = $inactiveSince->format('h:i A');
+                $nowGregorian = $evalTime->format('h:i A');
+                $intervalFormatted = "{$sinceGregorian} – {$nowGregorian}";
 
                 // Ethiopian time representation
                 $etSince = $this->formatEthiopianTime($inactiveSince);
@@ -277,6 +319,8 @@ class ShiftInactivityMonitorService
                     ];
                 })->toArray();
 
+                $shift12hWindow = Carbon::parse($activeShift->start_time)->format('h:i A') . ' – ' . Carbon::parse($activeShift->end_time)->format('h:i A');
+
                 $alerts[] = [
                     'branch_id' => $branch->id,
                     'branch_name' => $branch->name,
@@ -285,7 +329,7 @@ class ShiftInactivityMonitorService
                     'shift_id' => $activeShift->id,
                     'shift_name' => $activeShift->name,
                     'shift_name_am' => $activeShift->name_am ?? $activeShift->name,
-                    'shift_time_window' => "{$activeShift->start_time} – {$activeShift->end_time}",
+                    'shift_time_window' => $shift12hWindow,
                     'shift_time_ethiopian' => "{$activeShift->ethiopian_start_time} – {$activeShift->ethiopian_end_time}",
                     'shift_group_id' => $activeGroupSchedule?->shift_group_id,
                     'shift_group_name' => $activeGroupSchedule?->group?->name ?? 'Assigned Shift Group',
@@ -295,6 +339,7 @@ class ShiftInactivityMonitorService
                     'inactive_since_formatted' => $inactiveSince->format('h:i A'),
                     'inactive_duration_minutes' => $inactiveDurationMinutes,
                     'inactive_duration_human' => $this->formatDurationHuman($inactiveDurationMinutes),
+                    'raw_gap_minutes' => $rawInactiveGap,
                     'interval_formatted' => $intervalFormatted,
                     'interval_ethiopian' => $intervalEthiopian,
                     'last_entry_at' => $lastEntryTimeStr,
@@ -377,6 +422,8 @@ class ShiftInactivityMonitorService
                     fn ($att) => !in_array($att['id'], $workingUserIds, true)
                 ));
 
+                $shift12hWindow = Carbon::parse($activeShift->start_time)->format('h:i A') . ' – ' . Carbon::parse($activeShift->end_time)->format('h:i A');
+
                 $activeBranches[] = [
                     'branch_id' => $branch->id,
                     'branch_name' => $branch->name,
@@ -385,7 +432,7 @@ class ShiftInactivityMonitorService
                     'shift_id' => $activeShift->id,
                     'shift_name' => $activeShift->name,
                     'shift_name_am' => $activeShift->name_am ?? $activeShift->name,
-                    'shift_time_window' => "{$activeShift->start_time} – {$activeShift->end_time}",
+                    'shift_time_window' => $shift12hWindow,
                     'shift_time_ethiopian' => "{$activeShift->ethiopian_start_time} – {$activeShift->ethiopian_end_time}",
                     'shift_group_id' => $activeGroupSchedule?->shift_group_id,
                     'shift_group_name' => $activeGroupSchedule?->group?->name ?? 'Assigned Shift Group',
@@ -430,6 +477,8 @@ class ShiftInactivityMonitorService
         // Sort active branches by most recent activity ascending (lowest gap first)
         usort($activeBranches, fn ($a, $b) => $a['last_entry_minutes_ago'] <=> $b['last_entry_minutes_ago']);
 
+        $activeShift12hWindow = Carbon::parse($activeShift->start_time)->format('h:i A') . ' – ' . Carbon::parse($activeShift->end_time)->format('h:i A');
+
         return [
             'has_active_incidents' => count($alerts) > 0,
             'incident_count' => count($alerts),
@@ -442,13 +491,22 @@ class ShiftInactivityMonitorService
             'active_branches_count' => count($activeBranches),
             'total_branches_monitored' => $branches->count(),
             'threshold_minutes' => self::INACTIVITY_THRESHOLD_MINUTES,
+            'selected_date' => $targetSchedDate,
+            'selected_shift_id' => $activeShift->id,
+            'available_shifts' => $allShifts->map(fn ($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'name_am' => $s->name_am ?? $s->name,
+                'time_window' => Carbon::parse($s->start_time)->format('h:i A') . ' – ' . Carbon::parse($s->end_time)->format('h:i A'),
+                'time_window_ethiopian' => "{$s->ethiopian_start_time} – {$s->ethiopian_end_time}",
+            ])->values()->toArray(),
             'evaluated_at' => $evalTime->toIso8601String(),
             'evaluated_at_formatted' => $evalTime->format('M j, Y h:i A (T)'),
             'active_shift' => [
                 'id' => $activeShift->id,
                 'name' => $activeShift->name,
                 'name_am' => $activeShift->name_am ?? $activeShift->name,
-                'time_window' => "{$activeShift->start_time} – {$activeShift->end_time}",
+                'time_window' => $activeShift12hWindow,
                 'time_window_ethiopian' => "{$activeShift->ethiopian_start_time} – {$activeShift->ethiopian_end_time}",
                 'group_name' => $activeGroupSchedule?->group?->name ?? 'Duty Group',
             ],
@@ -577,11 +635,13 @@ class ShiftInactivityMonitorService
                     // Entire monitored interval had 0 counts
                     $duration = (int) $shiftStart->diffInMinutes($evalEnd);
                     if ($duration >= self::INACTIVITY_THRESHOLD_MINUTES) {
+                        $countedDuration = max(0, $duration - self::INACTIVITY_THRESHOLD_MINUTES);
                         $branchShiftIncidents[] = [
                             'gap_type' => 'COMPLETE_SHIFT_INACTIVITY',
                             'from' => $shiftStart,
                             'to' => $evalEnd,
-                            'duration_minutes' => $duration,
+                            'duration_minutes' => $countedDuration,
+                            'raw_gap_minutes' => $duration,
                             'is_ongoing' => ($evalEnd == $now && $now->lt($shiftEnd)),
                             'resumed_at' => null,
                         ];
@@ -591,11 +651,13 @@ class ShiftInactivityMonitorService
                     $firstLogAt = Carbon::parse($records->first()->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
                     $startGap = (int) $shiftStart->diffInMinutes($firstLogAt);
                     if ($startGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
+                        $countedStartGap = max(0, $startGap - self::INACTIVITY_THRESHOLD_MINUTES);
                         $branchShiftIncidents[] = [
                             'gap_type' => 'SHIFT_START_DELAY',
                             'from' => $shiftStart,
                             'to' => $firstLogAt,
-                            'duration_minutes' => $startGap,
+                            'duration_minutes' => $countedStartGap,
+                            'raw_gap_minutes' => $startGap,
                             'is_ongoing' => false,
                             'resumed_at' => $firstLogAt,
                         ];
@@ -608,11 +670,13 @@ class ShiftInactivityMonitorService
                         $midGap = (int) $curr->diffInMinutes($next);
 
                         if ($midGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
+                            $countedMidGap = max(0, $midGap - self::INACTIVITY_THRESHOLD_MINUTES);
                             $branchShiftIncidents[] = [
                                 'gap_type' => 'INTERMITTENT_INACTIVITY',
                                 'from' => $curr,
                                 'to' => $next,
-                                'duration_minutes' => $midGap,
+                                'duration_minutes' => $countedMidGap,
+                                'raw_gap_minutes' => $midGap,
                                 'is_ongoing' => false,
                                 'resumed_at' => $next,
                             ];
@@ -623,11 +687,13 @@ class ShiftInactivityMonitorService
                     $lastLogAt = Carbon::parse($records->last()->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
                     $tailGap = (int) $lastLogAt->diffInMinutes($evalEnd);
                     if ($tailGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
+                        $countedTailGap = max(0, $tailGap - self::INACTIVITY_THRESHOLD_MINUTES);
                         $branchShiftIncidents[] = [
                             'gap_type' => 'TRAILING_INACTIVITY',
                             'from' => $lastLogAt,
                             'to' => $evalEnd,
-                            'duration_minutes' => $tailGap,
+                            'duration_minutes' => $countedTailGap,
+                            'raw_gap_minutes' => $tailGap,
                             'is_ongoing' => ($evalEnd == $now && $now->lt($shiftEnd)),
                             'resumed_at' => null,
                         ];
@@ -638,6 +704,7 @@ class ShiftInactivityMonitorService
                     $nonCompliantShifts++;
                     foreach ($branchShiftIncidents as $inc) {
                         $totalInactiveMinutes += $inc['duration_minutes'];
+                        $shift12hWindow = Carbon::parse($shift->start_time)->format('h:i A') . ' – ' . Carbon::parse($shift->end_time)->format('h:i A');
                         $incidents[] = [
                             'incident_id' => 'INC-' . strtoupper(substr(md5($branch->id . $shift->id . $inc['from']->timestamp), 0, 8)),
                             'branch_id' => $branch->id,
@@ -647,7 +714,7 @@ class ShiftInactivityMonitorService
                             'shift_id' => $shift->id,
                             'shift_name' => $shift->name,
                             'shift_name_am' => $shift->name_am ?? $shift->name,
-                            'shift_window' => "{$shift->start_time} – {$shift->end_time}",
+                            'shift_window' => $shift12hWindow,
                             'shift_window_ethiopian' => "{$shift->ethiopian_start_time} – {$shift->ethiopian_end_time}",
                             'shift_group_name' => $activeGroupSched?->group?->name ?? 'Duty Group',
                             'attendants' => $attendantsList,
@@ -656,16 +723,17 @@ class ShiftInactivityMonitorService
                             'gap_category' => $inc['is_ongoing'] ? 'ONGOING_LAPSE' : 'RESOLVED_PAST_LAPSE',
                             'type_label' => $this->getGapTypeLabel($inc['gap_type'], false),
                             'type_label_am' => $this->getGapTypeLabel($inc['gap_type'], true),
-                            'from_time' => $inc['from']->format('H:i'),
-                            'to_time' => $inc['to']->format('H:i'),
-                            'interval_formatted' => "{$inc['from']->format('H:i')} – {$inc['to']->format('H:i')}",
+                            'from_time' => $inc['from']->format('h:i A'),
+                            'to_time' => $inc['to']->format('h:i A'),
+                            'interval_formatted' => "{$inc['from']->format('h:i A')} – {$inc['to']->format('h:i A')}",
                             'interval_ethiopian' => "{$this->formatEthiopianTime($inc['from'])} – {$this->formatEthiopianTime($inc['to'])}",
                             'duration_minutes' => $inc['duration_minutes'],
                             'duration_human' => $this->formatDurationHuman($inc['duration_minutes']),
+                            'raw_gap_minutes' => $inc['raw_gap_minutes'],
                             'is_ongoing' => $inc['is_ongoing'],
                             'status' => $inc['is_ongoing'] ? 'ACTIVE_NON_WORKING' : 'PAST_UNATTENDED_GAP',
                             'severity' => ($inc['duration_minutes'] >= 60) ? 'CRITICAL' : 'WARNING',
-                            'resumed_at_formatted' => isset($inc['resumed_at']) && $inc['resumed_at'] ? $inc['resumed_at']->format('H:i (h:i A)') : null,
+                            'resumed_at_formatted' => isset($inc['resumed_at']) && $inc['resumed_at'] ? $inc['resumed_at']->format('h:i A') : null,
                             'resumed_at_ethiopian' => isset($inc['resumed_at']) && $inc['resumed_at'] ? $this->formatEthiopianTime($inc['resumed_at']) : null,
                             'total_shift_entries' => $totalCount,
                         ];
@@ -700,7 +768,8 @@ class ShiftInactivityMonitorService
                     'id' => $s->id,
                     'name' => $s->name,
                     'name_am' => $s->name_am ?? $s->name,
-                    'time_window' => "{$s->start_time} – {$s->end_time}",
+                    'time_window' => Carbon::parse($s->start_time)->format('h:i A') . ' – ' . Carbon::parse($s->end_time)->format('h:i A'),
+                    'time_window_ethiopian' => "{$s->ethiopian_start_time} – {$s->ethiopian_end_time}",
                 ]),
                 'available_branches' => $branches->map(fn ($b) => [
                     'id' => $b->id,

@@ -234,7 +234,7 @@ export const attendanceApi = {
 
 // ── Shift Inactivity & Duty Compliance Monitoring ────────────────────────────
 export const shiftInactivityApi = {
-    alerts: (params?: { library_id?: number }) =>
+    alerts: (params?: { library_id?: number; date?: string; shift_id?: number }) =>
         api.get<{ success: boolean; data: any }>('/shifts/inactivity-alerts', { params }),
 
     report: (params?: { date?: string; library_id?: number; shift_id?: number }) =>

@@ -1,7 +1,43 @@
 <?php
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/run-seeder', function () {
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        $migrateOutput = Artisan::output();
+
+        Artisan::call('db:seed', ['--force' => true]);
+        $seedOutput = Artisan::output();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Database migrated and seeded successfully!',
+            'counts' => [
+                'users' => \App\Models\User::count(),
+                'libraries' => \App\Models\Library::count(),
+                'shifts' => \App\Models\Shift::count(),
+                'shift_groups' => \App\Models\ShiftGroup::count(),
+                'group_schedules' => \App\Models\GroupShiftSchedule::count(),
+                'academic_years' => \App\Models\AcademicYear::count(),
+                'attendance_records' => \App\Models\LibraryAttendance::count(),
+                'ethiopian_holidays' => \App\Models\EthiopianHoliday::count(),
+            ],
+            'output' => [
+                'migrate' => trim($migrateOutput),
+                'seed' => trim($seedOutput),
+            ],
+        ], 200);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'class' => get_class($e),
+        ], 500);
+    }
+});
 
 Route::get('/health-check-db', function () {
     $response = [

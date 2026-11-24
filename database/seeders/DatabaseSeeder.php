@@ -750,5 +750,8 @@ class DatabaseSeeder extends Seeder
                 'notes' => 'Group D overnight duty for Hidar 2019 across all branches',
             ]
         );
+
+        // Run live shift demonstration seeder for real-time counter compliance
+        $this->call(LiveShiftDemonstrationSeeder::class);
     }
 }

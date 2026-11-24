@@ -10,3 +10,4 @@ tests
 !.env.example
 storage/*.key
 public/build
+bootstrap/cache/*.php

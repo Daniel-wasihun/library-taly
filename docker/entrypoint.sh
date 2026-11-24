@@ -15,24 +15,34 @@ mkdir -p /var/www/html/storage/framework/cache/data \
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Direct logs to stderr so they show up directly in Render's dashboard logs
+# Direct logs to stderr so they show up in Render's dashboard logs
 export LOG_CHANNEL="${LOG_CHANNEL:-stderr}"
 
 # Ensure APP_KEY is valid base64 key
 case "$APP_KEY" in
     base64:*)
-        echo "APP_KEY is set."
+        echo "APP_KEY is configured."
         ;;
     *)
-        echo "Notice: APP_KEY is missing or not a base64 key, generating a valid key..."
-        GENERATED_KEY=$(php artisan key:generate --show)
-        export APP_KEY="$GENERATED_KEY"
-        echo "Generated APP_KEY: $APP_KEY"
+        echo "Notice: APP_KEY is missing or invalid, generating fresh base64 key..."
+        export APP_KEY=$(php artisan key:generate --show)
+        echo "Generated APP_KEY successfully."
         ;;
 esac
 
+# Create container .env file if missing so php artisan commands have APP_KEY
+if [ ! -f /var/www/html/.env ]; then
+    touch /var/www/html/.env
+fi
+grep -q "^APP_KEY=" /var/www/html/.env 2>/dev/null || echo "APP_KEY=${APP_KEY}" >> /var/www/html/.env
+
+# Clear any cached configuration from build stage
+php artisan config:clear || true
+php artisan route:clear || true
+php artisan view:clear || true
+
 # Test Database Connectivity
-echo "Testing Database Connection to $DB_HOST:$DB_PORT..."
+echo "Testing Database Connection ($DB_HOST:$DB_PORT)..."
 php artisan tinker --execute="
 try {
     \DB::connection()->getPdo();
@@ -45,7 +55,7 @@ try {
 # Run database migrations if enabled
 if [ "$RUN_MIGRATIONS" = "true" ]; then
     echo "Running database migrations..."
-    php artisan migrate --force || echo "Warning: Migration failed, check database credentials."
+    php artisan migrate --force || echo "Warning: Migration failed, check database connectivity."
 
     if [ "$RUN_SEEDERS" = "true" ]; then
         echo "Running database seeders..."

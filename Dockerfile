@@ -12,6 +12,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY resources resources
 COPY vite.config.ts tsconfig.json index.html* ./
+COPY public public
 RUN npm run build
 
 # ----------------------------------------------------
@@ -54,8 +55,9 @@ RUN apk update && apk add --no-cache \
         intl \
         opcache
 
-# Use production PHP configuration
-RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+# Use production PHP configuration and ensure PHP-FPM workers preserve container environment variables
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && echo "clear_env = no" >> /usr/local/etc/php-fpm.d/zz-docker.conf
 
 WORKDIR /var/www/html
 

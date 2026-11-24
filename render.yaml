@@ -16,8 +16,10 @@ services:
         value: false
       - key: APP_TIMEZONE
         value: Africa/Addis_Ababa
+      - key: LOG_CHANNEL
+        value: stderr
       - key: APP_KEY
-        generateValue: true
+        sync: false # Set a valid base64 key or let entrypoint auto-generate one
       - key: APP_URL
         sync: false # Set to https://<your-service>.onrender.com once created
       - key: APP_LOCALE
@@ -27,13 +29,13 @@ services:
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
-        sync: false # Supabase Host (e.g. aws-0-eu-central-1.pooler.supabase.com or db.<ref>.supabase.co)
+        sync: false # Supabase Pooler Host (e.g. aws-0-eu-central-1.pooler.supabase.com)
       - key: DB_PORT
-        value: 5432 # or 6543 if using Supabase Pooler
+        value: 5432 # or 6543
       - key: DB_DATABASE
         value: postgres
       - key: DB_USERNAME
-        sync: false # Supabase User (e.g. postgres.your_project_ref or postgres)
+        sync: false # Supabase User (e.g. postgres.your_project_ref)
       - key: DB_PASSWORD
         sync: false # Your Supabase DB Password
       - key: DB_SSLMODE
@@ -51,6 +53,6 @@ services:
       - key: RUN_MIGRATIONS
         value: true
       - key: RUN_SEEDERS
-        value: true # Seeds default roles, branches, and admin user on first launch
+        value: true
       - key: SANCTUM_STATEFUL_DOMAINS
         sync: false # e.g. <your-service>.onrender.com

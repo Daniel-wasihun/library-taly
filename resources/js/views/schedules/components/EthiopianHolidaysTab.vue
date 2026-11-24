@@ -36,7 +36,7 @@
 
         <!-- Month Filter -->
         <div class="flex items-center gap-1.5">
-          <label class="text-xs font-semibold text-main-text whitespace-nowrap">{{ langStore.t('schedules.ethiopian_month', 'Month') }}:</label>
+          <label class="text-xs font-semibold text-main-text whitespace-nowrap">{{ langStore.isAmharic() ? 'የኢትዮጵያ ወር:' : 'Month:' }}</label>
           <AppDropdown
             v-model="selectedMonth"
             :options="monthOptions"

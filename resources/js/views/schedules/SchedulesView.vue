@@ -125,7 +125,7 @@
           :icon="Plus"
           @click="showCreateIndividual = true"
         >
-          Assign Turn
+          {{ langStore.isAmharic() ? 'ተረኝነት መድብ' : 'Assign Turn' }}
         </Button>
       </div>
 
@@ -174,7 +174,7 @@
             <button
               type="button"
               class="table-action-btn text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
-              title="Cancel Shift"
+              :title="langStore.isAmharic() ? 'ተረኝነትን ሰርዝ' : 'Cancel Shift'"
               @click="confirmDeleteIndividual(item)"
             >
               <Trash2 class="w-4 h-4 stroke-[2.2]" />
@@ -187,8 +187,8 @@
     <!-- Individual Turn Modal -->
     <Modal
       :show="showCreateIndividual"
-      title="Assign Individual Duty Turn"
-      description="Schedule a single turn for an individual staff member."
+      :title="langStore.isAmharic() ? 'የግል ተረኝነት መድብ' : 'Assign Individual Duty Turn'"
+      :description="langStore.isAmharic() ? 'ለአንድ ሠራተኛ የተናጠል የፈረቃ ተረኝነት መድብ።' : 'Schedule a single turn for an individual staff member.'"
       :icon="CalendarDays"
       size="md"
       @close="showCreateIndividual = false"
@@ -196,7 +196,7 @@
       <form @submit.prevent="handleCreateIndividual" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
-            Staff Member User ID <span class="text-rose-500">*</span>
+            {{ langStore.isAmharic() ? 'የሠራተኛ መለያ ቁጥር (User ID)' : 'Staff Member User ID' }} <span class="text-rose-500">*</span>
           </label>
           <input
             v-model.number="individualForm.user_id"
@@ -210,7 +210,7 @@
 
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
-            Library Duty Task <span class="text-rose-500">*</span>
+            {{ langStore.isAmharic() ? 'የቤተ-መጻሕፍት የሥራ ተግባር' : 'Library Duty Task' }} <span class="text-rose-500">*</span>
           </label>
           <div class="relative">
             <select
@@ -238,7 +238,9 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-main-text mb-1">Start Time</label>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.isAmharic() ? 'የመጀመሪያ ሰዓት' : 'Start Time' }}
+            </label>
             <input
               v-model="individualForm.start_time"
               type="time"
@@ -246,7 +248,9 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-main-text mb-1">End Time</label>
+            <label class="block text-xs font-semibold text-main-text mb-1">
+              {{ langStore.isAmharic() ? 'የመጨረሻ ሰዓት' : 'End Time' }}
+            </label>
             <input
               v-model="individualForm.end_time"
               type="time"
@@ -266,7 +270,7 @@
           :loading="scheduleStore.loading"
           @click="handleCreateIndividual"
         >
-          Assign Turn
+          {{ langStore.isAmharic() ? 'ተረኝነት መድብ' : 'Assign Turn' }}
         </Button>
       </template>
     </Modal>
@@ -274,7 +278,7 @@
     <!-- Individual Turn Delete Modal -->
     <Modal
       :show="showDeleteIndividual"
-      title="Cancel Duty Turn"
+      :title="langStore.isAmharic() ? 'የተረኝነት ተራን ሰርዝ' : 'Cancel Duty Turn'"
       size="sm"
       @close="showDeleteIndividual = false"
     >
@@ -283,16 +287,16 @@
           <Trash2 class="w-6 h-6 stroke-[2.2]" />
         </div>
         <p class="text-xs text-main-text">
-          Cancel and delete this assigned individual duty turn?
+          {{ langStore.isAmharic() ? 'እርግጠኛ ነዎት ይህን የተመደበ የተናጠል ተረኝነት መሰረዝ ይፈልጋሉ?' : 'Cancel and delete this assigned individual duty turn?' }}
         </p>
       </div>
 
       <template #footer>
         <Button variant="secondary" size="sm" @click="showDeleteIndividual = false">
-          Cancel
+          {{ langStore.t('common.cancel', 'Cancel') }}
         </Button>
         <Button variant="danger" size="sm" @click="handleDeleteIndividual">
-          Cancel Turn
+          {{ langStore.isAmharic() ? 'ተረኝነትን ሰርዝ' : 'Cancel Turn' }}
         </Button>
       </template>
     </Modal>

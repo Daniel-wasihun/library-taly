@@ -246,8 +246,8 @@
     <!-- No Group Selected Prompt -->
     <div v-else-if="!selectedGroupId" class="bg-card-bg border border-card-border rounded-sm p-8 text-center text-xs text-main-text/60 space-y-2">
       <Users class="w-10 h-10 stroke-[1.5] text-main-text/30 mx-auto" />
-      <p class="font-semibold text-main-text text-sm">No Duty Group Selected for this Branch</p>
-      <p>Please select a duty group above or click "Auto-Generate Schedule" to automatically configure shifts for all groups in {{ currentLibraryName }}.</p>
+      <p class="font-semibold text-main-text text-sm">{{ langStore.t('schedules.no_group_selected_prompt', 'No Duty Group Selected for this Branch') }}</p>
+      <p>{{ langStore.t('schedules.no_group_selected_desc', 'Please select a duty group above or click "Auto-Generate Schedule" to automatically configure shifts for all groups.') }}</p>
     </div>
 
     <!-- Shift Calendar Sections (Day Shift, Night Shift, etc.) -->
@@ -318,10 +318,14 @@
         <div>
           <div class="flex items-center justify-between text-xs text-main-text/60 mb-2">
             <span>
-              Click days to toggle duty for <strong class="text-main-text">{{ selectedGroup?.name }}</strong>:
+              {{ langStore.isAmharic()
+                ? `ቀኖችን በመንካት ለ${selectedGroup?.name || 'ምድብ'} ተረኝነትን ይምረጡ:`
+                : `${langStore.t('schedules.click_days_to_toggle', 'Click days to toggle duty for')} ${selectedGroup?.name}:` }}
             </span>
             <span class="font-bold text-main-text text-xs">
-              {{ (shiftSelections[shift.id] || []).length }} of {{ maxMonthDays }} days selected
+              {{ langStore.isAmharic()
+                ? `ከ${maxMonthDays} ቀናት ውስጥ ${(shiftSelections[shift.id] || []).length} ቀናት ተመርጠዋል`
+                : `${(shiftSelections[shift.id] || []).length} of ${maxMonthDays} days selected` }}
             </span>
           </div>
 
@@ -391,10 +395,12 @@
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-sm bg-card-bg border border-card-border shadow-2xs">
         <div class="text-xs text-main-text/75 space-y-0.5">
           <p class="font-bold text-main-text text-sm">
-            Save Monthly Duty Shift Assignment
+            {{ langStore.t('schedules.save_assignment_title', 'Save Monthly Duty Shift Assignment') }}
           </p>
           <p>
-            Applies duty turns for <span class="font-bold text-nav-accent">{{ selectedGroup?.name }}</span> across selected shifts for <span class="font-bold text-main-text">{{ langStore.isAmharic() ? `${currentMonthNameAm} ${selectedYear} ዓ.ም` : `${currentMonthNameEn} ${selectedYear} E.C.` }}</span>.
+            {{ langStore.isAmharic()
+              ? `ለ${selectedGroup?.name || 'ቡድን'} በተመረጡት ፈረቃዎች ለ${currentMonthNameAm} ${selectedYear} ዓ.ም. የተረኝነት ተራን ይመድባል።`
+              : `${langStore.t('schedules.applies_duty_turns', 'Applies duty turns for')} ${selectedGroup?.name} ${langStore.t('schedules.across_selected_shifts', 'across selected shifts for')} ${currentMonthNameEn} ${selectedYear} E.C.` }}
           </p>
         </div>
 
@@ -404,7 +410,7 @@
             size="sm"
             @click="syncGroupDaysFromMatrix"
           >
-            Reset Changes
+            {{ langStore.t('schedules.reset_changes', 'Reset Changes') }}
           </Button>
           <Button
             variant="primary"
@@ -412,7 +418,7 @@
             :loading="shiftStore.saving"
             @click="handleSaveSchedule"
           >
-            Save Shift Schedule
+            {{ langStore.t('schedules.save_shift_schedule', 'Save Shift Schedule') }}
           </Button>
         </div>
       </div>

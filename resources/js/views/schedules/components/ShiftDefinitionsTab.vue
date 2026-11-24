@@ -8,7 +8,7 @@
           <span>{{ langStore.t('schedules.tab_shifts', 'Library Shift Definitions & Ethiopian Local Time') }}</span>
         </h3>
         <p class="text-xs text-main-text/60 mt-0.5">
-          {{ langStore.t('schedules.subtitle', 'Configure duty shifts with Ethiopian 12-hour clock (sunrise dawn base) and 24-hour time windows.') }}
+          {{ langStore.isAmharic() ? 'በኢትዮጵያ የቀን አቆጣጠር የፈረቃ ቡድኖችን የቀንና የማታ ፈረቃዎችን ይመድቡና ያስተዳድሩ።' : langStore.t('schedules.subtitle', 'Configure duty shifts with Ethiopian 12-hour clock (sunrise dawn base) and 24-hour time windows.') }}
         </p>
       </div>
 
@@ -109,7 +109,7 @@
           </div>
 
           <p v-if="shift.description" class="text-xs text-main-text/70 line-clamp-2">
-            {{ shift.description }}
+            {{ langStore.isAmharic() ? (shift.code === 'day' ? 'መደበኛ የቀን ፈረቃ ከጠዋቱ 02:00 እስከ ከቀኑ 11:00 በኢትዮጵያ ሰዓት።' : (shift.code === 'night' ? 'የማታ/የሌሊት ፈረቃ ከከቀኑ 11:00 እስከ ሌሊቱ 11:00 በኢትዮጵያ ሰዓት (ንጋት 11:00)።' : shift.description)) : shift.description }}
           </p>
         </div>
 
@@ -196,7 +196,7 @@
                 {{ langStore.t('schedules.input_mode', 'Time Input System') }}
               </p>
               <p class="text-[11px] text-main-text/50">
-                Insert time in one format; the other format is converted and shown in front automatically.
+                {{ langStore.isAmharic() ? 'በአንዱ የሰዓት ሥርዓት ያስገቡ፤ ሌላኛው በራስ-ሰር ተቀይሮ እዚሁ ፊት ለፊት ይታያል።' : 'Insert time in one format; the other format is converted and shown in front automatically.' }}
               </p>
             </div>
 
@@ -393,12 +393,12 @@
 
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
-            {{ langStore.t('common.actions', 'Description') }} (optional)
+            {{ langStore.isAmharic() ? 'መግለጫ (አማራጭ)' : 'Description (optional)' }}
           </label>
           <textarea
             v-model="form.description"
             rows="2"
-            placeholder="Operational coverage details, handover guidelines..."
+            :placeholder="langStore.isAmharic() ? 'የፈረቃው ዝርዝር ተግባር፣ የሥራ ርክክብ መመሪያ...' : 'Operational coverage details, handover guidelines...'"
             class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs resize-none"
           ></textarea>
         </div>

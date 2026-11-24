@@ -47,8 +47,8 @@
 
     <div v-else-if="shiftStore.groups.length === 0" class="p-8 rounded-sm bg-card-bg border border-card-border text-center text-xs text-main-text/60">
       <Users class="w-10 h-10 stroke-[1.5] text-main-text/30 mx-auto mb-2" />
-      <p class="font-bold text-main-text">No Shift Groups Defined</p>
-      <p class="mt-1">Create unified shift groups (Group A, Group B, Group C...) to schedule shifts across all branches.</p>
+      <p class="font-bold text-main-text">{{ langStore.t('schedules.no_groups_defined', 'No Shift Groups Defined') }}</p>
+      <p class="mt-1">{{ langStore.t('schedules.no_groups_defined_desc', 'Create unified shift groups (Group A, Group B, Group C...) to schedule shifts across all branches.') }}</p>
     </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -82,7 +82,7 @@
               <button
                 type="button"
                 class="p-1.5 rounded-sm hover:bg-nav-accent/10 text-main-text/60 hover:text-nav-accent transition cursor-pointer"
-                title="Edit Group"
+                :title="langStore.t('common.edit', 'Edit Group')"
                 @click="openEditModal(group)"
               >
                 <Pencil class="w-3.5 h-3.5" />
@@ -90,7 +90,7 @@
               <button
                 type="button"
                 class="p-1.5 rounded-sm hover:bg-rose-500/10 text-rose-600 transition cursor-pointer"
-                title="Delete Group"
+                :title="langStore.t('common.delete', 'Delete Group')"
                 @click="confirmDelete(group)"
               >
                 <Trash2 class="w-3.5 h-3.5" />
@@ -99,14 +99,14 @@
           </div>
 
           <p v-if="group.description" class="text-xs text-main-text/70 line-clamp-2">
-            {{ group.description }}
+            {{ langStore.isAmharic() ? (group.name.includes('A') ? 'በሁሉም ቅርንጫፎች (ቴክኖ፣ ማህበራዊ፣ ተፈጥሮ) ቀዳሚ የቤተ-መጻሕፍት የፈረቃ ቡድን።' : (group.name.includes('B') ? 'ሁለተኛ የቤተ-መጻሕፍት የፈረቃ ተረኝነት ቡድን።' : (group.name.includes('C') ? 'ሦስተኛ የቤተ-መጻሕፍት የፈረቃ ተረኝነት ቡድን።' : (group.name.includes('D') ? 'አራተኛ የቤተ-መጻሕፍት የፈረቃ ተረኝነት ቡድን።' : group.description)))) : group.description }}
           </p>
 
           <!-- Assigned Members with their Library Branch -->
           <div class="pt-2 border-t border-card-border">
             <div class="text-[11px] font-bold text-main-text/60 mb-1.5 flex items-center justify-between">
-              <span>Assigned Attendants ({{ group.users?.length || 0 }})</span>
-              <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">1 Group Per Librarian</span>
+              <span>{{ langStore.t('schedules.assigned_attendants', 'Assigned Attendants') }} ({{ group.users?.length || 0 }})</span>
+              <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">{{ langStore.t('schedules.one_group_per_librarian', '1 Group Per Librarian') }}</span>
             </div>
             <div v-if="group.users && group.users.length > 0" class="flex flex-wrap gap-1.5">
               <span
@@ -122,18 +122,18 @@
               </span>
             </div>
             <p v-else class="text-[11px] text-main-text/40 italic">
-              No staff members assigned yet.
+              {{ langStore.t('schedules.no_staff_assigned', 'No staff members assigned yet.') }}
             </p>
           </div>
         </div>
 
         <div class="pt-2 border-t border-card-border flex items-center justify-between text-[11px]">
-          <span class="text-main-text/50">Status:</span>
+          <span class="text-main-text/50">{{ langStore.t('schedules.status_label', 'Status:') }}</span>
           <span
             class="px-2 py-0.5 rounded-sm font-bold text-[10px]"
             :class="group.is_active ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/10 text-rose-600'"
           >
-            {{ group.is_active ? 'Active' : 'Inactive' }}
+            {{ group.is_active ? langStore.t('common.active', 'Active') : langStore.t('common.inactive', 'Inactive') }}
           </span>
         </div>
       </div>
@@ -142,8 +142,8 @@
     <!-- Create / Edit Modal -->
     <Modal
       :show="showModal"
-      :title="editingGroup ? 'Edit Shift Group' : 'Create Unified Shift Group'"
-      description="Define group name and assign librarians. Each librarian belongs to their own library branch and can only belong to one group at a time."
+      :title="editingGroup ? (langStore.isAmharic() ? 'የፈረቃ ቡድን አስተካክል' : 'Edit Shift Group') : (langStore.isAmharic() ? 'አዲስ የተዋሃደ የፈረቃ ቡድን ፍጠር' : 'Create Unified Shift Group')"
+      :description="langStore.isAmharic() ? 'የቡድኑን ስም ይሰይሙ እና ሠራተኞችን ይመድቡ። እያንዳንዱ ሠራተኛ የራሱ ቅርንጫፍ አባል ሆኖ በአንድ ጊዜ በአንድ ምድብ ብቻ ይመደባል።' : 'Define group name and assign librarians. Each librarian belongs to their own library branch and can only belong to one group at a time.'"
       :icon="Users"
       size="md"
       @close="showModal = false"
@@ -151,20 +151,20 @@
       <form @submit.prevent="handleSaveGroup" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
-            Group Name *
+            {{ langStore.isAmharic() ? 'የቡድን ስም *' : 'Group Name *' }}
           </label>
           <input
             v-model="form.name"
             type="text"
             required
-            placeholder="e.g. Group A, Group B, Group C..."
+            :placeholder="langStore.isAmharic() ? 'ለምሳሌ፡ ምድብ ሀ፣ ምድብ ለ፣ ምድብ ሐ...' : 'e.g. Group A, Group B, Group C...'"
             class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs font-semibold"
           />
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
-            Target Scope / Branch
+            {{ langStore.isAmharic() ? 'የቡድኑ ወሰን / ቅርንጫፍ' : 'Target Scope / Branch' }}
           </label>
           <div class="relative">
             <select
@@ -181,18 +181,18 @@
             </div>
           </div>
           <p class="text-[11px] text-main-text/50 mt-1">
-            Leave as "All University Branches" so the group applies to all branches.
+            {{ langStore.isAmharic() ? 'ቡድኑ በሁሉም ቅርንጫፎች ተፈጻሚ እንዲሆን "ሁሉም የዩኒቨርሲቲ ቅርንጫፎች" እንደሆነ ይተዉት።' : 'Leave as "All University Branches" so the group applies to all branches.' }}
           </p>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-main-text mb-1">
-            Description (optional)
+            {{ langStore.isAmharic() ? 'መግለጫ (አማራጭ)' : 'Description (optional)' }}
           </label>
           <textarea
             v-model="form.description"
             rows="2"
-            placeholder="Shift group purpose, responsibilities..."
+            :placeholder="langStore.isAmharic() ? 'የፈረቃ ቡድን ዓላማ፣ ኃላፊነቶች...' : 'Shift group purpose, responsibilities...'"
             class="w-full px-3 py-2 text-xs rounded-sm bg-input-bg border border-input-border text-main-text focus:outline-none focus:border-nav-accent shadow-2xs resize-none"
           ></textarea>
         </div>
@@ -201,10 +201,10 @@
         <div>
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-xs font-semibold text-main-text">
-              Assign Librarians & Attendants ({{ form.user_ids.length }} selected)
+              {{ langStore.isAmharic() ? `ሠራተኞችንና ተረኞችን ይመድቡ (${form.user_ids.length} ተመርጠዋል)` : `Assign Librarians & Attendants (${form.user_ids.length} selected)` }}
             </label>
             <span class="text-[10px] text-nav-accent font-semibold">
-              Strictly 1 group per librarian
+              {{ langStore.t('schedules.one_group_per_librarian', '1 Group Per Librarian') }}
             </span>
           </div>
 
@@ -242,13 +242,13 @@
                   v-if="!staff.is_available"
                   class="text-[10px] px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-600 font-semibold"
                 >
-                  Already in {{ staff.current_group_name }}
+                  {{ langStore.isAmharic() ? `ቀደም ሲል በ${staff.current_group_name} ውስጥ` : `Already in ${staff.current_group_name}` }}
                 </span>
                 <span
                   v-else-if="form.user_ids.includes(staff.id)"
                   class="text-[10px] text-emerald-600 font-bold"
                 >
-                  ✓ Selected
+                  {{ langStore.isAmharic() ? '✓ ተመርጧል' : '✓ Selected' }}
                 </span>
               </div>
             </div>
@@ -265,7 +265,7 @@
             type="submit"
             :loading="shiftStore.saving"
           >
-            {{ editingGroup ? 'Update Group' : 'Create Group' }}
+            {{ editingGroup ? (langStore.isAmharic() ? 'ምድቡን አድስ' : 'Update Group') : (langStore.isAmharic() ? 'ምድብ ፍጠር' : 'Create Group') }}
           </Button>
         </div>
       </form>
@@ -274,7 +274,7 @@
     <!-- Delete Confirmation Modal -->
     <Modal
       :show="showDelete"
-      title="Delete Shift Group"
+      :title="langStore.isAmharic() ? 'የፈረቃ ቡድንን ሰርዝ' : 'Delete Shift Group'"
       size="sm"
       @close="showDelete = false"
     >
@@ -283,16 +283,16 @@
           <Trash2 class="w-6 h-6 stroke-[2.2]" />
         </div>
         <p class="text-xs text-main-text">
-          Are you sure you want to delete <strong class="text-rose-600">{{ deletingGroup?.name }}</strong>?
+          {{ langStore.isAmharic() ? 'እርግጠኛ ነዎት ይህን የፈረቃ ቡድን መሰረዝ ይፈልጋሉ?' : 'Are you sure you want to delete' }} <strong class="text-rose-600">{{ deletingGroup?.name }}</strong>?
         </p>
         <p class="text-[11px] text-main-text/50">
-          This will detach assigned attendants and clean group schedules.
+          {{ langStore.isAmharic() ? 'ይህ የተመደቡ ሠራተኞችን ያላቅቃል እንዲሁም የወርሃዊ ፈረቃዎችን ያጸዳል።' : 'This will detach assigned attendants and clean group schedules.' }}
         </p>
       </div>
 
       <template #footer>
         <Button variant="secondary" size="sm" @click="showDelete = false">
-          Cancel
+          {{ langStore.t('common.cancel', 'Cancel') }}
         </Button>
         <Button
           variant="danger"
@@ -300,7 +300,7 @@
           :loading="shiftStore.saving"
           @click="handleDeleteGroup"
         >
-          Delete Group
+          {{ langStore.isAmharic() ? 'ቡድኑን ሰርዝ' : 'Delete Group' }}
         </Button>
       </template>
     </Modal>

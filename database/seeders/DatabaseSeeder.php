@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\AcademicYear;
 use App\Models\EthiopianHoliday;
 use App\Models\GroupShiftSchedule;
 use App\Models\Library;
@@ -748,6 +749,40 @@ class DatabaseSeeder extends Seeder
                 'days' => [2, 6, 10, 14, 18, 22, 26, 30],
                 'status' => 'active',
                 'notes' => 'Group D overnight duty for Hidar 2019 across all branches',
+            ]
+        );
+
+        // Seed Academic Years
+        AcademicYear::updateOrCreate(
+            ['code' => 'AY-2024-2025'],
+            [
+                'name' => '2017 E.C. (2024/2025 G.C.)',
+                'start_date' => '2024-09-11',
+                'end_date' => '2025-07-07',
+                'is_current' => false,
+                'description' => 'Previous University Academic Year',
+            ]
+        );
+
+        AcademicYear::updateOrCreate(
+            ['code' => 'AY-2025-2026'],
+            [
+                'name' => '2018 E.C. (2025/2026 G.C.)',
+                'start_date' => '2025-09-11',
+                'end_date' => '2026-07-07',
+                'is_current' => true,
+                'description' => 'Current Active University Academic Year',
+            ]
+        );
+
+        AcademicYear::updateOrCreate(
+            ['code' => 'AY-2026-2027'],
+            [
+                'name' => '2019 E.C. (2026/2027 G.C.)',
+                'start_date' => '2026-09-11',
+                'end_date' => '2027-07-07',
+                'is_current' => false,
+                'description' => 'Upcoming University Academic Year',
             ]
         );
 

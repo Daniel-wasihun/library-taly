@@ -82,6 +82,20 @@ Route::middleware('auth:sanctum')->group(function () {
     // Shift Definitions CRUD (Day Shift, Night Shift with Ethiopian Local Time)
     Route::apiResource('shifts', ShiftController::class);
 
+    // Shift Groups CRUD (Group A, Group B with Branch and Attendants)
+    Route::get('/shift-groups/eligible-staff', [ShiftGroupController::class, 'eligibleStaff']);
+    Route::apiResource('shift-groups', ShiftGroupController::class);
+
+    // Ethiopian Calendar Monthly Shift Scheduling Matrix & Assignment
+    Route::get('/shift-schedules/matrix', [GroupShiftScheduleController::class, 'matrix']);
+    Route::post('/shift-schedules/assign', [GroupShiftScheduleController::class, 'assign']);
+    Route::post('/shift-schedules/auto-generate', [GroupShiftScheduleController::class, 'autoGenerate']);
+    Route::get('/shift-schedules/holidays', [GroupShiftScheduleController::class, 'holidays']);
+    Route::post('/shift-schedules/holidays', [GroupShiftScheduleController::class, 'storeHoliday']);
+    Route::delete('/shift-schedules/holidays/{holiday}', [GroupShiftScheduleController::class, 'destroyHoliday']);
+    Route::get('/shift-schedules/check-overlap', [GroupShiftScheduleController::class, 'checkOverlap']);
+    Route::delete('/shift-schedules/{groupShiftSchedule}', [GroupShiftScheduleController::class, 'destroy']);
+
     // Physical Library Attendance / Usage Counter (LMS Pattern)
     Route::prefix('physical/attendance')->group(function () {
         Route::get('/', [AttendanceController::class, 'index']);

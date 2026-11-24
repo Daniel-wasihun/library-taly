@@ -91,11 +91,28 @@ return [
                 if (empty($host) || str_starts_with($host, '/')) {
                     return $host;
                 }
-                return preg_replace(['#^https?://#i', '#/.*$#'], '', $host);
+                $clean = preg_replace(['#^https?://#i', '#/.*$#'], '', $host);
+                if (preg_match('/(^|\.)supabase\.co$/i', $clean)) {
+                    return 'aws-0-eu-central-1.pooler.supabase.com';
+                }
+                return $clean;
             })(env('DB_HOST', '127.0.0.1')),
-            'port' => env('DB_PORT', '5432'),
+            'port' => (function ($port, $host) {
+                if (preg_match('/(^|\.)supabase\.co$/i', $host)) {
+                    return $port === '5432' ? '6543' : $port;
+                }
+                return $port;
+            })(env('DB_PORT', '5432'), env('DB_HOST', '')),
             'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
+            'username' => (function ($user, $host) {
+                if (preg_match('/(?:db\.)?([a-z0-9]+)\.supabase\.co/i', $host, $m)) {
+                    $ref = $m[1];
+                    if (!str_contains($user, '.')) {
+                        return ($user ?: 'postgres') . '.' . $ref;
+                    }
+                }
+                return $user;
+            })(env('DB_USERNAME', 'postgres'), env('DB_HOST', '')),
             'password' => env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',

@@ -21,7 +21,24 @@ export LOG_CHANNEL="${LOG_CHANNEL:-stderr}"
 # Sanitize DB_HOST if user accidentally pasted https:// or trailing slashes
 if [ -n "$DB_HOST" ]; then
     CLEAN_HOST=$(echo "$DB_HOST" | sed -E 's|^https?://||; s|/.*$||')
-    export DB_HOST="$CLEAN_HOST"
+    if echo "$CLEAN_HOST" | grep -qE '(^|\.)supabase\.co$'; then
+        SUPABASE_REF=$(echo "$CLEAN_HOST" | sed -E 's/^(db\.)?([a-z0-9]+)\.supabase\.co$/\2/')
+        echo "Detected Supabase Project Reference: $SUPABASE_REF"
+        # Render requires IPv4 pooler instead of IPv6-only direct host
+        export DB_HOST="aws-0-eu-central-1.pooler.supabase.com"
+        export DB_PORT="${DB_PORT:-6543}"
+        case "$DB_USERNAME" in
+            *"."*)
+                # Already has project ref in username
+                ;;
+            *)
+                export DB_USERNAME="${DB_USERNAME:-postgres}.${SUPABASE_REF}"
+                ;;
+        esac
+        echo "Auto-configured Supabase IPv4 Pooler: $DB_HOST:$DB_PORT with user $DB_USERNAME"
+    else
+        export DB_HOST="$CLEAN_HOST"
+    fi
 fi
 
 # Ensure APP_KEY is valid base64 key
@@ -47,9 +64,12 @@ php artisan config:clear || true
 php artisan route:clear || true
 php artisan view:clear || true
 
+# Start PHP-FPM early so fastcgi backend is ready
+php-fpm -D
+
 # Test Database Connectivity
 echo "Testing Database Connection ($DB_HOST:$DB_PORT)..."
-php artisan tinker --execute="
+timeout 10 php artisan tinker --execute="
 try {
     \DB::connection()->getPdo();
     echo '>>> Database connected successfully!' . PHP_EOL;
@@ -61,11 +81,11 @@ try {
 # Run database migrations if enabled
 if [ "$RUN_MIGRATIONS" = "true" ]; then
     echo "Running database migrations..."
-    php artisan migrate --force || echo "Warning: Migration failed, check database connectivity."
+    timeout 30 php artisan migrate --force || echo "Warning: Migration failed or timed out."
 
     if [ "$RUN_SEEDERS" = "true" ]; then
         echo "Running database seeders..."
-        php artisan db:seed --force || echo "Warning: Database seeder failed."
+        timeout 45 php artisan db:seed --force || echo "Warning: Database seeder failed or timed out."
     fi
 fi
 
@@ -83,6 +103,5 @@ echo " Environment: ${APP_ENV:-production}"
 echo " Log Channel: $LOG_CHANNEL"
 echo "=========================================================="
 
-# Start PHP-FPM in background and Nginx in foreground
-php-fpm -D
+# Start Nginx in foreground
 exec nginx -g "daemon off;"

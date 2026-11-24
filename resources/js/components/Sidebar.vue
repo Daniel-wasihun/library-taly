@@ -4,28 +4,40 @@
   >
     <!-- Brand Header matching Senbet / Gibi-Gubae standard -->
     <div
-      class="h-16 flex items-center border-b border-card-border shrink-0 transition-all duration-300"
-      :class="isCollapsed ? 'justify-center px-2' : 'justify-start px-4'"
+      class="h-14 flex items-center border-b border-card-border shrink-0 transition-all duration-300"
+      :class="isCollapsed ? 'justify-center px-2' : 'justify-between px-3.5'"
     >
       <!-- Brand Logo & Title -->
       <router-link
         :to="authStore.canViewDashboard ? '/dashboard' : (authStore.canViewAttendance ? '/attendance' : (authStore.canViewLibraries ? '/libraries' : '/my-turns'))"
         class="flex items-center gap-2.5 min-w-0 cursor-pointer group"
         :title="langStore.t('app.name', 'UniLibrary Portal')"
+        @click="isMobile && emit('closeMobile')"
       >
         <!-- Crest Icon -->
-        <div class="w-8 h-8 rounded-xs bg-gradient-to-br from-brand-blue to-blue-700 text-white flex items-center justify-center font-bold text-sm shadow-xs border border-white/20 shrink-0 group-hover:scale-105 transition-transform">
+        <div class="w-7 h-7 rounded-md bg-gradient-to-br from-brand-blue to-blue-700 text-white flex items-center justify-center font-bold text-xs shadow-xs border border-white/20 shrink-0 group-hover:scale-105 transition-transform">
           📚
         </div>
         <div v-if="!isCollapsed" class="flex flex-col min-w-0">
           <span class="font-bold text-xs tracking-tight text-main-text leading-tight truncate">
             {{ langStore.t('app.name', 'UniLibrary Portal') }}
           </span>
-          <span class="text-[9px] text-brand-blue dark:text-brand-yellow font-bold tracking-wider uppercase mt-0.5 truncate">
-            {{ langStore.t('app.subtitle', 'University Library System') }}
+          <span class="text-[8.5px] text-brand-blue dark:text-brand-yellow font-bold tracking-wider uppercase mt-0.5 truncate">
+            {{ langStore.isAmharic() ? 'ወልድያ ዩኒቨርሲቲ' : 'Woldia University' }}
           </span>
         </div>
       </router-link>
+
+      <!-- Mobile Close (X) Button -->
+      <button
+        v-if="isMobile"
+        @click="emit('closeMobile')"
+        type="button"
+        class="p-1 rounded-md text-main-text/50 hover:text-main-text hover:bg-main-bg transition cursor-pointer"
+        aria-label="Close menu"
+      >
+        <X class="w-4 h-4" />
+      </button>
     </div>
 
     <!-- Navigation Menu with Groups (Only options are visible) -->
@@ -44,6 +56,7 @@
         <router-link
           v-if="authStore.canViewDashboard"
           to="/dashboard"
+          @click="isMobile && emit('closeMobile')"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[
             isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2 text-[11.5px]',
@@ -68,6 +81,7 @@
         <router-link
           v-if="authStore.canViewLibraries"
           to="/libraries"
+          @click="isMobile && emit('closeMobile')"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[
             isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2 text-[11.5px]',
@@ -92,6 +106,7 @@
         <router-link
           v-if="authStore.canViewAcademicYears"
           to="/academic-years"
+          @click="isMobile && emit('closeMobile')"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[
             isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2 text-[11.5px]',
@@ -115,6 +130,7 @@
         <!-- My Turns -->
         <router-link
           to="/my-turns"
+          @click="isMobile && emit('closeMobile')"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[
             isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2 text-[11.5px]',
@@ -149,6 +165,7 @@
         <!-- Attendance Counter (Semantic & Short) -->
         <router-link
           to="/attendance"
+          @click="isMobile && emit('closeMobile')"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[
             isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2 text-[11.5px]',
@@ -184,6 +201,7 @@
         <router-link
           v-if="authStore.canViewUsers"
           to="/users"
+          @click="isMobile && emit('closeMobile')"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[
             isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2 text-[11.5px]',
@@ -208,6 +226,7 @@
         <router-link
           v-if="authStore.canViewRoles"
           to="/roles"
+          @click="isMobile && emit('closeMobile')"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[
             isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2 text-[11.5px]',
@@ -232,6 +251,7 @@
         <router-link
           v-if="authStore.canViewSchedules"
           to="/schedules"
+          @click="isMobile && emit('closeMobile')"
           class="flex items-center rounded-xs transition-all duration-200 cursor-pointer relative group"
           :class="[
             isCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2 text-[11.5px]',
@@ -254,8 +274,21 @@
       </div>
     </nav>
 
-    <!-- Bottom Toggler button in collapsed state for easy re-expansion -->
-    <div v-if="isCollapsed" class="p-2 border-t border-card-border shrink-0 flex justify-center">
+    <!-- Mobile Drawer Footer with Current User Profile -->
+    <div v-if="isMobile" class="p-3 border-t border-card-border/80 shrink-0 bg-main-bg/50">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-7 h-7 rounded-full bg-brand-blue/15 text-brand-blue font-bold flex items-center justify-center text-xs shrink-0 font-mono shadow-2xs border border-brand-blue/20">
+          {{ authStore.user?.name?.charAt(0).toUpperCase() || 'U' }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-bold text-main-text truncate leading-tight">{{ authStore.user?.name || 'Staff' }}</p>
+          <p class="text-[10px] text-main-text/50 truncate font-mono">@{{ authStore.user?.username || 'user' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Toggler button in collapsed state for easy re-expansion (Desktop only) -->
+    <div v-if="isCollapsed && !isMobile" class="p-2 border-t border-card-border shrink-0 flex justify-center">
       <button
         type="button"
         @click="emit('toggle')"
@@ -282,19 +315,24 @@ import {
   CalendarDays,
   CalendarRange,
   Landmark,
+  PanelLeftOpen,
+  X,
 } from 'lucide-vue-next';
 
 withDefaults(
   defineProps<{
     isCollapsed?: boolean;
+    isMobile?: boolean;
   }>(),
   {
     isCollapsed: false,
+    isMobile: false,
   }
 );
 
 const emit = defineEmits<{
   (e: 'toggle'): void;
+  (e: 'closeMobile'): void;
 }>();
 
 const route = useRoute();

@@ -22,12 +22,15 @@
       :class="[
         isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0',
         isResizing ? '' : 'transition-all duration-300 ease-in-out',
-        'w-64 lg:w-auto'
+        'w-56 sm:w-60 lg:w-auto'
       ]"
       :style="sidebarContainerStyle"
     >
       <Sidebar
-        :is-collapsed="isSidebarCollapsed"
+        :is-collapsed="isDesktop ? isSidebarCollapsed : false"
+        :is-mobile="!isDesktop"
+        @toggle="toggleSidebar"
+        @close-mobile="isMobileMenuOpen = false"
       />
 
       <!-- Drag Handle for Resizing Sidebar (Desktop only, when expanded) -->

@@ -18,6 +18,12 @@ chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 # Direct logs to stderr so they show up in Render's dashboard logs
 export LOG_CHANNEL="${LOG_CHANNEL:-stderr}"
 
+# Sanitize DB_HOST if user accidentally pasted https:// or trailing slashes
+if [ -n "$DB_HOST" ]; then
+    CLEAN_HOST=$(echo "$DB_HOST" | sed -E 's|^https?://||; s|/.*$||')
+    export DB_HOST="$CLEAN_HOST"
+fi
+
 # Ensure APP_KEY is valid base64 key
 case "$APP_KEY" in
     base64:*)

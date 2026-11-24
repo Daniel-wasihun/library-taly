@@ -13,7 +13,7 @@ services:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
-        value: false
+        value: true
       - key: APP_TIMEZONE
         value: Africa/Addis_Ababa
       - key: LOG_CHANNEL
@@ -41,13 +41,13 @@ services:
       - key: DB_SSLMODE
         value: require
       - key: SESSION_DRIVER
-        value: database
+        value: file
       - key: SESSION_LIFETIME
         value: 120
       - key: SESSION_ENCRYPT
         value: false
       - key: CACHE_STORE
-        value: database
+        value: file
       - key: QUEUE_CONNECTION
         value: database
       - key: RUN_MIGRATIONS

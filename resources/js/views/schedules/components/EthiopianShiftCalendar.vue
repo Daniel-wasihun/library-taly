@@ -395,7 +395,7 @@
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-sm bg-card-bg border border-card-border shadow-2xs">
         <div class="text-xs text-main-text/75 space-y-0.5">
           <p class="font-bold text-main-text text-sm">
-            {{ langStore.t('schedules.save_assignment_title', 'Save Monthly Duty Shift Assignment') }}
+            {{ langStore.isAmharic() ? 'የወርሃዊ ተረኝነት ምደባን አስቀምጥ' : langStore.t('schedules.save_assignment_title', 'Save Monthly Duty Shift Assignment') }}
           </p>
           <p>
             {{ langStore.isAmharic()
@@ -410,7 +410,7 @@
             size="sm"
             @click="syncGroupDaysFromMatrix"
           >
-            {{ langStore.t('schedules.reset_changes', 'Reset Changes') }}
+            {{ langStore.isAmharic() ? 'ለውጦችን መልስ' : langStore.t('schedules.reset_changes', 'Reset Changes') }}
           </Button>
           <Button
             variant="primary"
@@ -418,7 +418,7 @@
             :loading="shiftStore.saving"
             @click="handleSaveSchedule"
           >
-            {{ langStore.t('schedules.save_shift_schedule', 'Save Shift Schedule') }}
+            {{ langStore.isAmharic() ? 'የፈረቃ መርሃ-ግብር አስቀምጥ' : langStore.t('schedules.save_shift_schedule', 'Save Shift Schedule') }}
           </Button>
         </div>
       </div>

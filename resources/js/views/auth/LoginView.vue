@@ -173,6 +173,11 @@ const fillDemo = (login: string, pass: string) => {
 const handleLogin = async () => {
   const success = await authStore.login({ login: form.login, password: form.password });
   if (success) {
+    const savedRoute = localStorage.getItem('unilib_pwa_last_route');
+    if (savedRoute && savedRoute !== '/' && savedRoute !== '/login' && !savedRoute.startsWith('/login')) {
+      router.push(savedRoute);
+      return;
+    }
     if (authStore.canViewDashboard) {
       router.push('/dashboard');
     } else if (authStore.hasPermission('attendance.record') || authStore.hasPermission('attendance.view')) {

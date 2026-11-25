@@ -35,12 +35,34 @@ const currentDate = computed(() => {
   return new Date(currentTimestamp.value);
 });
 
-// Precise, ACID-consistent time calculations
+// Precise, ACID-consistent time calculations anchored strictly to Africa/Addis_Ababa (EAT, UTC+3)
 const timeInfo = computed(() => {
   const d = currentDate.value;
-  const h = d.getHours();
-  const m = String(d.getMinutes()).padStart(2, '0');
-  const s = String(d.getSeconds()).padStart(2, '0');
+
+  // Format strictly into Africa/Addis_Ababa parts using Intl.DateTimeFormat
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Africa/Addis_Ababa',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hourCycle: 'h23',
+  });
+
+  const parts = formatter.formatToParts(d);
+  const map: Record<string, string> = {};
+  for (const p of parts) {
+    map[p.type] = p.value;
+  }
+
+  const h = Number(map.hour === '24' ? '0' : map.hour);
+  const m = (map.minute || '00').padStart(2, '0');
+  const s = (map.second || '00').padStart(2, '0');
+  const gy = Number(map.year);
+  const gm = Number(map.month);
+  const gd = Number(map.day);
 
   // Standard 24h & 12h representation
   const std24 = `${String(h).padStart(2, '0')}:${m}:${s}`;
@@ -74,17 +96,18 @@ const timeInfo = computed(() => {
   const etTimeShort = `${String(etH).padStart(2, '0')}:${m} ${etPeriodShort}`;
 
   // Ethiopian Calendar Date
-  const [eyear, emonth, edate] = toEthiopian(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  const [eyear, emonth, edate] = toEthiopian(gy, gm, gd);
   const ethMonthName = amMonths[emonth] || '';
-  const ethDayName = amDays[d.getDay()] || '';
+  const dayOfWeekIndex = new Date(gy, gm - 1, gd).getDay();
+  const ethDayName = amDays[dayOfWeekIndex] || '';
   const etDateFormatted = `${ethMonthName} ${edate}፣ ${eyear} ዓ.ም`;
   const etDateShort = `${ethMonthName} ${edate}`;
 
   // Gregorian Date
   const gregMonthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const gregDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const gregFormatted = `${gregDayNames[d.getDay()]}, ${gregMonthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-  const gregShort = `${gregMonthNames[d.getMonth()]} ${d.getDate()}`;
+  const gregFormatted = `${gregDayNames[dayOfWeekIndex]}, ${gregMonthNames[gm - 1]} ${gd}, ${gy}`;
+  const gregShort = `${gregMonthNames[gm - 1]} ${gd}`;
 
   const isAmharic = langStore.isAmharic();
 
@@ -97,7 +120,7 @@ const timeInfo = computed(() => {
     mobileTime: timeFormatMode.value === 'ethiopian' ? `${etH}:${m} ${etPeriodShort}` : `${h12}:${m} ${period12}`,
     mobileDate: isAmharic ? `${ethMonthName} ${edate}` : gregShort,
     rawHour: h,
-    rawMinute: d.getMinutes(),
+    rawMinute: Number(m),
   };
 });
 </script>

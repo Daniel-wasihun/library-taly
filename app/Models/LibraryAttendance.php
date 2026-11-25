@@ -27,6 +27,14 @@ class LibraryAttendance extends Model
         'visitor_count' => 'integer',
     ];
 
+    /**
+     * Prepare a date for array / JSON serialization with explicit timezone offset.
+     */
+    protected function serializeDate(\DateTimeInterface $date): string
+    {
+        return $date->format('Y-m-d\TH:i:sP');
+    }
+
     protected static function boot()
     {
         parent::boot();

@@ -149,20 +149,56 @@ export const formatDT = (dateInput: Date | string | null | undefined, isAmharic 
         }
     }
 
-    let date: Date;
-    if (typeof dateInput === 'string') {
-        const cleaned = dateInput.replace(' ', 'T');
-        date = new Date(cleaned);
+    let h: number;
+    let m: string;
+    let gy: number;
+    let gm: number;
+    let gd: number;
+    let dayOfWeekIndex: number;
+
+    // 1. If string is a bare local datetime without timezone offset (e.g. "2026-11-25 20:18:00" or "2026-11-25T20:18:00")
+    if (typeof dateInput === 'string' && !/[Zz]|[+-]\d{2}(?::?\d{2})?$/.test(dateInput.trim())) {
+        const parts = dateInput.trim().replace('T', ' ').split(' ');
+        const [yStr, mStr, dStr] = (parts[0] || '').split('-').map(Number);
+        const [hStr, minStr] = (parts[1] || '00:00').split(':').map(Number);
+
+        gy = yStr;
+        gm = mStr;
+        gd = dStr;
+        h = hStr;
+        m = String(minStr || 0).padStart(2, '0');
+        dayOfWeekIndex = new Date(gy, gm - 1, gd).getDay();
     } else {
-        date = dateInput;
-    }
+        // 2. Parse ISO string or Date object anchored strictly to Africa/Addis_Ababa (EAT, UTC+3)
+        const date = typeof dateInput === 'string' ? new Date(dateInput.replace(' ', 'T')) : dateInput;
+        if (!date || isNaN(date.getTime())) {
+            return { time: '—', date: '—', full: '—' };
+        }
 
-    if (isNaN(date.getTime())) {
-        return { time: '—', date: '—', full: '—' };
-    }
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Africa/Addis_Ababa',
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            hourCycle: 'h23',
+        });
 
-    const h = date.getHours();
-    const m = date.getMinutes().toString().padStart(2, '0');
+        const pList = formatter.formatToParts(date);
+        const map: Record<string, string> = {};
+        for (const p of pList) {
+            map[p.type] = p.value;
+        }
+
+        h = Number(map.hour === '24' ? '0' : map.hour);
+        m = (map.minute || '00').padStart(2, '0');
+        gy = Number(map.year);
+        gm = Number(map.month);
+        gd = Number(map.day);
+        dayOfWeekIndex = new Date(gy, gm - 1, gd).getDay();
+    }
 
     // 12-hour Gregorian format
     if (!isAmharic) {
@@ -174,8 +210,8 @@ export const formatDT = (dateInput: Date | string | null | undefined, isAmharic 
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-        const dateStr = `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
-        const fullStr = `${dayNames[date.getDay()]}, ${dateStr}`;
+        const dateStr = `${monthNames[gm - 1]} ${gd}, ${gy}`;
+        const fullStr = `${dayNames[dayOfWeekIndex]}, ${dateStr}`;
 
         return {
             time: time12,
@@ -185,11 +221,7 @@ export const formatDT = (dateInput: Date | string | null | undefined, isAmharic 
     }
 
     // 12-hour Ethiopian Calendar and Dawn-based Clock
-    const [eyear, emonth, edate] = toEthiopian(
-        date.getFullYear(),
-        date.getMonth() + 1,
-        date.getDate()
-    );
+    const [eyear, emonth, edate] = toEthiopian(gy, gm, gd);
 
     // Ethiopian 12-hour clock (starts at dawn 6:00 AM)
     let etH = h >= 6 ? h - 6 : h + 6;
@@ -204,7 +236,7 @@ export const formatDT = (dateInput: Date | string | null | undefined, isAmharic 
 
     const etTime = `${etH}:${m} ${period}`;
     const etDate = `${amMonths[emonth]} ${edate}, ${eyear}`;
-    const etFull = `${amDays[date.getDay()]}፣ ${amMonths[emonth]} ${edate} ቀን ${eyear} ዓ.ም`;
+    const etFull = `${amDays[dayOfWeekIndex]}፣ ${amMonths[emonth]} ${edate} ቀን ${eyear} ዓ.ም`;
 
     return {
         time: etTime,

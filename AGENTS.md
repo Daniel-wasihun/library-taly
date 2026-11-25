@@ -20,6 +20,7 @@
 
 ### 2. Offline-First PWA Attendance Counter
 - **PWA Infrastructure**: Service Worker (`public/sw.js`), `manifest.json`, mobile-capable meta tags, and Woldia University Library clean branding/splash screen.
+- **PWA Route Memory & State Persistence**: `router/index.ts` automatically tracks user navigation (`unilib_pwa_last_route`) and seamlessly restores the user's exact previous page upon reopening the standalone PWA or browser tab, with permission and authentication checks.
 - **PWA Install Prompt**: Captures `beforeinstallprompt` to present a tailored, professional install banner (`PwaInstallPrompt.vue`) and provides a persistent "Install App" button in the navbar when running in a browser tab or after app removal, with a 3-step guide for iOS Safari.
 - **Native OS & Browser PDF Preview & Universal File Downloader**: PDF preview directly launches the operating system and browser native viewer (`window.open(pdfUrl, '_blank')` with `Content-Disposition: inline`) eliminating custom coded modals. `fileDownloader.ts` saves CSV, Excel, Word, and audit files using the File System Access API (`showSaveFilePicker`) to let users choose any directory/folder on desktop, Web Share API (`navigator.share`) on mobile PWAs for direct "Save to Files / Downloads", and direct authenticated HTTPS server download URLs to ensure mobile standalone PWAs (Android DownloadManager & iOS WebKit) intercept and prompt for download location without dropping blob URLs.
 - **Strict 2-Minute Invariant for Edits & Deletions**: Both backend (`AttendanceController.php`) and frontend (`AttendanceView.vue`) enforce a strict 120-second window from `entry_at`. Once 2 minutes pass, increment, decrement, and delete buttons are permanently disabled with **zero bypass, even for Super Admin**.
@@ -31,9 +32,11 @@
 - **Auto-Replacing Latest Entry Banner**: Located in `AttendanceMonitor.vue`, replaces immediately on new entries using Vue's `<transition name="fade" mode="out-in">` keyed by entry ID/slug.
 - **Dynamic Real-Time Stats**: `AttendanceView.vue` computes live totals directly across cached and server logs.
 
-### 3. Dual Ethiopian & Gregorian Date/Time Clock
+### 3. Dual Ethiopian & Gregorian Date/Time Clock & Absolute Timezone Accuracy
 - `UnifiedDateTimeClock.vue` is embedded in the top navbar across both desktop and mobile viewports.
-- Synchronizes Gregorian and Ethiopian calendar dates and live clock time consistently across devices.
+- Standardized strictly to `Africa/Addis_Ababa` (UTC+3, EAT) using `Intl.DateTimeFormat` on frontend and Laravel `APP_TIMEZONE=Africa/Addis_Ababa` on backend.
+- Eloquent `LibraryAttendance` serializes timestamps with explicit ISO 8601 offset (`Y-m-d\TH:i:sP`), preventing dual +3 hour offset drift.
+- Synchronizes Gregorian and Ethiopian calendar dates and live dawn clock (6:00 AM dawn = 12:00) consistently across devices.
 
 ### 4. UI Design System & Dark Mode Standards
 - Styled with Tailwind CSS v4 utilizing Gibi-Gubae / Senbet design tokens (`app.css`).

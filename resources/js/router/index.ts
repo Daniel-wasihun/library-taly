@@ -1,7 +1,26 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 
-function getLandingRoute(authStore: any) {
+export const PWA_LAST_ROUTE_KEY = 'unilib_pwa_last_route';
+
+export function getStoredLastRoute(): string | null {
+    try {
+        const last = localStorage.getItem(PWA_LAST_ROUTE_KEY);
+        if (last && last !== '/' && last !== '/login' && !last.startsWith('/login')) {
+            return last;
+        }
+    } catch {}
+    return null;
+}
+
+function getLandingRoute(authStore: any, restorePrevious = true) {
+    if (restorePrevious) {
+        const lastRoute = getStoredLastRoute();
+        if (lastRoute) {
+            return lastRoute;
+        }
+    }
+
     if (authStore.canViewDashboard) {
         return { name: 'Dashboard' };
     }
@@ -42,7 +61,7 @@ const routes: RouteRecordRaw[] = [
                 path: '',
                 redirect: () => {
                     const authStore = useAuthStore();
-                    return getLandingRoute(authStore);
+                    return getLandingRoute(authStore, true);
                 },
             },
             {
@@ -99,7 +118,7 @@ const routes: RouteRecordRaw[] = [
         path: '/:pathMatch(.*)*',
         redirect: () => {
             const authStore = useAuthStore();
-            return getLandingRoute(authStore);
+            return getLandingRoute(authStore, false);
         },
     },
 ];
@@ -147,33 +166,42 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.guest && authStore.isAuthenticated) {
-        return getLandingRoute(authStore);
+        return getLandingRoute(authStore, true);
     }
 
     // 1. Strict Dashboard authorization guard: only users with dashboard.view permission can access
     if (to.name === 'Dashboard' && !authStore.canViewDashboard) {
-        return getLandingRoute(authStore);
+        return getLandingRoute(authStore, false);
     }
 
     // 2. Strict single permission guard
     if (to.meta.permission && !authStore.hasPermission(to.meta.permission as string)) {
-        return getLandingRoute(authStore);
+        return getLandingRoute(authStore, false);
     }
 
     // 3. Strict multi-permission guard (any permitted)
     if (to.meta.permissions && Array.isArray(to.meta.permissions)) {
         const hasAny = (to.meta.permissions as string[]).some((p) => authStore.hasPermission(p));
         if (!hasAny) {
-            return getLandingRoute(authStore);
+            return getLandingRoute(authStore, false);
         }
     }
 
     // 4. Role guard fallback
     if (to.meta.roles && !authStore.hasRole(to.meta.roles as string[])) {
-        return getLandingRoute(authStore);
+        return getLandingRoute(authStore, false);
     }
 
     return true;
+});
+
+// Remember user's last visited page for PWA relaunch / session resumption
+router.afterEach((to) => {
+    if (to.name && to.path !== '/login' && !to.meta?.guest) {
+        try {
+            localStorage.setItem(PWA_LAST_ROUTE_KEY, to.fullPath);
+        } catch {}
+    }
 });
 
 // Auto-recover from stale dynamic chunk imports on mobile and slow connections

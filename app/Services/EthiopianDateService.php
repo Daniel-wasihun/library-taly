@@ -112,7 +112,7 @@ class EthiopianDateService
             return ['time' => '—', 'date' => '—', 'full' => '—'];
         }
 
-        $date = $dateInput instanceof Carbon ? $dateInput : Carbon::parse($dateInput);
+        $date = ($dateInput instanceof Carbon ? $dateInput->copy() : Carbon::parse($dateInput))->setTimezone('Africa/Addis_Ababa');
 
         $h = (int) $date->format('G');
         $m = $date->format('i');

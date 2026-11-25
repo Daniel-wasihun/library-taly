@@ -143,6 +143,7 @@ export const useAuthStore = defineStore(
             user.value = null;
             localStorage.removeItem('auth_token');
             localStorage.removeItem('univ-library-auth');
+            localStorage.removeItem('unilib_pwa_last_route');
         }
 
         return {

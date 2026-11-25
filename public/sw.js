@@ -1,4 +1,4 @@
-const CACHE_NAME = 'unilib-pwa-v4';
+const CACHE_NAME = 'unilib-pwa-v5';
 const STATIC_ASSETS = [
     '/manifest.json',
     '/favicon.ico',
@@ -39,6 +39,15 @@ self.addEventListener('fetch', (event) => {
 
     // Bypass non-GET requests
     if (request.method !== 'GET') {
+        return;
+    }
+
+    // Bypass report downloads, exports, and print endpoints directly to network
+    if (
+        url.pathname.includes('/download') ||
+        url.pathname.includes('/export') ||
+        url.pathname.includes('/print')
+    ) {
         return;
     }
 

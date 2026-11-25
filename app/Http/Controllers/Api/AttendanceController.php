@@ -531,6 +531,10 @@ class AttendanceController extends Controller
             $reportData['isPdf'] = true;
             $html = view('reports.attendance_print', $reportData)->render();
 
+            if (!file_exists(storage_path('fonts'))) {
+                @mkdir(storage_path('fonts'), 0775, true);
+            }
+
             $options = new \Dompdf\Options();
             $options->set('isFontSubsettingEnabled', true);
             $options->set('isRemoteEnabled', false);

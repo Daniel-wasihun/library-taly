@@ -37,6 +37,7 @@ export async function saveFileWithPickerOrFallback(options: SaveFileOptions): Pr
   } = options;
 
   const ext = filename.split('.').pop() || '';
+  let dataBlob = initialBlob;
 
   // 1. Desktop File System Access API: Always prompt native OS "Save As" dialog
   if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
@@ -57,7 +58,6 @@ export async function saveFileWithPickerOrFallback(options: SaveFileOptions): Pr
       const handle = await (window as any).showSaveFilePicker(pickerOptions);
 
       // If user selected location, acquire blob (from prop or fetch callback)
-      let dataBlob = initialBlob;
       if (!dataBlob && fetchBlob) {
         dataBlob = await fetchBlob();
       }
@@ -78,7 +78,6 @@ export async function saveFileWithPickerOrFallback(options: SaveFileOptions): Pr
   }
 
   // Ensure we have a Blob if we need to share or download locally
-  let dataBlob = initialBlob;
   if (!dataBlob && fetchBlob) {
     try {
       dataBlob = await fetchBlob();

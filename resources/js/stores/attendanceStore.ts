@@ -383,6 +383,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
                     date: langStore.isAmharic() ? 'ዛሬ' : 'Today',
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     scope: scopeLabel,
+                    scopeKey: scope,
                     size: 'PDF Document',
                 });
                 saveExportHistory();
@@ -431,6 +432,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
                     date: langStore.isAmharic() ? 'ዛሬ' : 'Today',
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     scope: scopeLabel,
+                    scopeKey: scope,
                     size: 'Ready',
                 });
                 saveExportHistory();

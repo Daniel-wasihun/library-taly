@@ -407,9 +407,26 @@ const handleExport = (range: 'day' | 'week' | 'month' | 'current') => {
  * Direct PDF download (no new tab)
  */
 const handlePrint = (range: 'day' | 'week' | 'month' | 'current' = 'current') => {
-  let from = dateRange.value.from;
-  let to = dateRange.value.to;
-  if (range === 'day' || activeTab.value === 'counter') {
+  const now = new Date();
+  let from = todayStr;
+  let to = todayStr;
+
+  if (range === 'week') {
+    const pastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    from = toLocalIso(pastWeek);
+  } else if (range === 'month') {
+    if (langStore.isAmharic()) {
+      const [ey, em] = toEthiopian(now.getFullYear(), now.getMonth() + 1, now.getDate());
+      const [gy, gm, gd] = toGregorian(ey, em, 1);
+      from = `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
+    } else {
+      from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    }
+  } else if (range === 'current') {
+    from = dateRange.value.from;
+    to = dateRange.value.to;
+  }
+  if (activeTab.value === 'counter' || range === 'day') {
     from = todayStr;
     to = todayStr;
   }

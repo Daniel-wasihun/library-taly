@@ -1562,7 +1562,7 @@ const handleResetToday = () => {
             <!-- Action button -->
             <button
               type="button"
-              @click="triggerDownload(item.format)"
+              @click="triggerDownload(item.format, (item as any).scopeKey)"
               :disabled="Boolean(downloadingFormat)"
               class="px-2.5 py-1 rounded text-xs font-bold border border-card-border hover:bg-brand-blue hover:text-white hover:border-brand-blue transition cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5"
               title="Download File"

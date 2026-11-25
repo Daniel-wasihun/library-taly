@@ -186,27 +186,53 @@ const dailyStats = computed(() => {
   const kpis = statsFromStore?.kpis;
   const dist = statsFromStore?.library_distribution || [];
 
-  const stats = {
-    male: statsFromStore?.total_male ?? 0,
-    female: statsFromStore?.total_female ?? 0,
-    total: statsFromStore?.total_users ?? 0,
-    student: kpis?.student ?? 0,
-    teacher: kpis?.teacher ?? 0,
-    staff: kpis?.staff ?? 0,
-  };
+  let male = statsFromStore?.total_male ?? 0;
+  let female = statsFromStore?.total_female ?? 0;
+  let total = statsFromStore?.total_users ?? 0;
+  let student = kpis?.student ?? 0;
+  let teacher = kpis?.teacher ?? 0;
+  let staff = kpis?.staff ?? 0;
 
-  if (stats.student === 0 && stats.teacher === 0 && stats.staff === 0 && dist.length > 0) {
+  // Real-time calculation from active logs: immediately updates on every count click
+  if (attendanceStore.logs && attendanceStore.logs.length > 0) {
+    let logMale = 0;
+    let logFemale = 0;
+    let logTotal = 0;
+    let logStudent = 0;
+    let logTeacher = 0;
+    let logStaff = 0;
+
+    attendanceStore.logs.forEach((log) => {
+      const c = Number(log.visitor_count || 1);
+      logTotal += c;
+      if (log.gender === 'male') logMale += c;
+      if (log.gender === 'female') logFemale += c;
+      const type = (log.user_type || '').toLowerCase();
+      if (type === 'student') logStudent += c;
+      else if (type === 'teacher') logTeacher += c;
+      else if (type === 'staff') logStaff += c;
+    });
+
+    male = Math.max(male, logMale);
+    female = Math.max(female, logFemale);
+    total = Math.max(total, logTotal);
+    student = Math.max(student, logStudent);
+    teacher = Math.max(teacher, logTeacher);
+    staff = Math.max(staff, logStaff);
+  }
+
+  if (student === 0 && teacher === 0 && staff === 0 && dist.length > 0) {
     dist.forEach((d: any) => {
       const count = parseInt(String(d.count || 0), 10) || 0;
       const type = d.user_type?.toLowerCase();
 
-      if (type === 'student') stats.student += count;
-      else if (type === 'teacher') stats.teacher += count;
-      else if (type === 'staff') stats.staff += count;
+      if (type === 'student') student += count;
+      else if (type === 'teacher') teacher += count;
+      else if (type === 'staff') staff += count;
     });
   }
 
-  return stats;
+  return { male, female, total, student, teacher, staff };
 });
 
 const distributionReport = computed(() => {

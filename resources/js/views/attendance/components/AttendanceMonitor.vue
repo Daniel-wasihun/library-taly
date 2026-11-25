@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { History, Download, Plus, Minus, Trash2, Printer, Building2, Clock, UserCheck, Users2, Users } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { History, Download, Plus, Minus, Trash2, Printer, Building2, Clock, UserCheck, Users2, Users, Sparkles } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import { useLanguageStore } from '@/stores/languageStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -29,6 +30,10 @@ const emit = defineEmits<{
 const langStore = useLanguageStore();
 const authStore = useAuthStore();
 const attendanceStore = useAttendanceStore();
+
+const latestEntry = computed(() => {
+  return props.logs && props.logs.length > 0 ? props.logs[0] : null;
+});
 
 const getTimeDisplay = (dateStr: string) => {
   return formatDT(dateStr, langStore.isAmharic()).time;
@@ -148,6 +153,35 @@ const getDateDisplay = (dateStr: string) => {
       </div>
     </div>
 
+    <!-- Active Latest Entry Banner: Immediately removes previous entry and shows the new one on every log -->
+    <transition name="fade" mode="out-in">
+      <div
+        v-if="latestEntry"
+        :key="latestEntry.id || latestEntry.slug"
+        class="mx-2.5 sm:mx-5 mt-2.5 sm:mt-3 px-3 py-2 rounded-sm bg-blue-50/90 dark:bg-blue-950/40 border border-brand-blue/30 flex items-center justify-between text-xs transition-all shadow-2xs"
+      >
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-ping"></span>
+          <span class="font-bold text-main-text shrink-0 text-[11px] sm:text-xs">
+            {{ langStore.isAmharic() ? 'አሁን የተመዘገበ፡' : 'Latest Entry:' }}
+          </span>
+          <span
+            class="font-mono font-extrabold truncate text-[11px] sm:text-xs"
+            :class="latestEntry.gender === 'male' ? 'text-brand-blue dark:text-white' : 'text-brand-yellow'"
+          >
+            +{{ latestEntry.visitor_count }} {{ langStore.localizeGender(latestEntry.gender) }} {{ langStore.localizeType(latestEntry.user_type) }}
+          </span>
+          <span class="hidden sm:inline text-main-text/40">·</span>
+          <span class="hidden sm:inline text-[10px] text-main-text/60 truncate">
+            {{ langStore.localizeBranch(latestEntry.library) }}
+          </span>
+        </div>
+        <span class="text-[10px] sm:text-[11px] text-main-text/70 font-mono font-semibold shrink-0">
+          {{ getTimeDisplay(latestEntry.entry_at) }}
+        </span>
+      </div>
+    </transition>
+
     <!-- CLEAN, STRAIGHT-LINE, NON-WRAPPING DATA TABLE -->
     <div class="flex-1 overflow-x-auto w-full relative min-h-[360px]">
       <!-- Slim Loading Progress Bar when refreshing existing records -->
@@ -158,14 +192,18 @@ const getDateDisplay = (dateStr: string) => {
       <table class="w-full text-left text-[11px] sm:text-xs border-collapse whitespace-nowrap">
         <thead>
           <tr class="border-b border-card-border bg-slate-50/70 dark:bg-slate-800/50 select-none whitespace-nowrap text-nowrap">
-            <th class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-main-text/60 uppercase text-[10px] text-center w-10">Status</th>
+            <th class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-main-text/60 uppercase text-[10px] text-center w-10">
+              {{ langStore.t('common.status', 'Status') }}
+            </th>
             <th class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-main-text/60 uppercase text-[10px]">{{ langStore.t('common.staff', 'Staff Member') }}</th>
             <th class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-main-text/60 uppercase text-[10px]">{{ langStore.t('attendance.user_type', 'Patron Type') }}</th>
             <th class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-main-text/60 uppercase text-[10px] text-center">{{ langStore.t('common.gender', 'Gender') }}</th>
             <th class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-main-text/60 uppercase text-[10px] text-center">{{ langStore.t('common.count', 'Visitor Count') }}</th>
             <th class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-main-text/60 uppercase text-[10px]">{{ langStore.t('common.location', 'Branch') }}</th>
             <th class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-main-text/60 uppercase text-[10px]">{{ langStore.t('common.time', 'Time (12h)') }}</th>
-            <th class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-main-text/60 uppercase text-[10px] text-right">{{ langStore.t('common.actions', 'Actions') }}</th>
+            <th class="py-2.5 px-3 sm:py-3 sm:px-4 font-bold text-main-text/60 uppercase text-[10px] text-right">
+              {{ langStore.t('common.actions', 'Actions') }}
+            </th>
           </tr>
         </thead>
         <tbody class="divide-y divide-card-border/60">
@@ -184,7 +222,7 @@ const getDateDisplay = (dateStr: string) => {
           </template>
           <tr v-else-if="logs.length === 0">
             <td colspan="8" class="px-4 py-12 text-center text-main-text/40">
-              {{ langStore.t('common.no_records', 'No attendance records logged for today yet.') }}
+              {{ langStore.isAmharic() ? 'ለዛሬ እስካሁን የተመዘገበ የመገኘት መረጃ የለም።' : langStore.t('common.no_records', 'No attendance records logged for today yet.') }}
             </td>
           </tr>
           <tr

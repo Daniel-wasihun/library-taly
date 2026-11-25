@@ -61,6 +61,37 @@ const userTypes = computed(() => [
 ]);
 
 const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
+const localizedDutyReason = computed(() => {
+  if (!props.dutyStatus) {
+    return langStore.isAmharic()
+      ? 'የመገኘት ቆጣሪን መመዝገብ የሚችሉት በተመደበልዎት የፈረቃ ሰዓት ውስጥ ብቻ ነው።'
+      : 'You can only record patron usage counter data during your active assigned shift date and time window.';
+  }
+
+  if (langStore.isAmharic()) {
+    const code = props.dutyStatus.code;
+    const rawReason = props.dutyStatus.reason || '';
+
+    if (code === 'OUTSIDE_DUTY_TURN' || rawReason.includes('logged in, but') || rawReason.includes('no active shift')) {
+      return 'ወደ ስርዓቱ ገብተዋል፤ ነገር ግን የመገኘት ቆጣሪን መመዝገብ የሚችሉት በተመደበልዎት የፈረቃ ሰዓት ውስጥ ብቻ ነው። ለዛሬ የተመደበልዎት ንቁ ፈረቃ የለም።';
+    }
+    if (code === 'OUTSIDE_SHIFT_HOURS' || rawReason.includes('outside your shift') || rawReason.includes('outside shift')) {
+      return 'የተመደበልዎት ፈረቃ ዛሬ አለ፤ ነገር ግን አሁን ያለው ሰዓት ከፈረቃዎ ሰዓት ውጭ ነው። ቆጣሪው የሚሠራው በፈረቃዎ ሰዓት ውስጥ ብቻ ነው።';
+    }
+    if (code === 'BRANCH_RESTRICTED' || rawReason.includes('Branch restricted')) {
+      return 'የተመደቡበት የቤተ-መጻሕፍት ቅርንጫፍ አይደለም። ቆጣሪ መመዝገብ የሚችሉት በተመደቡበት ቅርንጫፍ ብቻ ነው።';
+    }
+    if (code === 'OFFLINE_DUTY_ACTIVE') {
+      return 'ከመስመር ውጭ ሁነታ፡ የቆጣሪ ምዝገባ ነቅቷል። መረጃው ኢንተርኔት ሲገናኝ ይረጋገጣል።';
+    }
+    if (!authStore.isAuthenticated) {
+      return 'ወደ ስርዓቱ አልገቡም። እባክዎ መጀመሪያ ይግቡ።';
+    }
+  }
+
+  return props.dutyStatus.reason || langStore.t('attendance.counter_locked_desc', 'You can only record patron usage counter data during your active assigned shift date and time window.');
+});
 </script>
 
 <template>
@@ -90,10 +121,10 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
           <span>{{ langStore.t('attendance.counter_locked_title', 'Usage Counter Inactive (Outside Assigned Shift)') }}</span>
         </div>
         <p class="text-[11px] leading-relaxed opacity-90">
-          {{ props.dutyStatus?.reason || langStore.t('attendance.counter_locked_desc', 'You can only record patron usage counter data during your active assigned shift date and time window.') }}
+          {{ localizedDutyReason }}
         </p>
         <div v-if="props.dutyStatus?.next_turn" class="mt-1.5 text-[10px] font-mono font-medium text-rose-700 dark:text-rose-300">
-          {{ langStore.t('attendance.next_turn', 'Next turn') }}: {{ props.dutyStatus.next_turn }}
+          {{ langStore.isAmharic() ? 'ቀጣይ ተረኝነት፡ ' : 'Next turn: ' }}{{ props.dutyStatus.next_turn }}
         </div>
       </div>
 
@@ -162,7 +193,7 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
           <!-- Quick Batch Buttons (Male) -->
           <div class="w-full">
-            <div class="text-[9px] sm:text-[10px] font-bold text-brand-blue/70 text-center uppercase tracking-wider mb-1.5">
+            <div class="text-[9px] sm:text-[10px] font-bold text-brand-blue/80 dark:text-blue-200 text-center uppercase tracking-wider mb-1.5">
               {{ langStore.t('common.batch', 'Batch') }} (+2 .. +15)
             </div>
             <div class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-4 gap-1 sm:gap-1.5 w-full">
@@ -172,7 +203,7 @@ const batchOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
                 type="button"
                 @click="emit('log', 'male', n)"
                 :disabled="!canLog"
-                class="h-7 sm:h-8 px-1 rounded-sm border font-bold text-[10px] sm:text-xs font-mono flex items-center justify-center transition-all duration-150 active:scale-90 disabled:opacity-25 disabled:pointer-events-none cursor-pointer bg-white/80 dark:bg-slate-900/60 text-brand-blue border-brand-blue/20 hover:bg-brand-blue hover:text-white dark:hover:bg-brand-blue dark:hover:text-white shadow-2xs"
+                class="h-7 sm:h-8 px-1 rounded-sm border font-extrabold text-[10px] sm:text-xs font-mono flex items-center justify-center transition-all duration-150 active:scale-90 disabled:opacity-25 disabled:pointer-events-none cursor-pointer bg-white/90 dark:bg-slate-900/90 text-brand-blue dark:text-white border-brand-blue/30 dark:border-blue-500/50 hover:bg-brand-blue hover:text-white dark:hover:bg-brand-blue dark:hover:text-white shadow-2xs"
               >
                 +{{ n }}
               </button>

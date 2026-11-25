@@ -11,19 +11,17 @@
       <router-link
         :to="authStore.canViewDashboard ? '/dashboard' : (authStore.canViewAttendance ? '/attendance' : (authStore.canViewLibraries ? '/libraries' : '/my-turns'))"
         class="flex items-center gap-2.5 min-w-0 cursor-pointer group"
-        :title="langStore.t('app.name', 'UniLibrary Portal')"
+        :title="langStore.isAmharic() ? 'ወልድያ ዩኒቨርሲቲ ቤተ-መጻሕፍት' : 'Woldia University Library'"
         @click="isMobile && emit('closeMobile')"
       >
-        <!-- Crest Icon -->
-        <div class="w-7 h-7 rounded-md bg-gradient-to-br from-brand-blue to-blue-700 text-white flex items-center justify-center font-bold text-xs shadow-xs border border-white/20 shrink-0 group-hover:scale-105 transition-transform">
-          📚
-        </div>
+        <!-- Clean WDU Logo -->
+        <WduLogo :size="28" class="group-hover:scale-105 transition-transform shrink-0" />
         <div v-if="!isCollapsed" class="flex flex-col min-w-0">
           <span class="font-bold text-xs tracking-tight text-main-text leading-tight truncate">
-            {{ langStore.t('app.name', 'UniLibrary Portal') }}
-          </span>
-          <span class="text-[8.5px] text-brand-blue dark:text-brand-yellow font-bold tracking-wider uppercase mt-0.5 truncate">
             {{ langStore.isAmharic() ? 'ወልድያ ዩኒቨርሲቲ' : 'Woldia University' }}
+          </span>
+          <span class="text-[9px] text-brand-blue dark:text-brand-yellow font-bold tracking-wider uppercase mt-0.5 truncate">
+            {{ langStore.isAmharic() ? 'ቤተ-መጻሕፍት ፖርታል' : 'Library Portal' }}
           </span>
         </div>
       </router-link>
@@ -306,6 +304,7 @@
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useLanguageStore } from '@/stores/languageStore';
+import WduLogo from '@/components/WduLogo.vue';
 import {
   LayoutDashboard,
   Clock,

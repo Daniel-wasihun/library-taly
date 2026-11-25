@@ -3,12 +3,15 @@
     <!-- Top Bar with Language and Theme Switcher -->
     <header class="px-6 py-4 flex items-center justify-between z-20">
       <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-blue to-blue-700 text-white flex items-center justify-center font-bold text-sm shadow-xs border border-white/20">
-          📚
+        <WduLogo :size="36" />
+        <div class="flex flex-col">
+          <span class="font-bold text-sm tracking-tight text-main-text leading-tight">
+            {{ langStore.isAmharic() ? 'ወልድያ ዩኒቨርሲቲ' : 'Woldia University' }}
+          </span>
+          <span class="text-[9.5px] text-brand-blue dark:text-brand-yellow font-bold uppercase tracking-wider">
+            {{ langStore.isAmharic() ? 'ቤተ-መጻሕፍት ፖርታል' : 'Library Portal' }}
+          </span>
         </div>
-        <span class="font-bold text-sm tracking-tight text-main-text">
-          {{ langStore.t('app.name', 'UniLibrary Portal') }}
-        </span>
       </div>
 
       <div class="flex items-center gap-2">
@@ -20,16 +23,16 @@
     <!-- Main Login Card Area -->
     <main class="flex-1 flex items-center justify-center p-4">
       <div class="w-full max-w-md bg-card-bg border border-card-border rounded-sm sm:rounded shadow-xl p-6 sm:p-8 space-y-6">
-        <!-- Title -->
-        <div class="text-center space-y-1">
-          <div class="w-12 h-12 rounded-xs sm:rounded-sm bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center mx-auto mb-3 shadow-2xs">
-            <BookOpen class="w-6 h-6 stroke-[2.2]" />
+        <!-- Title & WDU Emblem -->
+        <div class="text-center space-y-2">
+          <div class="flex justify-center mb-1">
+            <WduLogo :size="64" />
           </div>
-          <h2 class="text-xl font-bold text-main-text tracking-tight">
-            {{ langStore.t('app.welcome', 'Welcome to UniLibrary Portal') }}
+          <h2 class="text-xl font-extrabold text-main-text tracking-tight">
+            {{ langStore.isAmharic() ? 'ወልድያ ዩኒቨርሲቲ ቤተ-መጻሕፍት' : 'Woldia University Library' }}
           </h2>
-          <p class="text-xs text-main-text/50">
-            {{ langStore.t('app.subtitle', 'University Library Management System') }}
+          <p class="text-xs text-brand-blue dark:text-brand-yellow font-semibold tracking-wide">
+            {{ langStore.isAmharic() ? 'የመገኘትና የፈረቃ አስተዳደር ሥርዓት' : 'Library Attendance & Shift Duty System' }}
           </p>
         </div>
 
@@ -151,6 +154,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
+import WduLogo from '@/components/WduLogo.vue';
 import Button from '@/components/ui/Button.vue';
 import { BookOpen, User, Lock, Eye, EyeOff } from 'lucide-vue-next';
 

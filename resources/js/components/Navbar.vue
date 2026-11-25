@@ -29,7 +29,7 @@
       </h1>
       <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xs text-[10px] font-semibold bg-brand-blue/10 text-brand-blue dark:bg-brand-yellow/15 dark:text-brand-yellow border border-brand-blue/20 dark:border-brand-yellow/30">
         <span class="w-1.5 h-1.5 rounded-full bg-brand-blue dark:bg-brand-yellow animate-pulse"></span>
-        UniLibrary Portal
+        {{ langStore.isAmharic() ? 'ወልድያ ዩኒቨርሲቲ ቤተ-መጻሕፍት' : 'Woldia University Library' }}
       </span>
     </div>
 

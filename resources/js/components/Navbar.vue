@@ -38,6 +38,18 @@
       <!-- Standardized Synchronized Ethiopian & Gregorian Date/Time Clock -->
       <UnifiedDateTimeClock />
 
+      <!-- Install App Button (Visible only when in browser, not standalone) -->
+      <button
+        v-if="!isStandalone"
+        type="button"
+        @click="triggerPwaInstall"
+        class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-sm text-[11px] font-bold bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue dark:bg-brand-blue/20 dark:hover:bg-brand-blue/30 dark:text-blue-200 border border-brand-blue/20 transition active:scale-95 cursor-pointer"
+        :title="langStore.isAmharic() ? 'የቤተ-መጻሕፍት አፑን ይጫኑ' : 'Install PWA App'"
+      >
+        <Download class="w-3.5 h-3.5 shrink-0" />
+        <span class="hidden sm:inline">{{ langStore.isAmharic() ? 'አፑን ጫን' : 'Install App' }}</span>
+      </button>
+
       <!-- Dark/Light Mode Toggler -->
       <ThemeToggle />
 
@@ -55,7 +67,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-vue-next';
+import { Menu, PanelLeftClose, PanelLeftOpen, Download } from 'lucide-vue-next';
 import { useLanguageStore } from '@/stores/languageStore';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import ThemeToggle from './ThemeToggle.vue';
@@ -78,6 +90,21 @@ const emit = defineEmits<{
 
 const route = useRoute();
 const langStore = useLanguageStore();
+
+const isStandalone = computed(() => {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true ||
+    document.referrer.includes('android-app://')
+  );
+});
+
+const triggerPwaInstall = () => {
+  if ((window as any).__wduTriggerPwaInstall) {
+    (window as any).__wduTriggerPwaInstall();
+  }
+};
 
 const title = computed(() => {
   const path = route.path;

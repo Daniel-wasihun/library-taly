@@ -282,13 +282,12 @@ watch(
 );
 
 /**
- * 2-minute modification and deletion rule:
- * Admin / Super Admin can modify or delete at any time.
- * Attendants are strictly disabled after 2 minutes from entry_at.
+ * Strict 2-minute modification and deletion rule:
+ * Zero exceptions: Even Super Admin and Admin are strictly blocked from modifying
+ * or deleting counter values after 2 minutes (120,000 ms) from entry_at.
  */
 const canModifyEntry = (entryAt: string) => {
   if (!authStore.hasPermission('attendance.update')) return false;
-  if (authStore.isAdmin || authStore.isSuperAdmin) return true;
   if (!entryAt) return false;
   const entryMs = new Date(entryAt).getTime();
   const diffMinutes = Math.abs(currentTime.value - entryMs) / 60000;
@@ -297,7 +296,6 @@ const canModifyEntry = (entryAt: string) => {
 
 const canDeleteEntry = (entryAt: string) => {
   if (!authStore.hasPermission('attendance.delete')) return false;
-  if (authStore.isAdmin || authStore.isSuperAdmin) return true;
   if (!entryAt) return false;
   const entryMs = new Date(entryAt).getTime();
   const diffMinutes = Math.abs(currentTime.value - entryMs) / 60000;
@@ -337,18 +335,38 @@ const handleLog = async (gender: 'male' | 'female', count = 1) => {
 };
 
 const handleUpdateCount = async (log: Attendance, delta: number) => {
+  if (!canUpdateEntry(log.entry_at)) {
+    toast.error(langStore.isAmharic()
+      ? 'የ2 ደቂቃ ገደብ፡ ከምዝገባ በኋላ ከ2 ደቂቃ በላይ ያለፉ መዝገቦችን መቀየር በጥብቅ የተከለከለ ነው (የአስተዳዳሪዎችን ጨምሮ)።'
+      : 'Strict 2-minute rule: records cannot be adjusted after 2 minutes of logging, even by administrators.');
+    return;
+  }
   const newCount = log.visitor_count + delta;
   if (newCount < 1 || newCount > 100) return;
   await attendanceStore.updateLogCount(log.slug, newCount);
 };
 
 const openDeleteConfirm = (log: Attendance) => {
+  if (!canDeleteEntry(log.entry_at)) {
+    toast.error(langStore.isAmharic()
+      ? 'የ2 ደቂቃ ገደብ፡ ከምዝገባ በኋላ ከ2 ደቂቃ በላይ ያለፉ መዝገቦችን መሰረዝ በጥብቅ የተከለከለ ነው (የአስተዳዳሪዎችን ጨምሮ)።'
+      : 'Strict 2-minute rule: records cannot be deleted after 2 minutes of logging, even by administrators.');
+    return;
+  }
   logToDelete.value = log;
   showDeleteConfirm.value = true;
 };
 
 const confirmDelete = async () => {
   if (!logToDelete.value) return;
+  if (!canDeleteEntry(logToDelete.value.entry_at)) {
+    toast.error(langStore.isAmharic()
+      ? 'የ2 ደቂቃ ገደብ፡ ከምዝገባ በኋላ ከ2 ደቂቃ በላይ ያለፉ መዝገቦችን መሰረዝ በጥብቅ የተከለከለ ነው (የአስተዳዳሪዎችን ጨምሮ)።'
+      : 'Strict 2-minute rule: records cannot be deleted after 2 minutes of logging, even by administrators.');
+    showDeleteConfirm.value = false;
+    logToDelete.value = null;
+    return;
+  }
   const success = await attendanceStore.deleteLog(logToDelete.value.slug);
   if (success) {
     showDeleteConfirm.value = false;

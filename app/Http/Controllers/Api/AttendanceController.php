@@ -385,11 +385,13 @@ class AttendanceController extends Controller
             }
         }
 
-        // 2-minute rule: attendant cannot change the numbers after 2 minutes; admin or superadmin can
-        $diffMinutes = Carbon::parse($attendance->entry_at)->diffInMinutes(now());
-        if ($diffMinutes > 2 && !$user->hasAdminPrivilege()) {
+        // Strict 2-minute rule: NO ONE (including admin and superadmin) can change numbers after 2 minutes of logging
+        $diffSeconds = abs(Carbon::parse($attendance->entry_at)->diffInSeconds(now()));
+        if ($diffSeconds > 120) {
             return response()->json([
-                'message' => 'Cannot adjust count: visitor counts can only be adjusted within 2 minutes of logging by attendants.',
+                'success' => false,
+                'message' => 'Operational regulation: attendance counter entries cannot be adjusted or modified after 2 minutes of recording. This lock applies strictly to all users including administrators.',
+                'code' => 'ATTENDANCE_EDIT_WINDOW_EXPIRED',
             ], 403);
         }
 
@@ -434,11 +436,13 @@ class AttendanceController extends Controller
             }
         }
 
-        // 2-minute rule: deletion allowed only within 2 minutes of logging for attendants; admin/superadmin can delete at any time
-        $diffMinutes = Carbon::parse($attendance->entry_at)->diffInMinutes(now());
-        if ($diffMinutes > 2 && !$user->hasAdminPrivilege()) {
+        // Strict 2-minute rule: NO ONE (including admin and superadmin) can delete entries after 2 minutes of logging
+        $diffSeconds = abs(Carbon::parse($attendance->entry_at)->diffInSeconds(now()));
+        if ($diffSeconds > 120) {
             return response()->json([
-                'message' => 'Cannot delete this log: entries can only be cancelled within 2 minutes of recording by attendants.',
+                'success' => false,
+                'message' => 'Operational regulation: attendance counter entries cannot be deleted after 2 minutes of recording. This lock applies strictly to all users including administrators.',
+                'code' => 'ATTENDANCE_EDIT_WINDOW_EXPIRED',
             ], 403);
         }
 

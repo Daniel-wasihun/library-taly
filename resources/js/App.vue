@@ -1,6 +1,7 @@
 <template>
     <router-view />
     <Toast />
+    <PwaInstallPrompt />
 </template>
 
 <script setup lang="ts">
@@ -9,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import Toast from '@/components/Toast.vue';
+import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt.vue';
 
 const authStore = useAuthStore();
 const themeStore = useThemeStore();

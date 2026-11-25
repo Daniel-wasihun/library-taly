@@ -1,13 +1,14 @@
-const CACHE_NAME = 'unilib-pwa-v1';
+const CACHE_NAME = 'unilib-pwa-v2';
 const STATIC_ASSETS = [
     '/',
+    '/attendance',
     '/manifest.json',
     '/favicon.ico',
     '/icons/icon-192x192.png',
     '/icons/icon-512x512.png'
 ];
 
-// Install: Cache critical static assets
+// Install: Cache critical static assets and application shell
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -29,7 +30,7 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch: Network-first for API, Stale-while-revalidate for static scripts/styles/HTML
+// Fetch: Stale-while-revalidate for assets/pages, Network-first for API with offline fallback
 self.addEventListener('fetch', (event) => {
     const request = event.request;
     const url = new URL(request.url);
@@ -39,17 +40,33 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // API calls: Network first with graceful offline response
+    // API calls: Network first, cache-fallback, then graceful offline mock
     if (url.pathname.startsWith('/api/')) {
         event.respondWith(
-            fetch(request).catch(() => {
+            fetch(request).then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(request, responseClone);
+                    });
+                }
+                return networkResponse;
+            }).catch(async () => {
+                // Try to serve previously cached API response
+                const cached = await caches.match(request);
+                if (cached) {
+                    return cached;
+                }
+
                 return new Response(
                     JSON.stringify({
                         offline: true,
-                        message: 'Device is currently offline. Cached data or offline queue is active.',
+                        success: true,
+                        data: [],
+                        message: 'Device is offline. Offline queue active.',
                     }),
                     {
-                        status: 503,
+                        status: 200,
                         headers: { 'Content-Type': 'application/json' },
                     }
                 );
@@ -58,38 +75,35 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Navigation and static assets: Cache first with network fallback
+    // Navigation and static assets: Cache first / Stale-while-revalidate
     event.respondWith(
         caches.match(request).then((cachedResponse) => {
             if (cachedResponse) {
-                // Fetch fresh copy in background to update cache
+                // Background update
                 fetch(request).then((networkResponse) => {
                     if (networkResponse && networkResponse.status === 200) {
                         caches.open(CACHE_NAME).then((cache) => {
                             cache.put(request, networkResponse);
                         });
                     }
-                }).catch(() => {
-                    // Offline - cachedResponse already served
-                });
+                }).catch(() => {});
                 return cachedResponse;
             }
 
             return fetch(request).then((networkResponse) => {
-                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-                    return networkResponse;
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(request, responseToCache);
+                    });
                 }
-
-                const responseToCache = networkResponse.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(request, responseToCache);
-                });
-
                 return networkResponse;
             }).catch(() => {
-                // If navigation request and offline, serve root page
+                // If navigation request and completely offline, serve the cached SPA shell
                 if (request.mode === 'navigate') {
-                    return caches.match('/');
+                    return caches.match('/attendance').then((attRes) => {
+                        return attRes || caches.match('/');
+                    });
                 }
             });
         })

@@ -110,14 +110,26 @@ export const useAuthStore = defineStore(
 
         async function fetchMe(): Promise<void> {
             if (!token.value) return;
+            // Never wipe credentials if device is currently offline
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                return;
+            }
             try {
                 const response = await authApi.me();
                 user.value = response.data.user;
-            } catch {
-                token.value = null;
-                user.value = null;
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('univ-library-auth');
+            } catch (err: any) {
+                // If it's a network disconnection, timeout, or unreachable server, preserve cached auth
+                const isNetworkError = !err.response || err.code === 'ECONNABORTED' || err.message?.includes('Network');
+                if (isNetworkError) {
+                    return;
+                }
+                // Only clear credentials if backend explicitly responded with 401 Unauthorized
+                if (err.response?.status === 401) {
+                    token.value = null;
+                    user.value = null;
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('univ-library-auth');
+                }
             }
         }
 

@@ -140,7 +140,7 @@ export async function syncOfflineAttendance(force = false): Promise<{
         prunedTotal = pruned.length;
 
         if (prunedTotal > 0) {
-            toast.warning(`Pruned ${prunedTotal} offline record(s) recorded outside active shift schedules.`);
+            console.log(`[Sync] Pruned ${prunedTotal} offline record(s) recorded outside active shift schedules.`);
         }
 
         if (valid.length === 0) {
@@ -191,7 +191,8 @@ export async function syncOfflineAttendance(force = false): Promise<{
         await updatePendingCount();
 
         if (syncedTotal > 0) {
-            toast.success(`Successfully synced ${syncedTotal} attendance counter record(s) to server.`);
+            // Exactly one clean green success toast upon successful sync
+            toast.success(`Online: Synced ${syncedTotal} attendance counter record(s) successfully.`);
         }
 
     } catch (e: any) {
@@ -211,17 +212,30 @@ export function initOfflineSyncService(): void {
     networkListenersInitialized = true;
 
     // Listen for online / offline browser events
-    window.addEventListener('online', () => {
+    window.addEventListener('online', async () => {
+        const wasOffline = !isOnline.value;
         isOnline.value = true;
-        const toast = useToastStore();
-        toast.info('Network connection restored. Syncing offline attendance...');
-        syncOfflineAttendance();
+
+        if (wasOffline) {
+            const toast = useToastStore();
+            const pending = await updatePendingCount();
+            if (pending > 0) {
+                // syncOfflineAttendance() will fire the single clean green toast upon completion
+                await syncOfflineAttendance();
+            } else {
+                // Single green toast
+                toast.success('Online: Network connection restored.');
+            }
+        }
     });
 
     window.addEventListener('offline', () => {
-        isOnline.value = false;
-        const toast = useToastStore();
-        toast.warning('Offline mode activated. Attendance counter logs will be stored locally.');
+        if (isOnline.value) {
+            isOnline.value = false;
+            // Exactly one clean yellow warning toast when switching to offline mode
+            const toast = useToastStore();
+            toast.warning('Offline Mode: Attendance counter active. Data saved locally.');
+        }
     });
 
     // Check initial pending records

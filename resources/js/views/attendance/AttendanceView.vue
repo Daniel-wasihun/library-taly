@@ -61,7 +61,7 @@ const checkDutyStatus = async () => {
     return;
   }
 
-  // If currently offline, read duty status from IndexedDB cache
+  // If currently offline, read duty status from IndexedDB cache or allow offline counting
   if (!isOnline.value || (typeof navigator !== 'undefined' && !navigator.onLine)) {
     try {
       const cached = await offlineDb.getCachedDuty(selectedLibrary.value);
@@ -72,6 +72,14 @@ const checkDutyStatus = async () => {
     } catch {
       // Fallback
     }
+
+    // Default offline duty status so attendants are not locked out when starting offline
+    dutyStatus.value = {
+      allowed: true,
+      reason: 'Offline Mode: Counter active. Shift validation will occur during sync.',
+      code: 'OFFLINE_DUTY_ACTIVE',
+    };
+    return;
   }
 
   try {
@@ -101,6 +109,17 @@ const checkDutyStatus = async () => {
       }
     } catch {
       // ignore
+    }
+
+    // If network error occurred, allow offline counting
+    const isNetworkError = !err.response || err.code === 'ECONNABORTED' || err.message?.includes('Network');
+    if (isNetworkError) {
+      dutyStatus.value = {
+        allowed: true,
+        reason: 'Offline Mode: Counter active. Data saved locally.',
+        code: 'OFFLINE_DUTY_ACTIVE',
+      };
+      return;
     }
 
     dutyStatus.value = {
@@ -261,32 +280,31 @@ const canDeleteEntry = (entryAt: string) => {
 const canUpdateEntry = (entryAt: string) => canModifyEntry(entryAt);
 
 const handleLog = async (gender: 'male' | 'female', count = 1) => {
-  if (!authStore.hasPermission('attendance.record')) {
+  const isOffline = !isOnline.value || (typeof navigator !== 'undefined' && !navigator.onLine);
+
+  if (!isOffline && !authStore.hasPermission('attendance.record')) {
     toast.error('Permission required: Only authorized staff with attendance.record permission can record attendance.');
     return;
   }
 
   if (!selectedLibrary.value) {
-    showNoLibraryModal.value = true;
-    return;
+    selectedLibrary.value = libraryStore.libraries[0]?.id ? Number(libraryStore.libraries[0].id) : 1;
   }
 
-  // Pre-flight check: ensure active shift duty
-  if (!authStore.isAdmin && !authStore.isSuperAdmin && (!dutyStatus.value || !dutyStatus.value.allowed)) {
+  // Pre-flight check: ensure active shift duty when online
+  if (!isOffline && !authStore.isAdmin && !authStore.isSuperAdmin && (!dutyStatus.value || !dutyStatus.value.allowed)) {
     toast.error(dutyStatus.value?.reason || 'Usage counter is locked: you can only record during your active shift time.');
     return;
   }
 
   try {
-    const res = await attendanceStore.logEntry(
+    await attendanceStore.logEntry(
       selectedLibrary.value,
       selectedUserType.value,
       gender,
       count
     );
-    if (res?.success) {
-      toast.success(`Logged ${count} ${langStore.localizeGender(gender)} ${langStore.localizeType(selectedUserType.value)}`);
-    }
+    // Logged silently without popup toast interruption
   } catch {
     // handled in store
   }
@@ -391,8 +409,8 @@ onMounted(async () => {
   const assignedId = authStore.user?.library_id;
   if (!authStore.user?.can_manage_all_libraries && assignedId) {
     selectedLibrary.value = Number(assignedId);
-  } else if (libraryStore.libraries.length > 0 && !selectedLibrary.value) {
-    selectedLibrary.value = Number(libraryStore.libraries[0].id);
+  } else if (!selectedLibrary.value) {
+    selectedLibrary.value = libraryStore.libraries[0]?.id ? Number(libraryStore.libraries[0].id) : 1;
   }
 
   attendanceStore.filters.library_id = selectedLibrary.value || '';

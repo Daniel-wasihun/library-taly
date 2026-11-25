@@ -97,7 +97,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
                 isLoaded.value = true;
             }
         } catch {
-            toast.error('Failed to fetch attendance records.');
+            if (typeof navigator !== 'undefined' && navigator.onLine) {
+                toast.error('Failed to fetch attendance records.');
+            }
         } finally {
             loading.value = false;
         }
@@ -110,15 +112,15 @@ export const useAttendanceStore = defineStore('attendance', () => {
         const recordedAt = now.toISOString();
 
         // ── OFFLINE-FIRST LOGIC ──────────────────────────────────────────────
-        // If device is offline, record to IndexedDB immediately without failing
+        // If device is offline, record to IndexedDB immediately and silently
         if (!isOnline.value || (typeof navigator !== 'undefined' && !navigator.onLine)) {
             try {
                 const libStore = useLibraryStore();
-                const lib = libStore.libraries.find(l => l.id === libraryId);
+                const lib = libStore.libraries.find(l => Number(l.id) === Number(libraryId));
 
                 const offlineRecord: OfflineAttendanceRecord = {
                     client_uuid: clientUuid,
-                    library_id: libraryId,
+                    library_id: Number(libraryId),
                     user_type: userType,
                     gender: gender as 'male' | 'female',
                     count: count,
@@ -137,7 +139,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
                 const mockItem: Attendance = {
                     id: -Math.floor(Math.random() * 100000),
                     slug: clientUuid,
-                    library_id: libraryId,
+                    library_id: Number(libraryId),
                     user_type: userType,
                     gender: gender,
                     visitor_count: count,
@@ -150,10 +152,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
                 logs.value.unshift(mockItem);
                 pagination.total += count;
 
-                toast.info(`Offline: Logged ${count} ${userType} (${gender}). Queued for background sync.`);
+                // Handled silently - no annoying toast on counter entry
                 return { success: true, data: mockItem, offline: true };
             } catch (err: any) {
-                toast.error('Failed to save offline log: ' + err.message);
+                console.error('Failed to save offline log:', err);
                 throw err;
             } finally {
                 logging.value = false;
@@ -185,16 +187,16 @@ export const useAttendanceStore = defineStore('attendance', () => {
             }
             return data;
         } catch (err: any) {
-            // If request failed due to network interruption or timeout, fallback to offline IndexedDB
+            // If request failed due to network interruption or timeout, fallback to offline IndexedDB silently
             const isNetworkError = !err.response || err.code === 'ECONNABORTED' || err.message?.includes('Network');
             if (isNetworkError) {
                 try {
                     const libStore = useLibraryStore();
-                    const lib = libStore.libraries.find(l => l.id === libraryId);
+                    const lib = libStore.libraries.find(l => Number(l.id) === Number(libraryId));
 
                     const offlineRecord: OfflineAttendanceRecord = {
                         client_uuid: clientUuid,
-                        library_id: libraryId,
+                        library_id: Number(libraryId),
                         user_type: userType,
                         gender: gender as 'male' | 'female',
                         count: count,
@@ -209,10 +211,10 @@ export const useAttendanceStore = defineStore('attendance', () => {
                     await offlineDb.addRecord(offlineRecord);
                     await updatePendingCount();
 
-                    toast.warning(`Network unreachable. Saved offline! Will sync automatically.`);
+                    // Handled silently
                     return { success: true, offline: true };
                 } catch (storeErr: any) {
-                    toast.error('Failed to queue offline record: ' + storeErr.message);
+                    console.error('Failed to queue offline record:', storeErr);
                 }
             }
 

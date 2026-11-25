@@ -1,11 +1,59 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { librariesApi } from '@/api';
 import { useToastStore } from './toastStore';
 import type { Library } from '@/types';
 
+export const DEFAULT_OFFLINE_LIBRARIES: Library[] = [
+    {
+        id: 1,
+        name: 'Natural Science Library',
+        code: 'NATURAL',
+        campus: 'Main Campus',
+        is_active: true,
+        description: 'Natural sciences, computing, and mathematics reference branch',
+    } as any,
+    {
+        id: 2,
+        name: 'Social Science Library',
+        code: 'SOCIAL',
+        campus: 'Main Campus',
+        is_active: true,
+        description: 'Humanities, language studies, and social sciences collection',
+    } as any,
+    {
+        id: 3,
+        name: 'Technology Campus Library',
+        code: 'TECH',
+        campus: 'Technology Campus',
+        is_active: true,
+        description: 'Engineering, architecture, and technology disciplines',
+    } as any,
+    {
+        id: 4,
+        name: 'Health Science Library',
+        code: 'HEALTH',
+        campus: 'Health Science Campus',
+        is_active: true,
+        description: 'Medicine, nursing, public health, and pharmacy library',
+    } as any,
+];
+
+function loadLocalCachedLibraries(): Library[] {
+    try {
+        const raw = localStorage.getItem('unilib_cached_libraries');
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+    } catch {
+        // ignore
+    }
+    return DEFAULT_OFFLINE_LIBRARIES;
+}
+
 export const useLibraryStore = defineStore('library', () => {
-    const libraries = ref<Library[]>([]);
+    const libraries = ref<Library[]>(loadLocalCachedLibraries());
     const selectedLibrary = ref<Library | null>(null);
     const activeBranchFilter = ref<string | number>('all');
     const loading = ref(false);
@@ -24,12 +72,29 @@ export const useLibraryStore = defineStore('library', () => {
         loading.value = true;
         try {
             const { data } = await librariesApi.list(params);
-            libraries.value = data.data || [];
+            const fetched = data.data || [];
+            if (fetched.length > 0) {
+                libraries.value = fetched;
+                try {
+                    localStorage.setItem('unilib_cached_libraries', JSON.stringify(fetched));
+                } catch {
+                    // ignore
+                }
+            } else if (libraries.value.length === 0) {
+                libraries.value = DEFAULT_OFFLINE_LIBRARIES;
+            }
             if (!hasFilters) {
                 isLoaded.value = true;
             }
         } catch {
-            toast.error('Failed to load library branches.');
+            // Silently fallback to cached or default libraries when offline
+            if (libraries.value.length === 0) {
+                libraries.value = loadLocalCachedLibraries();
+            }
+            // Do NOT throw annoying error toast when offline or initial load
+            if (typeof navigator !== 'undefined' && navigator.onLine) {
+                toast.error('Failed to refresh library branches from server.');
+            }
         } finally {
             loading.value = false;
         }

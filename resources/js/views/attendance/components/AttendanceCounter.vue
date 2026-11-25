@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { Users2, GraduationCap, School, Briefcase, Sparkles, Lock } from 'lucide-vue-next';
 import { useLanguageStore } from '@/stores/languageStore';
 import { useAuthStore } from '@/stores/authStore';
+import { isOnline } from '@/services/syncService';
 
 const props = defineProps<{
   selectedLibrary: number | null;
@@ -26,11 +27,13 @@ const langStore = useLanguageStore();
 const authStore = useAuthStore();
 
 const canRecord = computed(() => {
+  if (!isOnline.value) return true; // Offline mode: allow attendants to capture counts locally
   return authStore.isSuperAdmin || authStore.isAdmin || authStore.hasPermission('attendance.record');
 });
 
 const isDutyAllowed = computed(() => {
   if (authStore.isSuperAdmin || authStore.isAdmin) return true;
+  if (!isOnline.value) return true; // Offline mode: allow counting, validated against shift upon sync
   if (!props.dutyStatus) return false;
   return Boolean(props.dutyStatus.allowed);
 });

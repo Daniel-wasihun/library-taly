@@ -8,6 +8,7 @@ import { useLibraryStore } from './libraryStore';
 import type { Attendance, AttendanceStats } from '@/types';
 import { offlineDb, type OfflineAttendanceRecord } from '@/services/offlineStorage';
 import { isOnline, updatePendingCount, syncOfflineAttendance } from '@/services/syncService';
+import { saveFileWithPickerOrFallback } from '@/utils/fileDownloader';
 
 export const useAttendanceStore = defineStore('attendance', () => {
     const logs = ref<Attendance[]>([]);
@@ -21,6 +22,34 @@ export const useAttendanceStore = defineStore('attendance', () => {
     const statsLoaded = ref(false);
     const isDownloadingReport = ref(false);
     const downloadingReportFormat = ref<string | null>(null);
+
+    // Universal Document Preview Modal State
+    const isPdfPreviewOpen = ref(false);
+    const pdfPreviewUrl = ref<string | null>(null);
+    const pdfPreviewBlob = ref<Blob | null>(null);
+    const pdfPreviewFilename = ref<string>('');
+
+    const openPdfPreview = (blob: Blob, filename: string) => {
+        if (pdfPreviewUrl.value) {
+            try { window.URL.revokeObjectURL(pdfPreviewUrl.value); } catch {}
+        }
+        pdfPreviewBlob.value = blob;
+        pdfPreviewUrl.value = window.URL.createObjectURL(blob);
+        pdfPreviewFilename.value = filename;
+        isPdfPreviewOpen.value = true;
+    };
+
+    const closePdfPreview = () => {
+        isPdfPreviewOpen.value = false;
+        if (pdfPreviewUrl.value) {
+            const oldUrl = pdfPreviewUrl.value;
+            setTimeout(() => {
+                try { window.URL.revokeObjectURL(oldUrl); } catch {}
+            }, 60000);
+            pdfPreviewUrl.value = null;
+        }
+        pdfPreviewBlob.value = null;
+    };
 
     const loadSavedHistory = () => {
         try {
@@ -327,15 +356,21 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
         try {
             const response = await attendanceApi.downloadReport(params);
-            const blob = new Blob([response.data], { type: mimeMap[format] || 'application/octet-stream' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            const mimeType = mimeMap[format] || 'application/octet-stream';
+            const blob = new Blob([response.data], { type: mimeType });
+
+            // If PDF format, open in the window default PDF preview modal with save/print/share
+            if (format === 'pdf') {
+                openPdfPreview(blob, filename);
+            } else {
+                // For CSV, XLSX, DOC: prompt directory save picker or download to selected folder
+                await saveFileWithPickerOrFallback({
+                    blob,
+                    filename,
+                    mimeType,
+                    title: filename,
+                });
+            }
 
             const estSize = Math.max(12, Math.round(blob.size / 1024)) + ' KB';
             
@@ -369,11 +404,19 @@ export const useAttendanceStore = defineStore('attendance', () => {
             });
             saveExportHistory();
 
-            toast.success(
-                langStore.isAmharic()
-                    ? `ይፋዊ የ${format.toUpperCase()} ሪፖርት (${scopeLabel}) በተሳካ ሁኔታ ወርዷል።`
-                    : `Official ${format.toUpperCase()} report (${scopeLabel}) downloaded successfully.`
-            );
+            if (format === 'pdf') {
+                toast.success(
+                    langStore.isAmharic()
+                        ? `ይፋዊ የ${format.toUpperCase()} ሪፖርት ቅድመ-እይታ ተከፍቷል፤ ወደ ፈለጉት ማህደር ማስቀመጥ ወይም ማተም ይችላሉ።`
+                        : `Official ${format.toUpperCase()} report preview ready. You can save to any folder or print.`
+                );
+            } else {
+                toast.success(
+                    langStore.isAmharic()
+                        ? `ይፋዊ የ${format.toUpperCase()} ሪፖርት በተሳካ ሁኔታ ተቀምጧል።`
+                        : `Official ${format.toUpperCase()} report (${scopeLabel}) saved successfully.`
+                );
+            }
         } catch {
             toast.error(
                 langStore.isAmharic()
@@ -453,5 +496,11 @@ export const useAttendanceStore = defineStore('attendance', () => {
         updateLogCount,
         deleteLog,
         invalidateCache,
+        isPdfPreviewOpen,
+        pdfPreviewUrl,
+        pdfPreviewBlob,
+        pdfPreviewFilename,
+        openPdfPreview,
+        closePdfPreview,
     };
 });

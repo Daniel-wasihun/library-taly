@@ -33,8 +33,11 @@
       </span>
     </div>
 
-    <!-- Right: Theme Toggler + Language Switcher + User Profile Menu with Sign Out -->
-    <div class="flex items-center gap-1.5 sm:gap-3">
+    <!-- Center / Right: Live Clock + Theme Toggler + Language Switcher + User Profile Menu -->
+    <div class="flex items-center gap-1.5 sm:gap-2.5">
+      <!-- Standardized Synchronized Ethiopian & Gregorian Date/Time Clock -->
+      <UnifiedDateTimeClock />
+
       <!-- Dark/Light Mode Toggler -->
       <ThemeToggle />
 
@@ -57,6 +60,7 @@ import { useLanguageStore } from '@/stores/languageStore';
 import LanguageSwitcher from './LanguageSwitcher.vue';
 import ThemeToggle from './ThemeToggle.vue';
 import HeaderProfileDropdown from './HeaderProfileDropdown.vue';
+import UnifiedDateTimeClock from './UnifiedDateTimeClock.vue';
 
 withDefaults(
   defineProps<{

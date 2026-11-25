@@ -1540,6 +1540,7 @@ import { useLanguageStore } from '@/stores/languageStore';
 import { useToastStore } from '@/stores/toastStore';
 import { dashboardApi, shiftInactivityApi } from '@/api';
 import { formatDT } from '@/utils/ethiopianDate';
+import { saveFileWithPickerOrFallback } from '@/utils/fileDownloader';
 import Modal from '@/components/ui/Modal.vue';
 import {
   LayoutDashboard,
@@ -1732,24 +1733,48 @@ const handleExportCsv = async () => {
   try {
     exportingCsv.value = true;
     toast.info(langStore.isAmharic() ? 'የCSV ፋይል በመዘጋጀት ላይ ነው...' : 'Generating CSV export, please wait...');
-    const response = await shiftInactivityApi.exportBlob({
-      date: auditFilterDate.value,
-      shift_id: selectedShiftFilter.value !== 'all' ? selectedShiftFilter.value : undefined,
+
+    const filename = `shift_inactivity_audit_${auditFilterDate.value || 'today'}.csv`;
+    const mimeType = 'text/csv; charset=UTF-8';
+
+    const token = authStore.token || localStorage.getItem('auth_token') || '';
+    const queryParams = new URLSearchParams({
       format: 'csv',
+      date: auditFilterDate.value || '',
       lang: langStore.isAmharic() ? 'am' : 'en',
+      token,
+      download: '1',
+    });
+    if (selectedShiftFilter.value && selectedShiftFilter.value !== 'all') {
+      queryParams.append('shift_id', selectedShiftFilter.value);
+    }
+    const directUrl = `/api/shifts/inactivity/export?${queryParams.toString()}`;
+
+    const saveResult = await saveFileWithPickerOrFallback({
+      filename,
+      mimeType,
+      title: filename,
+      directUrl,
+      fetchBlob: async () => {
+        const response = await shiftInactivityApi.exportBlob({
+          date: auditFilterDate.value,
+          shift_id: selectedShiftFilter.value !== 'all' ? selectedShiftFilter.value : undefined,
+          format: 'csv',
+          lang: langStore.isAmharic() ? 'am' : 'en',
+        });
+        return new Blob([response.data], { type: mimeType });
+      },
     });
 
-    const blob = new Blob([response.data], { type: 'text/csv; charset=UTF-8' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `shift_inactivity_audit_${auditFilterDate.value || 'today'}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    if (saveResult.method === 'cancelled') {
+      return;
+    }
 
-    toast.success(langStore.isAmharic() ? 'የCSV ሪፖርት በተሳካ ሁኔታ ወርዷል።' : 'Shift inactivity CSV report downloaded successfully.');
+    if (saveResult.success) {
+      toast.success(langStore.isAmharic() ? 'የCSV ሪፖርት በተሳካ ሁኔታ ተቀምጧል።' : 'Shift inactivity CSV report saved successfully.');
+    } else {
+      toast.error(langStore.isAmharic() ? 'የCSV ሪፖርት ማስቀመጥ አልተቻለም።' : 'Failed to save shift inactivity CSV report.');
+    }
   } catch (err) {
     console.error('Failed to export CSV:', err);
     toast.error(langStore.isAmharic() ? 'የCSV ሪፖርት ማውረድ አልተቻለም።' : 'Failed to export shift inactivity CSV report.');

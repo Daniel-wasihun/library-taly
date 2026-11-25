@@ -23,34 +23,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
     const isDownloadingReport = ref(false);
     const downloadingReportFormat = ref<string | null>(null);
 
-    // Universal Document Preview Modal State
-    const isPdfPreviewOpen = ref(false);
-    const pdfPreviewUrl = ref<string | null>(null);
-    const pdfPreviewBlob = ref<Blob | null>(null);
-    const pdfPreviewFilename = ref<string>('');
-
-    const openPdfPreview = (blob: Blob, filename: string) => {
-        if (pdfPreviewUrl.value) {
-            try { window.URL.revokeObjectURL(pdfPreviewUrl.value); } catch {}
-        }
-        pdfPreviewBlob.value = blob;
-        pdfPreviewUrl.value = window.URL.createObjectURL(blob);
-        pdfPreviewFilename.value = filename;
-        isPdfPreviewOpen.value = true;
-    };
-
-    const closePdfPreview = () => {
-        isPdfPreviewOpen.value = false;
-        if (pdfPreviewUrl.value) {
-            const oldUrl = pdfPreviewUrl.value;
-            setTimeout(() => {
-                try { window.URL.revokeObjectURL(oldUrl); } catch {}
-            }, 60000);
-            pdfPreviewUrl.value = null;
-        }
-        pdfPreviewBlob.value = null;
-    };
-
     const loadSavedHistory = () => {
         try {
             const raw = sessionStorage.getItem('wdu_attendance_exports');
@@ -355,25 +327,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
         );
 
         try {
-            const response = await attendanceApi.downloadReport(params);
-            const mimeType = mimeMap[format] || 'application/octet-stream';
-            const blob = new Blob([response.data], { type: mimeType });
-
-            // If PDF format, open in the window default PDF preview modal with save/print/share
-            if (format === 'pdf') {
-                openPdfPreview(blob, filename);
-            } else {
-                // For CSV, XLSX, DOC: prompt directory save picker or download to selected folder
-                await saveFileWithPickerOrFallback({
-                    blob,
-                    filename,
-                    mimeType,
-                    title: filename,
-                });
-            }
-
-            const estSize = Math.max(12, Math.round(blob.size / 1024)) + ' KB';
-            
             const scopeLabelsAm: Record<string, string> = {
                 patron_types: 'የተጠቃሚዎች ምድብ (Usage Counter)',
                 branches: 'የቅርንጫፍ ንጽጽር (Branch Comparison)',
@@ -393,28 +346,105 @@ export const useAttendanceStore = defineStore('attendance', () => {
                 ? (scopeLabelsAm[scope] || scope) 
                 : (scopeLabelsEn[scope] || scope);
 
-            exportHistory.value.unshift({
-                id: auditId,
-                name: filename.replace(`.${ext}`, ''),
-                format,
-                date: langStore.isAmharic() ? 'ዛሬ' : 'Today',
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                scope: scopeLabel,
-                size: estSize,
-            });
-            saveExportHistory();
+            const token = authStore.token || localStorage.getItem('auth_token') || '';
 
+            // 1. PDF: Native Browser & OS Viewer Preview (Never coded modal)
             if (format === 'pdf') {
+                const queryParams = new URLSearchParams({
+                    format: 'pdf',
+                    scope,
+                    lang: langStore.currentLanguage,
+                    ...(customFilters || filters),
+                    token,
+                    preview: '1',
+                    t: String(Date.now()),
+                });
+                const pdfUrl = `/api/physical/attendance/report/download?${queryParams.toString()}`;
+
+                // Direct native OS/browser window opening
+                const printWin = window.open(pdfUrl, '_blank');
+                if (!printWin || printWin.closed || typeof printWin.closed === 'undefined') {
+                    // Fallback for popup-restricted or standalone mobile PWA
+                    const anchor = document.createElement('a');
+                    anchor.href = pdfUrl;
+                    anchor.target = '_blank';
+                    anchor.rel = 'noopener noreferrer';
+                    document.body.appendChild(anchor);
+                    anchor.click();
+                    setTimeout(() => {
+                        if (anchor.parentNode) anchor.parentNode.removeChild(anchor);
+                    }, 2000);
+                }
+
+                exportHistory.value.unshift({
+                    id: auditId,
+                    name: filename.replace(`.${ext}`, ''),
+                    format,
+                    date: langStore.isAmharic() ? 'ዛሬ' : 'Today',
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    scope: scopeLabel,
+                    size: 'PDF Document',
+                });
+                saveExportHistory();
+
                 toast.success(
                     langStore.isAmharic()
-                        ? `ይፋዊ የ${format.toUpperCase()} ሪፖርት ቅድመ-እይታ ተከፍቷል፤ ወደ ፈለጉት ማህደር ማስቀመጥ ወይም ማተም ይችላሉ።`
-                        : `Official ${format.toUpperCase()} report preview ready. You can save to any folder or print.`
+                        ? 'ይፋዊ የPDF ሪፖርት በስርዓቱ ቤተኛ ማሳያ (Native Preview) ተከፍቷል፤ በቀጥታ ማተም ወይም ማስቀመጥ ይችላሉ።'
+                        : 'Official PDF report opened in native OS & browser viewer. You can print or save directly.'
+                );
+                return;
+            }
+
+            // 2. CSV, Excel (.xlsx), Word (.doc): Always prompt save location
+            const queryParams = new URLSearchParams({
+                format,
+                scope,
+                lang: langStore.currentLanguage,
+                ...(customFilters || filters),
+                token,
+                download: '1',
+                t: String(Date.now()),
+            });
+            const directUrl = `/api/physical/attendance/report/download?${queryParams.toString()}`;
+            const mimeType = mimeMap[format] || 'application/octet-stream';
+
+            const saveResult = await saveFileWithPickerOrFallback({
+                filename,
+                mimeType,
+                title: filename,
+                directUrl,
+                fetchBlob: async () => {
+                    const response = await attendanceApi.downloadReport(params);
+                    return new Blob([response.data], { type: mimeType });
+                },
+            });
+
+            if (saveResult.method === 'cancelled') {
+                return;
+            }
+
+            if (saveResult.success) {
+                exportHistory.value.unshift({
+                    id: auditId,
+                    name: filename.replace(`.${ext}`, ''),
+                    format,
+                    date: langStore.isAmharic() ? 'ዛሬ' : 'Today',
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    scope: scopeLabel,
+                    size: 'Ready',
+                });
+                saveExportHistory();
+
+                toast.success(
+                    langStore.isAmharic()
+                        ? `ይፋዊ የ${format.toUpperCase()} ሪፖርት (${scopeLabel}) በተሳካ ሁኔታ ተቀምጧል።`
+                        : `Official ${format.toUpperCase()} report (${scopeLabel}) saved successfully.`
                 );
             } else {
-                toast.success(
+                toast.error(
                     langStore.isAmharic()
-                        ? `ይፋዊ የ${format.toUpperCase()} ሪፖርት በተሳካ ሁኔታ ተቀምጧል።`
-                        : `Official ${format.toUpperCase()} report (${scopeLabel}) saved successfully.`
+                        ? 'ሪፖርቱን ማስቀመጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።'
+                        : 'Could not save report file. Please retry.'
                 );
             }
         } catch {
@@ -496,11 +526,5 @@ export const useAttendanceStore = defineStore('attendance', () => {
         updateLogCount,
         deleteLog,
         invalidateCache,
-        isPdfPreviewOpen,
-        pdfPreviewUrl,
-        pdfPreviewBlob,
-        pdfPreviewFilename,
-        openPdfPreview,
-        closePdfPreview,
     };
 });

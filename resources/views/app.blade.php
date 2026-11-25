@@ -106,7 +106,64 @@
             <div style="width: 160px; height: 4px; background: rgba(255, 255, 255, 0.12); border-radius: 9999px; overflow: hidden; position: relative;">
                 <div style="position: absolute; top: 0; bottom: 0; background: linear-gradient(90deg, #3b82f6, #60a5fa, #fbbf24); border-radius: 9999px; animation: wdu-bar 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;"></div>
             </div>
+
+            <!-- Auto-Recovery / Refresh Action if App Mount is Delayed on Mobile -->
+            <div id="wdu-splash-recovery" style="display: none; margin-top: 24px;">
+                <button type="button" onclick="window.__wduResetAndReload()" style="padding: 9px 20px; font-size: 13px; font-weight: 700; color: #ffffff; background: #2563eb; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.2s;">
+                    Reload Portal / እንደገና ጫን
+                </button>
+            </div>
         </div>
     </div>
+
+    <!-- Client-Side Splash & Cache Auto-Recovery Script -->
+    <script>
+        window.__wduResetAndReload = function() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    for (var i = 0; i < regs.length; i++) {
+                        regs[i].unregister();
+                    }
+                    if ('caches' in window) {
+                        caches.keys().then(function(keys) {
+                            Promise.all(keys.map(function(k) { return caches.delete(k); })).then(function() {
+                                window.location.reload(true);
+                            });
+                        });
+                    } else {
+                        window.location.reload(true);
+                    }
+                }).catch(function() {
+                    window.location.reload(true);
+                });
+            } else {
+                window.location.reload(true);
+            }
+        };
+
+        // Show reload button if splash is still on screen after 3.5 seconds
+        setTimeout(function() {
+            var splash = document.getElementById('wdu-splash');
+            var recovery = document.getElementById('wdu-splash-recovery');
+            if (splash && recovery && document.getElementById('app') && document.getElementById('app').contains(splash)) {
+                recovery.style.display = 'block';
+            }
+        }, 3500);
+
+        // Auto-purge stale SW cache if module script loading error occurs
+        window.addEventListener('error', function(e) {
+            var msg = e && (e.message || '');
+            if (typeof msg === 'string' && (msg.indexOf('MIME type') !== -1 || msg.indexOf('Failed to load module') !== -1 || msg.indexOf('dynamically imported') !== -1)) {
+                console.warn('[UniLibrary] Detected stale bundle error, clearing service worker cache...');
+                if ('serviceWorker' in navigator && 'caches' in window) {
+                    caches.keys().then(function(keys) {
+                        Promise.all(keys.map(function(k) { return caches.delete(k); })).then(function() {
+                            window.location.reload(true);
+                        });
+                    });
+                }
+            }
+        });
+    </script>
 </body>
 </html>

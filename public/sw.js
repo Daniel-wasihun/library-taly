@@ -1,46 +1,48 @@
-const CACHE_NAME = 'unilib-pwa-v2';
+const CACHE_NAME = 'unilib-pwa-v4';
 const STATIC_ASSETS = [
-    '/',
-    '/attendance',
     '/manifest.json',
     '/favicon.ico',
     '/icons/icon-192x192.png',
-    '/icons/icon-512x512.png'
+    '/icons/icon-512x512.png',
+    '/icons/wdu-logo.svg'
 ];
 
-// Install: Cache critical static assets and application shell
+// Install: Cache core static assets and skip waiting immediately
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(STATIC_ASSETS).catch((err) => {
-                console.warn('[SW] Cache addAll warning:', err);
+                console.warn('[SW] Precache warning:', err);
             });
         }).then(() => self.skipWaiting())
     );
 });
 
-// Activate: Clean up older cache versions
+// Activate: Delete old cache versions and claim clients immediately
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keys) => {
             return Promise.all(
-                keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+                keys.filter((key) => key !== CACHE_NAME).map((key) => {
+                    console.log('[SW] Purging old cache:', key);
+                    return caches.delete(key);
+                })
             );
         }).then(() => self.clients.claim())
     );
 });
 
-// Fetch: Stale-while-revalidate for assets/pages, Network-first for API with offline fallback
+// Fetch handler
 self.addEventListener('fetch', (event) => {
     const request = event.request;
     const url = new URL(request.url);
 
-    // Bypass non-GET requests (e.g. POST /api/physical/attendance/sync handled by IndexedDB queue)
+    // Bypass non-GET requests
     if (request.method !== 'GET') {
         return;
     }
 
-    // API calls: Network first, cache-fallback, then graceful offline mock
+    // 1. API Calls: Network-first, cache fallback, then offline mock
     if (url.pathname.startsWith('/api/')) {
         event.respondWith(
             fetch(request).then((networkResponse) => {
@@ -52,7 +54,6 @@ self.addEventListener('fetch', (event) => {
                 }
                 return networkResponse;
             }).catch(async () => {
-                // Try to serve previously cached API response
                 const cached = await caches.match(request);
                 if (cached) {
                     return cached;
@@ -75,22 +76,13 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Navigation and static assets: Cache first / Stale-while-revalidate
-    event.respondWith(
-        caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-                // Background update
-                fetch(request).then((networkResponse) => {
-                    if (networkResponse && networkResponse.status === 200) {
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(request, networkResponse);
-                        });
-                    }
-                }).catch(() => {});
-                return cachedResponse;
-            }
+    // 2. Navigation / HTML Requests: NETWORK-FIRST to always get fresh Vite script hashes
+    const isNavigation = request.mode === 'navigate' || 
+                         (request.headers.get('accept') && request.headers.get('accept').includes('text/html'));
 
-            return fetch(request).then((networkResponse) => {
+    if (isNavigation) {
+        event.respondWith(
+            fetch(request).then((networkResponse) => {
                 if (networkResponse && networkResponse.status === 200) {
                     const responseToCache = networkResponse.clone();
                     caches.open(CACHE_NAME).then((cache) => {
@@ -98,19 +90,51 @@ self.addEventListener('fetch', (event) => {
                     });
                 }
                 return networkResponse;
-            }).catch(() => {
-                // If navigation request and completely offline, serve the cached SPA shell
-                if (request.mode === 'navigate') {
-                    return caches.match('/attendance').then((attRes) => {
-                        return attRes || caches.match('/');
+            }).catch(async () => {
+                // If network fails (completely offline), fall back to cached shell
+                const cached = await caches.match(request);
+                if (cached) {
+                    return cached;
+                }
+                const fallback = await caches.match('/attendance');
+                return fallback || caches.match('/');
+            })
+        );
+        return;
+    }
+
+    // 3. Static Assets (/build/assets/, images, icons): Cache-first with strict MIME check
+    event.respondWith(
+        caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) {
+                return cachedResponse;
+            }
+
+            return fetch(request).then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                    const contentType = networkResponse.headers.get('content-type') || '';
+                    
+                    // NEVER cache HTML responses for JS or CSS files (prevent MIME type errors)
+                    const isJsOrCss = url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
+                    if (isJsOrCss && contentType.includes('text/html')) {
+                        return networkResponse;
+                    }
+
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(request, responseToCache);
                     });
                 }
+                return networkResponse;
+            }).catch(() => {
+                // Return null if offline and not in cache
+                return null;
             });
         })
     );
 });
 
-// Background sync support (if supported by browser)
+// Background sync support
 self.addEventListener('sync', (event) => {
     if (event.tag === 'sync-attendance-queue') {
         event.waitUntil(
@@ -120,5 +144,12 @@ self.addEventListener('sync', (event) => {
                 });
             })
         );
+    }
+});
+
+// Message listener
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
     }
 });

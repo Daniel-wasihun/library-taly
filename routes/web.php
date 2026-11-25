@@ -76,6 +76,10 @@ Route::get('/login', function () {
 })->name('login');
 
 Route::get('/{any}', function () {
+    // Return 404 for missing static assets or files with extensions to prevent MIME type script errors
+    if (request()->is('build/*', 'assets/*', 'icons/*') || preg_match('/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|json|map)$/i', request()->path())) {
+        abort(404);
+    }
     return view('app');
 })->where('any', '.*');
 

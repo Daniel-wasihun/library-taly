@@ -176,4 +176,17 @@ router.beforeEach(async (to) => {
     return true;
 });
 
+// Auto-recover from stale dynamic chunk imports on mobile and slow connections
+router.onError((error, to) => {
+    const isChunkError =
+        error?.message?.includes('Failed to fetch dynamically imported module') ||
+        error?.message?.includes('MIME type') ||
+        error?.name === 'ChunkLoadError';
+    if (isChunkError) {
+        console.warn('[UniLibrary Router] Stale chunk detected, refreshing page:', error);
+        const target = to?.fullPath || window.location.href;
+        window.location.href = target;
+    }
+});
+
 export default router;

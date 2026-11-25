@@ -1,0 +1,55 @@
+{
+  "name": "UniLibrary Portal - University Library Attendance",
+  "short_name": "UniLibrary",
+  "description": "University Library Attendance & Shift Duty Tracking System with Offline Counter and Automatic Sync.",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#1d4ed8",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["education", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Usage Counter",
+      "short_name": "Counter",
+      "description": "Log patron attendance counter offline or online",
+      "url": "/attendance",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Shift Schedules",
+      "short_name": "Schedules",
+      "description": "View university shift duties and calendar",
+      "url": "/schedules",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

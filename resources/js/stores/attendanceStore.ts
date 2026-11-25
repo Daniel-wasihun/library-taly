@@ -6,6 +6,8 @@ import { useAuthStore } from './authStore';
 import { useLanguageStore } from './languageStore';
 import { useLibraryStore } from './libraryStore';
 import type { Attendance, AttendanceStats } from '@/types';
+import { offlineDb, type OfflineAttendanceRecord } from '@/services/offlineStorage';
+import { isOnline, updatePendingCount, syncOfflineAttendance } from '@/services/syncService';
 
 export const useAttendanceStore = defineStore('attendance', () => {
     const logs = ref<Attendance[]>([]);
@@ -103,6 +105,62 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
     async function logEntry(libraryId: number, userType: string, gender: string, count = 1) {
         logging.value = true;
+        const now = new Date();
+        const clientUuid = 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        const recordedAt = now.toISOString();
+
+        // ── OFFLINE-FIRST LOGIC ──────────────────────────────────────────────
+        // If device is offline, record to IndexedDB immediately without failing
+        if (!isOnline.value || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+            try {
+                const libStore = useLibraryStore();
+                const lib = libStore.libraries.find(l => l.id === libraryId);
+
+                const offlineRecord: OfflineAttendanceRecord = {
+                    client_uuid: clientUuid,
+                    library_id: libraryId,
+                    user_type: userType,
+                    gender: gender as 'male' | 'female',
+                    count: count,
+                    recorded_at: recordedAt,
+                    sync_status: 'pending',
+                    library_name: lib?.name || 'Library #' + libraryId,
+                    staff_name: authStore.user?.name || 'Attendant',
+                    staff_id: authStore.user?.id,
+                    created_timestamp: now.getTime(),
+                };
+
+                await offlineDb.addRecord(offlineRecord);
+                await updatePendingCount();
+
+                // Optimistically add to UI list for immediate feedback
+                const mockItem: Attendance = {
+                    id: -Math.floor(Math.random() * 100000),
+                    slug: clientUuid,
+                    library_id: libraryId,
+                    user_type: userType,
+                    gender: gender,
+                    visitor_count: count,
+                    staff_id: authStore.user?.id || 1,
+                    entry_at: recordedAt,
+                    library: lib ? { id: lib.id, name: lib.name, code: lib.code } : undefined,
+                    staff: authStore.user ? { id: authStore.user.id, name: authStore.user.name, email: authStore.user.email } : undefined,
+                };
+
+                logs.value.unshift(mockItem);
+                pagination.total += count;
+
+                toast.info(`Offline: Logged ${count} ${userType} (${gender}). Queued for background sync.`);
+                return { success: true, data: mockItem, offline: true };
+            } catch (err: any) {
+                toast.error('Failed to save offline log: ' + err.message);
+                throw err;
+            } finally {
+                logging.value = false;
+            }
+        }
+
+        // ── ONLINE WITH OFFLINE FALLBACK ─────────────────────────────────────
         try {
             const { data } = await attendanceApi.log({
                 library_id: libraryId,
@@ -127,6 +185,37 @@ export const useAttendanceStore = defineStore('attendance', () => {
             }
             return data;
         } catch (err: any) {
+            // If request failed due to network interruption or timeout, fallback to offline IndexedDB
+            const isNetworkError = !err.response || err.code === 'ECONNABORTED' || err.message?.includes('Network');
+            if (isNetworkError) {
+                try {
+                    const libStore = useLibraryStore();
+                    const lib = libStore.libraries.find(l => l.id === libraryId);
+
+                    const offlineRecord: OfflineAttendanceRecord = {
+                        client_uuid: clientUuid,
+                        library_id: libraryId,
+                        user_type: userType,
+                        gender: gender as 'male' | 'female',
+                        count: count,
+                        recorded_at: recordedAt,
+                        sync_status: 'pending',
+                        library_name: lib?.name || 'Library #' + libraryId,
+                        staff_name: authStore.user?.name || 'Attendant',
+                        staff_id: authStore.user?.id,
+                        created_timestamp: now.getTime(),
+                    };
+
+                    await offlineDb.addRecord(offlineRecord);
+                    await updatePendingCount();
+
+                    toast.warning(`Network unreachable. Saved offline! Will sync automatically.`);
+                    return { success: true, offline: true };
+                } catch (storeErr: any) {
+                    toast.error('Failed to queue offline record: ' + storeErr.message);
+                }
+            }
+
             const msg = err.response?.data?.message || 'Failed to log attendance.';
             toast.error(msg);
             throw err;

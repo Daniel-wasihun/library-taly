@@ -206,6 +206,17 @@ export const attendanceApi = {
         count?: number;
     }) => api.post('/physical/attendance/log', data),
 
+    batchSync: (data: {
+        records: Array<{
+            client_uuid: string;
+            library_id: number;
+            user_type: string;
+            gender: string;
+            count: number;
+            recorded_at: string;
+        }>;
+    }) => api.post('/physical/attendance/sync', data),
+
     stats: (params?: {
         library_id?: string | number;
         date_from?: string;

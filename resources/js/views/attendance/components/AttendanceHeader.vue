@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Activity, MapPin } from 'lucide-vue-next';
+import { Activity, MapPin, Wifi, WifiOff, RefreshCw } from 'lucide-vue-next';
 import { useLanguageStore } from '@/stores/languageStore';
 import { useAuthStore } from '@/stores/authStore';
 import AppDropdown from '@/components/ui/AppDropdown.vue';
+import { isOnline, isSyncing, pendingSyncCount, syncOfflineAttendance } from '@/services/syncService';
 
 interface LibraryOption {
   value: number | null;
@@ -39,6 +40,11 @@ const internalSelectedLibrary = computed({
   get: () => props.selectedLibrary,
   set: (val) => emit('update:selectedLibrary', val !== null && val !== '' && val !== undefined ? Number(val) : null),
 });
+
+const handleManualSync = async () => {
+  if (isSyncing.value || !isOnline.value) return;
+  await syncOfflineAttendance(true);
+};
 </script>
 
 <template>
@@ -50,8 +56,16 @@ const internalSelectedLibrary = computed({
         <Activity class="w-5 h-5" />
       </div>
       <div>
-        <h2 class="text-sm sm:text-base font-bold text-main-text leading-tight tracking-tight">
-          {{ langStore.t('attendance.title', 'Physical Library Attendance & Usage Counter') }}
+        <h2 class="text-sm sm:text-base font-bold text-main-text leading-tight tracking-tight flex items-center gap-2">
+          <span>{{ langStore.t('attendance.title', 'Physical Library Attendance & Usage Counter') }}</span>
+          <!-- Offline / Online Status Pill -->
+          <span
+            class="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border"
+            :class="isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 animate-pulse'"
+          >
+            <component :is="isOnline ? Wifi : WifiOff" class="w-2.5 h-2.5" />
+            {{ isOnline ? 'Online' : 'Offline Mode' }}
+          </span>
         </h2>
         <p class="text-[11px] sm:text-xs text-main-text/50 mt-0.5">
           {{ langStore.t('attendance.subtitle', 'Live patron tracking, gender distribution, and automated periodic reporting') }}
@@ -59,11 +73,25 @@ const internalSelectedLibrary = computed({
       </div>
     </div>
 
-    <!-- Center / Right Controls (Branch Dropdown + Tab Switcher) -->
+    <!-- Center / Right Controls (Branch Dropdown + Tab Switcher + Offline Sync Badge) -->
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
       
+      <!-- Pending Offline Sync Badge & Trigger -->
+      <div v-if="pendingSyncCount > 0" class="flex items-center">
+        <button
+          type="button"
+          @click="handleManualSync"
+          :disabled="isSyncing || !isOnline"
+          class="w-full sm:w-auto flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xs sm:rounded-sm text-[11px] font-bold border transition cursor-pointer select-none bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 disabled:opacity-50"
+          :title="isOnline ? 'Click to sync pending records' : 'Records saved locally, will sync when connected'"
+        >
+          <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': isSyncing }" />
+          <span>{{ pendingSyncCount }} Offline Pending</span>
+        </button>
+      </div>
+
       <!-- Library Branch Dropdown using attractive reusable AppDropdown -->
-      <div class="w-full sm:min-w-[260px] flex-1 md:flex-initial">
+      <div class="w-full sm:min-w-[240px] flex-1 md:flex-initial">
         <AppDropdown
           v-model="internalSelectedLibrary"
           :options="libraryOptions"

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AcademicYearController;
 use App\Http\Controllers\Api\AttendanceController;
+use App\Http\Controllers\Api\AttendanceSyncController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DutyScheduleController;
@@ -100,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('physical/attendance')->group(function () {
         Route::get('/', [AttendanceController::class, 'index']);
         Route::post('/log', [AttendanceController::class, 'logEntry']);
+        Route::post('/sync', [AttendanceSyncController::class, 'sync']);
         Route::get('/stats', [AttendanceController::class, 'stats']);
         Route::get('/export', [AttendanceController::class, 'export']);
         Route::get('/report/download', [AttendanceController::class, 'downloadReport']);

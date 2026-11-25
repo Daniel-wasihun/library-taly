@@ -17,6 +17,8 @@ import AttendanceHeader from './components/AttendanceHeader.vue';
 import AttendanceCounter from './components/AttendanceCounter.vue';
 import AttendanceMonitor from './components/AttendanceMonitor.vue';
 import AttendanceAnalytics from './components/AttendanceAnalytics.vue';
+import { offlineDb } from '@/services/offlineStorage';
+import { isOnline, initOfflineSyncService } from '@/services/syncService';
 
 const attendanceStore = useAttendanceStore();
 const libraryStore = useLibraryStore();
@@ -59,6 +61,19 @@ const checkDutyStatus = async () => {
     return;
   }
 
+  // If currently offline, read duty status from IndexedDB cache
+  if (!isOnline.value || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    try {
+      const cached = await offlineDb.getCachedDuty(selectedLibrary.value);
+      if (cached) {
+        dutyStatus.value = cached;
+        return;
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
   try {
     checkingDuty.value = true;
     const res = await api.get('/schedules/check-duty', {
@@ -68,7 +83,26 @@ const checkDutyStatus = async () => {
       },
     });
     dutyStatus.value = res.data?.duty_check || null;
+
+    // Cache to IndexedDB for offline usage
+    if (dutyStatus.value && selectedLibrary.value) {
+      await offlineDb.setCachedDuty(selectedLibrary.value, {
+        ...dutyStatus.value,
+        cached_at: Date.now(),
+      });
+    }
   } catch (err: any) {
+    // If request failed because offline, try fallback to cached duty in IndexedDB
+    try {
+      const cached = await offlineDb.getCachedDuty(selectedLibrary.value);
+      if (cached) {
+        dutyStatus.value = cached;
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
     dutyStatus.value = {
       allowed: false,
       reason: err?.response?.data?.message || 'Unable to verify duty schedule.',
@@ -339,6 +373,9 @@ const resetDateRange = () => {
 };
 
 onMounted(async () => {
+  // Initialize offline sync listeners and background queue
+  initOfflineSyncService();
+
   timerInterval = setInterval(() => {
     currentTime.value = Date.now();
     // Periodic duty turn verification every 30s

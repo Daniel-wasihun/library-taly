@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { librariesApi } from '@/api';
 import { useToastStore } from './toastStore';
 import type { Library } from '@/types';

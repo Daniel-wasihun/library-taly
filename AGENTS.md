@@ -20,6 +20,8 @@
 
 ### 2. Offline-First PWA Attendance Counter
 - **PWA Infrastructure**: Service Worker (`public/sw.js`), `manifest.json`, mobile-capable meta tags, and Woldia University Library clean branding/splash screen.
+- **Service Worker Caching Strategy**: Network-First strategy for HTML navigation requests to prevent stale hashed Vite bundle references. Strict MIME-type checking ensures missing static assets (`.js`, `.css`) never get cached as HTML error pages. Missing assets return 404 in `routes/web.php` rather than triggering SPA fallbacks.
+- **Client Auto-Recovery**: `app.blade.php` and `router/index.ts` include auto-recovery listeners that detect chunk load/MIME errors and automatically refresh or allow quick one-tap cache purge and reload.
 - **Local Persistence & Sync Queue**: `attendanceStore.ts` stores offline entries with optimistic UI updates.
 - **Schedule Validation on Sync**: When reconnecting to the network, cached entries outside the scheduled duty shift are pruned to uphold data integrity.
 - **Silent Counting UX**: No disruptive toasts on button presses. Network state transitions use subtle yellow (offline) and green (synced) indicators.

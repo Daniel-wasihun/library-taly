@@ -1104,7 +1104,7 @@ class AttendanceReportService
             $output .= '   <Column ss:Width="90"/>' . "\n";
 
             $output .= '   <Row ss:Height="28"><Cell ss:MergeAcross="4" ss:StyleID="HeaderTitle"><Data ss:Type="String">' . htmlspecialchars($title) . '</Data></Cell></Row>' . "\n";
-            $output .= '   <Row><Cell ss:MergeAcross="4" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . $data['dateFromStr']['date'] . ' – ' . $data['dateToStr']['date'] . ' | ' . $data['refNumber']) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row><Cell ss:MergeAcross="4" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . $data['dateFromStr']['date'] . ' – ' . $data['dateToStr']['date']) . '</Data></Cell></Row>' . "\n";
             $output .= '   <Row ss:Height="12"><Cell ss:MergeAcross="4"/></Row>' . "\n";
 
             $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="4" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? 'የተጠቃሚዎች ምድብና የስነ-ሕዝብ ስርጭት' : 'Patron Category Demographic Breakdown') . '</Data></Cell></Row>' . "\n";
@@ -1160,7 +1160,7 @@ class AttendanceReportService
             $output .= '   <Column ss:Width="100"/>' . "\n";
 
             $output .= '   <Row ss:Height="28"><Cell ss:MergeAcross="6" ss:StyleID="HeaderTitle"><Data ss:Type="String">' . htmlspecialchars($title) . '</Data></Cell></Row>' . "\n";
-            $output .= '   <Row><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . $data['dateFromStr']['date'] . ' – ' . $data['dateToStr']['date'] . ' | ' . $data['refNumber']) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . $data['dateFromStr']['date'] . ' – ' . $data['dateToStr']['date']) . '</Data></Cell></Row>' . "\n";
             $output .= '   <Row ss:Height="12"><Cell ss:MergeAcross="6"/></Row>' . "\n";
 
             $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="6" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? 'የቅርንጫፍ ቤተ-መጻሕፍት አጠቃቀም ንጽጽር' : 'Library Branch Facilities Comparison') . '</Data></Cell></Row>' . "\n";
@@ -1221,7 +1221,7 @@ class AttendanceReportService
             $output .= '   <Column ss:Width="280"/>' . "\n";
 
             $output .= '   <Row ss:Height="28"><Cell ss:MergeAcross="6" ss:StyleID="HeaderTitle"><Data ss:Type="String">' . htmlspecialchars($title) . '</Data></Cell></Row>' . "\n";
-            $output .= '   <Row><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . $data['dateFromStr']['date'] . ' – ' . $data['dateToStr']['date'] . ' | ' . $data['refNumber']) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . $data['dateFromStr']['date'] . ' – ' . $data['dateToStr']['date']) . '</Data></Cell></Row>' . "\n";
             $output .= '   <Row ss:Height="12"><Cell ss:MergeAcross="6"/></Row>' . "\n";
 
             $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="6" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? 'የሳምንት ቀናት የተጠቃሚዎች ፍሰት ትንተና (Monday - Sunday)' : 'Day-of-the-Week Operational Foot-Traffic Influx Profile') . '</Data></Cell></Row>' . "\n";
@@ -1289,7 +1289,7 @@ class AttendanceReportService
             $output .= '   <Column ss:Width="300"/>' . "\n";
 
             $output .= '   <Row ss:Height="28"><Cell ss:MergeAcross="4" ss:StyleID="HeaderTitle"><Data ss:Type="String">' . htmlspecialchars($title) . '</Data></Cell></Row>' . "\n";
-            $output .= '   <Row><Cell ss:MergeAcross="4" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . ($data['intraMonthDayAnalytics']['selected_month_name_' . ($isAmharic ? 'am' : 'en')] ?? '') . ' | ' . $data['refNumber']) . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row><Cell ss:MergeAcross="4" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($data['libraryName'] . ' | ' . ($data['intraMonthDayAnalytics']['selected_month_name_' . ($isAmharic ? 'am' : 'en')] ?? '')) . '</Data></Cell></Row>' . "\n";
             $output .= '   <Row ss:Height="12"><Cell ss:MergeAcross="4"/></Row>' . "\n";
 
             if (!empty($data['intraMonthDayAnalytics'])) {
@@ -1656,20 +1656,14 @@ class AttendanceReportService
         // Document Metadata Table
         $html .= '<table class="meta-table" style="margin-bottom: 16pt;">';
         $html .= '<tr>';
-        $html .= '<td style="width: 25%; font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'የሰነድ መለያ ቁጥር' : 'Document Reference No') . ':</td>';
-        $html .= '<td style="width: 25%; font-family: monospace; font-weight: bold;">' . $data['refNumber'] . '</td>';
         $html .= '<td style="width: 25%; font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'የተዘጋጀበት ቀንና ሰዓት' : 'Date of Issuance') . ':</td>';
         $html .= '<td style="width: 25%;">' . $data['generatedAt']['full'] . ' (' . $data['generatedAt']['time'] . ')</td>';
+        $html .= '<td style="width: 25%; font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'የቤተ-መጻሕፍት ቅርንጫፍ' : 'Target Facilities') . ':</td>';
+        $html .= '<td style="width: 25%;">' . htmlspecialchars($data['libraryName']) . '</td>';
         $html .= '</tr>';
         $html .= '<tr>';
         $html .= '<td style="font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'የሪፖርቱ ሽፋን ጊዜ' : 'Reporting Window') . ':</td>';
         $html .= '<td>' . $data['dateFromStr']['date'] . ' – ' . $data['dateToStr']['date'] . '</td>';
-        $html .= '<td style="font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'የቤተ-መጻሕፍት ቅርንጫፍ' : 'Target Facilities') . ':</td>';
-        $html .= '<td>' . htmlspecialchars($data['libraryName']) . '</td>';
-        $html .= '</tr>';
-        $html .= '<tr>';
-        $html .= '<td style="font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'ያዘጋጀው ኃላፊ/ሠራተኛ' : 'Reporting Officer') . ':</td>';
-        $html .= '<td>' . htmlspecialchars($data['generatedBy']) . ' (' . $data['generatedByUsername'] . ')</td>';
         $html .= '<td style="font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'የኦዲት ወሰን' : 'Audit Scope') . ':</td>';
         $html .= '<td style="font-weight: bold; color: #0B529C;">' . strtoupper($scope) . '</td>';
         $html .= '</tr>';
@@ -1852,18 +1846,22 @@ class AttendanceReportService
             }
         }
 
-        // Formal Signature Block
-        $html .= '<div style="margin-top: 40pt; page-break-inside: avoid;">';
-        $html .= '<div class="sig-box" style="margin-right: 4%;">';
-        $html .= '<b>' . ($isAmharic ? 'የመዝጋቢው ቤተ-መጻሕፍት ሠራተኛ ፊርማ' : 'Duty Desk Librarian Signature') . '</b><br/>';
-        $html .= htmlspecialchars($data['generatedBy']) . '<br/>';
-        $html .= $data['generatedAt']['date'];
-        $html .= '</div>';
-        $html .= '<div class="sig-box">';
-        $html .= '<b>' . ($isAmharic ? 'የዋና ቤተ-መጻሕፍት ኃላፊ ማረጋገጫና ማህተም' : 'Chief University Librarian Seal & Approval') . '</b><br/>';
-        $html .= ($isAmharic ? 'ይፋዊ ማህተም' : 'Authorized Academic Registry') . '<br/>';
-        $html .= $data['refNumber'];
-        $html .= '</div>';
+        // Report Footer: Exporter Information Only
+        $html .= '<div style="margin-top: 25pt; padding-top: 10pt; border-top: 1pt solid #CBD5E1; font-size: 8.5pt; color: #475569; page-break-inside: avoid;">';
+        $html .= '<table style="width: 100%; border: none; margin: 0; padding: 0;">';
+        $html .= '<tr style="border: none;">';
+        $html .= '<td style="border: none; text-align: left; padding: 0;">';
+        $html .= '<strong style="color: #0F172A;">' . ($isAmharic ? 'ሪፖርቱን ያመነጨው/ያዘጋጀው፡ ' : 'Generated by: ') . '</strong>';
+        $html .= '<span style="color: #0B529C; font-weight: bold;">' . htmlspecialchars($data['generatedBy']) . '</span>';
+        if (!empty($data['generatedByUsername'])) {
+            $html .= ' <span style="color: #64748B; font-size: 8pt;">(@' . htmlspecialchars($data['generatedByUsername']) . ')</span>';
+        }
+        $html .= '</td>';
+        $html .= '<td style="border: none; text-align: right; padding: 0; font-family: monospace; color: #64748B;">';
+        $html .= $data['generatedAt']['date'] . ' · ' . $data['generatedAt']['time'];
+        $html .= '</td>';
+        $html .= '</tr>';
+        $html .= '</table>';
         $html .= '</div>';
 
         $html .= '</body></html>';
@@ -1891,7 +1889,6 @@ class AttendanceReportService
 
         // Executive Header Section
         fputcsv($f, [$scopeHeaders[$scope] ?? $scopeHeaders['full']]);
-        fputcsv($f, [$isAmharic ? 'የሰነድ መለያ ቁጥር' : 'Reference ID', $data['refNumber']]);
         fputcsv($f, [$isAmharic ? 'የተዘጋጀበት ቀን' : 'Generated At', $data['generatedAt']['full'] . ' ' . $data['generatedAt']['time']]);
         fputcsv($f, [$isAmharic ? 'የሪፖርቱ ሽፋን ጊዜ' : 'Reporting Window', $data['dateFromStr']['date'] . ' - ' . $data['dateToStr']['date']]);
         fputcsv($f, [$isAmharic ? 'የቤተ-መጻሕፍት ቅርንጫፍ' : 'Branch Scope', $data['libraryName']]);

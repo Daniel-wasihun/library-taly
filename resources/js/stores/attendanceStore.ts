@@ -348,55 +348,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
             const token = authStore.token || localStorage.getItem('auth_token') || '';
 
-            // 1. PDF: Native Browser & OS Viewer Preview (Never coded modal)
-            if (format === 'pdf') {
-                const queryParams = new URLSearchParams({
-                    format: 'pdf',
-                    scope,
-                    lang: langStore.currentLanguage,
-                    ...(customFilters || filters),
-                    token,
-                    preview: '1',
-                    t: String(Date.now()),
-                });
-                const pdfUrl = `/api/physical/attendance/report/download?${queryParams.toString()}`;
-
-                // Direct native OS/browser window opening
-                const printWin = window.open(pdfUrl, '_blank');
-                if (!printWin || printWin.closed || typeof printWin.closed === 'undefined') {
-                    // Fallback for popup-restricted or standalone mobile PWA
-                    const anchor = document.createElement('a');
-                    anchor.href = pdfUrl;
-                    anchor.target = '_blank';
-                    anchor.rel = 'noopener noreferrer';
-                    document.body.appendChild(anchor);
-                    anchor.click();
-                    setTimeout(() => {
-                        if (anchor.parentNode) anchor.parentNode.removeChild(anchor);
-                    }, 2000);
-                }
-
-                exportHistory.value.unshift({
-                    id: auditId,
-                    name: filename.replace(`.${ext}`, ''),
-                    format,
-                    date: langStore.isAmharic() ? 'ዛሬ' : 'Today',
-                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    scope: scopeLabel,
-                    scopeKey: scope,
-                    size: 'PDF Document',
-                });
-                saveExportHistory();
-
-                toast.success(
-                    langStore.isAmharic()
-                        ? 'ይፋዊ የPDF ሪፖርት በስርዓቱ ቤተኛ ማሳያ (Native Preview) ተከፍቷል፤ በቀጥታ ማተም ወይም ማስቀመጥ ይችላሉ።'
-                        : 'Official PDF report opened in native OS & browser viewer. You can print or save directly.'
-                );
-                return;
-            }
-
-            // 2. CSV, Excel (.xlsx), Word (.doc): Always prompt save location
+            // Universal Document Download with save location prompt (File System Access API / Web Share API / Direct URL)
             const queryParams = new URLSearchParams({
                 format,
                 scope,
@@ -433,7 +385,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     scope: scopeLabel,
                     scopeKey: scope,
-                    size: 'Ready',
+                    size: format === 'pdf' ? 'PDF Document' : 'Ready',
                 });
                 saveExportHistory();
 

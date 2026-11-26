@@ -615,13 +615,12 @@
         <table class="formal-table">
             <thead>
                 <tr>
-                    <th style="width: 16%;">{{ $isAmharic ? 'የሳምንቱ ዕለት' : 'Day of Week' }}</th>
-                    <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Avg' }}</th>
-                    <th class="text-right" style="width: 12%;">{{ $isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons' }}</th>
-                    <th class="text-right" style="width: 10%;">{{ $isAmharic ? 'ድርሻ (%)' : 'Share (%)' }}</th>
+                    <th style="width: 22%;">{{ $isAmharic ? 'የሳምንቱ ዕለት' : 'Day of Week' }}</th>
+                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Avg' }}</th>
+                    <th class="text-right" style="width: 18%;">{{ $isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons' }}</th>
+                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'ድርሻ (%)' : 'Share (%)' }}</th>
                     <th style="width: 18%;">{{ $isAmharic ? 'የፈረቃ ክፍፍል (ጠ/ቀ/ማ)' : 'Morn / Aft / Night' }}</th>
-                    <th style="width: 14%;">{{ $isAmharic ? 'የፍሰት ደረጃ' : 'Surge Level' }}</th>
-                    <th style="width: 18%;">{{ $isAmharic ? 'የአስተዳደር ትንበያ' : 'Management Prediction' }}</th>
+                    <th style="width: 12%;">{{ $isAmharic ? 'የፍሰት ደረጃ' : 'Surge Level' }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -633,7 +632,6 @@
                         <td class="text-right">{{ $dow['percentage'] }}%</td>
                         <td style="font-family: monospace; font-size: 8.5px;">{{ $dow['morning'] }} / {{ $dow['afternoon'] }} / {{ $dow['night'] }}</td>
                         <td><span style="font-weight: bold; color: {{ $dow['is_peak'] ? '#dc2626' : '#2563eb' }};">{{ $isAmharic ? $dow['surge_level_am'] : $dow['surge_level'] }}</span></td>
-                        <td style="font-size: 8.5px;">{{ $isAmharic ? $dow['prediction_am'] : $dow['prediction'] }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -647,18 +645,13 @@
         <div class="section-header">
             <span>{{ $isAmharic ? '6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና' : '6. Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix' }}</span>
         </div>
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 6px 10px; margin-bottom: 8px; font-size: 9.5px; color: #166534; border-radius: 3px;">
-            <b>{{ $isAmharic ? 'የአስተዳደር የቅድመ-ትንበያ ማስጠንቀቂያ፡ ' : 'Management Influx Prediction: ' }}</b>
-            {{ $intraMonthDayAnalytics['prediction'] }}
-        </div>
         <table class="formal-table">
             <thead>
                 <tr>
-                    <th style="width: 25%;">{{ $isAmharic ? 'የወሩ ሳምንታዊ ክፍለ-ጊዜ' : 'Weekly Cycle in Month' }}</th>
-                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons' }}</th>
-                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Average' }}</th>
-                    <th class="text-right" style="width: 15%;">{{ $isAmharic ? 'የወሩ ድርሻ (%)' : 'Monthly Share (%)' }}</th>
-                    <th style="width: 30%;">{{ $isAmharic ? 'የአሰራርና የጥናት ሁኔታ' : 'Operational Status' }}</th>
+                    <th style="width: 35%;">{{ $isAmharic ? 'የወሩ ሳምንታዊ ክፍለ-ጊዜ' : 'Weekly Cycle in Month' }}</th>
+                    <th class="text-right" style="width: 25%;">{{ $isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons' }}</th>
+                    <th class="text-right" style="width: 20%;">{{ $isAmharic ? 'አማካይ በቀን' : 'Daily Average' }}</th>
+                    <th class="text-right" style="width: 20%;">{{ $isAmharic ? 'የወሩ ድርሻ (%)' : 'Monthly Share (%)' }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -668,7 +661,6 @@
                         <td class="text-right" style="font-weight: bold;">{{ number_format($wCycle['total']) }}</td>
                         <td class="text-right">{{ number_format($wCycle['daily_average']) }}</td>
                         <td class="text-right">{{ $wCycle['percent'] }}%</td>
-                        <td>{{ $isAmharic ? $wCycle['prediction_am'] : $wCycle['prediction'] }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -690,9 +682,8 @@
                     <tr>
                         <td><b>{{ $occDay['display_name'] }}</b></td>
                         @foreach($occDay['occurrences'] as $oc)
-                            <td>
+                            <td class="text-center">
                                 <b>{{ number_format($oc['average']) }}</b>
-                                <span style="font-size: 8px; color: {{ $oc['is_peak'] ? '#dc2626' : '#475569' }};">({{ $isAmharic ? $oc['surge_badge_am'] : $oc['surge_badge'] }})</span>
                             </td>
                         @endforeach
                     </tr>

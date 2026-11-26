@@ -1534,7 +1534,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -1825,6 +1825,22 @@ const formatTimeStr12 = (timeStr: string) => {
   return timeStr;
 };
 
+let dashboardPollInterval: any = null;
+
+const refreshDashboardSilently = async () => {
+  if (typeof document !== 'undefined' && document.hidden) return;
+  try {
+    const { data } = await dashboardApi.stats();
+    if (data) {
+      stats.value = data;
+    }
+  } catch {}
+};
+
+const handleDashboardFocus = () => {
+  refreshDashboardSilently();
+};
+
 onMounted(async () => {
   try {
     const { data } = await dashboardApi.stats();
@@ -1839,5 +1855,19 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+
+  // Multi-device real-time sync polling every 15s silently
+  dashboardPollInterval = setInterval(refreshDashboardSilently, 15000);
+  window.addEventListener('focus', handleDashboardFocus);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshDashboardSilently();
+  });
+});
+
+onUnmounted(() => {
+  if (dashboardPollInterval) {
+    clearInterval(dashboardPollInterval);
+  }
+  window.removeEventListener('focus', handleDashboardFocus);
 });
 </script>

@@ -368,8 +368,7 @@ const handleResetToday = () => {
             variant="primary"
             size="sm"
             :icon="Printer"
-            :loading="downloadingFormat === 'pdf'"
-            @click="triggerDownload('pdf', 'full')"
+            @click="emit('print')"
             class="!bg-brand-blue text-white shadow-2xs"
           >
             {{ langStore.t('attendance.print_report', 'Print Official Report') }}

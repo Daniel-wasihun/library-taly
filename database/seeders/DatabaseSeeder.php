@@ -109,13 +109,15 @@ class DatabaseSeeder extends Seeder
             'attendance.analytics',
         ]);
 
-        // Librarian: View library and record attendance
+        // Librarian: View library and record attendance, with 2-minute adjustment authority
         $librarianRole->syncPermissions([
             'libraries.view',
             'academic_years.view',
             'schedules.view',
             'attendance.view',
             'attendance.record',
+            'attendance.update',
+            'attendance.delete',
         ]);
 
         // Attendant: Record attendance, and update/delete within policy window
@@ -752,37 +754,16 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Seed Academic Years
+        // Seed Academic Years - Strictly only 2019 E.C. exists across the system
+        AcademicYear::where('code', '!=', 'AY-2019-EC')->delete();
         AcademicYear::updateOrCreate(
-            ['code' => 'AY-2024-2025'],
-            [
-                'name' => '2017 E.C. (2024/2025 G.C.)',
-                'start_date' => '2024-09-11',
-                'end_date' => '2025-07-07',
-                'is_current' => false,
-                'description' => 'Previous University Academic Year',
-            ]
-        );
-
-        AcademicYear::updateOrCreate(
-            ['code' => 'AY-2025-2026'],
-            [
-                'name' => '2018 E.C. (2025/2026 G.C.)',
-                'start_date' => '2025-09-11',
-                'end_date' => '2026-07-07',
-                'is_current' => true,
-                'description' => 'Current Active University Academic Year',
-            ]
-        );
-
-        AcademicYear::updateOrCreate(
-            ['code' => 'AY-2026-2027'],
+            ['code' => 'AY-2019-EC'],
             [
                 'name' => '2019 E.C. (2026/2027 G.C.)',
                 'start_date' => '2026-09-11',
                 'end_date' => '2027-07-07',
-                'is_current' => false,
-                'description' => 'Upcoming University Academic Year',
+                'is_current' => true,
+                'description' => 'Current Active University Academic Year (2019 E.C.)',
             ]
         );
 

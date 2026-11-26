@@ -244,3 +244,35 @@ export const formatDT = (dateInput: Date | string | null | undefined, isAmharic 
         full: etFull,
     };
 };
+
+/**
+ * Robust entry timestamp parser for exact millisecond calculations.
+ * Handles ISO strings with timezone offsets, bare UTC strings, and bare local datetimes
+ * by anchoring them cleanly to Africa/Addis_Ababa (+03:00) to prevent +3 hour drift.
+ */
+export const parseEntryTime = (entryAt: string | Date | number | null | undefined): number => {
+    if (!entryAt) return 0;
+    if (typeof entryAt === 'number') return entryAt;
+    if (entryAt instanceof Date) return entryAt.getTime();
+
+    const str = String(entryAt).trim();
+    if (!str) return 0;
+
+    // 1. If string contains timezone indicator (Z or +03:00 / -05:00)
+    if (/[Zz]|[+-]\d{2}(?::?\d{2})?$/.test(str)) {
+        const parsed = new Date(str).getTime();
+        if (!isNaN(parsed)) return parsed;
+    }
+
+    // 2. Bare datetime e.g. "2026-11-26 09:20:00" or "2026-11-26T09:20:00"
+    // Generated on backend in Africa/Addis_Ababa (+03:00)
+    const normalized = str.replace(' ', 'T');
+    const withOffset = `${normalized}+03:00`;
+    const parsedWithOffset = new Date(withOffset).getTime();
+    if (!isNaN(parsedWithOffset)) {
+        return parsedWithOffset;
+    }
+
+    const fallback = new Date(str).getTime();
+    return isNaN(fallback) ? 0 : fallback;
+};

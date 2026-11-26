@@ -142,10 +142,10 @@ class AttendanceController extends Controller
     {
         $user = $request->user();
 
-        // Only users with library management permission or admin can view reporting & analytics
-        if (!$user->canManageReportingAndAnalytics()) {
+        // Allow users with reporting permission, or desk attendants/librarians with attendance permissions
+        if (!$user->canManageReportingAndAnalytics() && !$user->hasPermissionTo('attendance.view') && !$user->hasPermissionTo('attendance.record')) {
             return response()->json([
-                'message' => 'Unauthorized: Library management permission is required to view analytics and reporting.',
+                'message' => 'Unauthorized: Attendance viewing or reporting permission required to view statistics.',
             ], 403);
         }
 
@@ -364,7 +364,7 @@ class AttendanceController extends Controller
         $attendance = LibraryAttendance::where('slug', $slug)->firstOrFail();
         $user = $request->user();
 
-        if (!$user || !$user->hasPermissionTo('attendance.update')) {
+        if (!$user || (!$user->isSuperAdmin() && !$user->hasAdminPrivilege() && !$user->hasPermissionTo('attendance.update') && !$user->hasPermissionTo('attendance.record'))) {
             return response()->json(['message' => 'Unauthorized: Permission to update attendance record required.'], 403);
         }
 
@@ -386,8 +386,10 @@ class AttendanceController extends Controller
         }
 
         // Strict 2-minute rule: NO ONE (including admin and superadmin) can change numbers after 2 minutes of logging
-        $diffSeconds = abs(Carbon::parse($attendance->entry_at)->diffInSeconds(now()));
-        if ($diffSeconds > 120) {
+        $entryTime = Carbon::parse($attendance->entry_at)->setTimezone('Africa/Addis_Ababa');
+        $now = Carbon::now('Africa/Addis_Ababa');
+        $diffSeconds = $entryTime->diffInSeconds($now, false);
+        if ($diffSeconds > 120 || $diffSeconds < -60) {
             return response()->json([
                 'success' => false,
                 'message' => 'Operational regulation: attendance counter entries cannot be adjusted or modified after 2 minutes of recording. This lock applies strictly to all users including administrators.',
@@ -415,7 +417,7 @@ class AttendanceController extends Controller
         $attendance = LibraryAttendance::where('slug', $slug)->firstOrFail();
         $user = $request->user();
 
-        if (!$user || !$user->hasPermissionTo('attendance.delete')) {
+        if (!$user || (!$user->isSuperAdmin() && !$user->hasAdminPrivilege() && !$user->hasPermissionTo('attendance.delete') && !$user->hasPermissionTo('attendance.record'))) {
             return response()->json(['message' => 'Unauthorized: Permission to delete attendance record required.'], 403);
         }
 
@@ -437,8 +439,10 @@ class AttendanceController extends Controller
         }
 
         // Strict 2-minute rule: NO ONE (including admin and superadmin) can delete entries after 2 minutes of logging
-        $diffSeconds = abs(Carbon::parse($attendance->entry_at)->diffInSeconds(now()));
-        if ($diffSeconds > 120) {
+        $entryTime = Carbon::parse($attendance->entry_at)->setTimezone('Africa/Addis_Ababa');
+        $now = Carbon::now('Africa/Addis_Ababa');
+        $diffSeconds = $entryTime->diffInSeconds($now, false);
+        if ($diffSeconds > 120 || $diffSeconds < -60) {
             return response()->json([
                 'success' => false,
                 'message' => 'Operational regulation: attendance counter entries cannot be deleted after 2 minutes of recording. This lock applies strictly to all users including administrators.',

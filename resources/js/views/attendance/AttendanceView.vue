@@ -10,13 +10,14 @@ import Modal from '@/components/ui/Modal.vue';
 import Button from '@/components/ui/Button.vue';
 import api from '@/api/client';
 import type { Attendance } from '@/types';
-import { toEthiopian, toGregorian } from '@/utils/ethiopianDate';
+import { toEthiopian, toGregorian, parseEntryTime } from '@/utils/ethiopianDate';
 
 // Sub-components
 import AttendanceHeader from './components/AttendanceHeader.vue';
 import AttendanceCounter from './components/AttendanceCounter.vue';
 import AttendanceMonitor from './components/AttendanceMonitor.vue';
 import AttendanceAnalytics from './components/AttendanceAnalytics.vue';
+import ReportPreviewModal from '@/components/reports/ReportPreviewModal.vue';
 import { offlineDb } from '@/services/offlineStorage';
 import { isOnline, initOfflineSyncService } from '@/services/syncService';
 
@@ -287,19 +288,25 @@ watch(
  * or deleting counter values after 2 minutes (120,000 ms) from entry_at.
  */
 const canModifyEntry = (entryAt: string) => {
-  if (!authStore.hasPermission('attendance.update')) return false;
+  if (!authStore.isSuperAdmin && !authStore.isAdmin && !authStore.hasPermission('attendance.update') && !authStore.hasPermission('attendance.record')) {
+    return false;
+  }
   if (!entryAt) return false;
-  const entryMs = new Date(entryAt).getTime();
-  const diffMinutes = Math.abs(currentTime.value - entryMs) / 60000;
-  return diffMinutes <= 2;
+  const entryMs = parseEntryTime(entryAt);
+  if (!entryMs) return false;
+  const elapsedSeconds = (currentTime.value - entryMs) / 1000;
+  return elapsedSeconds >= -30 && elapsedSeconds <= 120;
 };
 
 const canDeleteEntry = (entryAt: string) => {
-  if (!authStore.hasPermission('attendance.delete')) return false;
+  if (!authStore.isSuperAdmin && !authStore.isAdmin && !authStore.hasPermission('attendance.delete') && !authStore.hasPermission('attendance.record')) {
+    return false;
+  }
   if (!entryAt) return false;
-  const entryMs = new Date(entryAt).getTime();
-  const diffMinutes = Math.abs(currentTime.value - entryMs) / 60000;
-  return diffMinutes <= 2;
+  const entryMs = parseEntryTime(entryAt);
+  if (!entryMs) return false;
+  const elapsedSeconds = (currentTime.value - entryMs) / 1000;
+  return elapsedSeconds >= -30 && elapsedSeconds <= 120;
 };
 const canUpdateEntry = (entryAt: string) => canModifyEntry(entryAt);
 
@@ -403,10 +410,19 @@ const handleExport = (range: 'day' | 'week' | 'month' | 'current') => {
   }, scope);
 };
 
+const showReportPreviewModal = ref(false);
+const previewReportScope = ref<'full' | 'patron_types' | 'branches' | 'day_of_week' | 'intra_month'>('full');
+const previewDateFrom = ref(todayStr);
+const previewDateTo = ref(todayStr);
+let syncInterval: any = null;
+
 /**
- * Direct PDF download (no new tab)
+ * Open Custom In-App Report Preview Modal (Eliminates disruptive new tabs in PWA)
  */
-const handlePrint = (range: 'day' | 'week' | 'month' | 'current' = 'current') => {
+const handleOpenPreview = (
+  range: 'day' | 'week' | 'month' | 'current' = 'current',
+  scope?: 'full' | 'patron_types' | 'branches' | 'day_of_week' | 'intra_month'
+) => {
   const now = new Date();
   let from = todayStr;
   let to = todayStr;
@@ -430,16 +446,18 @@ const handlePrint = (range: 'day' | 'week' | 'month' | 'current' = 'current') =>
     from = todayStr;
     to = todayStr;
   }
-  const scope = activeTab.value === 'counter' ? 'patron_types' : 'full';
-  attendanceStore.downloadFormalReport('pdf', {
-    date_from: from,
-    date_to: to,
-    library_id: selectedLibrary.value || undefined,
-  }, scope);
+
+  previewDateFrom.value = from;
+  previewDateTo.value = to;
+  previewReportScope.value = scope || (activeTab.value === 'counter' ? 'patron_types' : 'full');
+  showReportPreviewModal.value = true;
+};
+
+const handlePrint = (range: 'day' | 'week' | 'month' | 'current' = 'current') => {
+  handleOpenPreview(range);
 };
 
 const refreshStats = async () => {
-  if (!authStore.canManageReporting) return;
   attendanceStore.filters.date_from = dateRange.value.from;
   attendanceStore.filters.date_to = dateRange.value.to;
   attendanceStore.filters.library_id = selectedLibrary.value || '';
@@ -449,6 +467,24 @@ const refreshStats = async () => {
 const resetDateRange = () => {
   dateRange.value = { from: todayStr, to: todayStr };
   refreshStats();
+};
+
+/**
+ * Multi-device active data sync: fetches latest logs and real-time counter totals
+ */
+const syncActiveData = async () => {
+  if (typeof document !== 'undefined' && document.hidden) return;
+  if (!isOnline.value) return;
+  try {
+    await Promise.all([
+      attendanceStore.fetchLogs(1, undefined, true),
+      attendanceStore.fetchStats(true),
+    ]);
+  } catch {}
+};
+
+const handleWindowFocus = () => {
+  syncActiveData();
 };
 
 onMounted(async () => {
@@ -462,6 +498,16 @@ onMounted(async () => {
       checkDutyStatus();
     }
   }, 5000);
+
+  // Multi-device real-time polling every 10 seconds silently
+  syncInterval = setInterval(() => {
+    syncActiveData();
+  }, 10000);
+
+  window.addEventListener('focus', handleWindowFocus);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) syncActiveData();
+  });
 
   // Use cached library list
   await libraryStore.fetchLibraries(undefined, false);
@@ -478,15 +524,12 @@ onMounted(async () => {
   attendanceStore.filters.date_from = todayStr;
   attendanceStore.filters.date_to = todayStr;
 
-  // Run initial duty check and log fetch cleanly in parallel
-  const initPromises: Promise<any>[] = [
+  // Run initial duty check, log fetch, and stats fetch cleanly in parallel with force=true
+  await Promise.all([
     checkDutyStatus(),
-    attendanceStore.fetchLogs(1, undefined, false),
-  ];
-  if (authStore.canManageReporting && activeTab.value === 'analytics') {
-    initPromises.push(attendanceStore.fetchStats(false));
-  }
-  await Promise.all(initPromises);
+    attendanceStore.fetchLogs(1, undefined, true),
+    attendanceStore.fetchStats(true),
+  ]);
 
   // Allow subsequent user interactions to trigger watchers smoothly
   isInitialMount.value = false;
@@ -496,6 +539,10 @@ onUnmounted(() => {
   if (timerInterval) {
     clearInterval(timerInterval);
   }
+  if (syncInterval) {
+    clearInterval(syncInterval);
+  }
+  window.removeEventListener('focus', handleWindowFocus);
 });
 
 watch(selectedLibrary, (newVal) => {
@@ -643,5 +690,16 @@ watch(
         </Button>
       </template>
     </Modal>
+
+    <!-- Custom In-App Official Document Preview Modal (No new tab in PWA) -->
+    <ReportPreviewModal
+      :show="showReportPreviewModal"
+      :scope="previewReportScope"
+      :date-from="previewDateFrom"
+      :date-to="previewDateTo"
+      :library-id="selectedLibrary"
+      :report-stats="attendanceStore.stats"
+      @close="showReportPreviewModal = false"
+    />
   </div>
 </template>

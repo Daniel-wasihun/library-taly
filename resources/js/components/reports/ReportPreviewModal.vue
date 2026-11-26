@@ -164,8 +164,7 @@ const handleSaveCsv = async () => {
 <template>
   <Modal
     :show="show"
-    max-width="5xl"
-    :closeable="true"
+    size="2xl"
     @close="emit('close')"
   >
     <!-- Modal Control Header (Sticky on Screen, Hidden during Print) -->
@@ -408,6 +407,67 @@ const handleSaveCsv = async () => {
 
       </div>
     </div>
+
+    <!-- Modal Action Footer: Print, PDF, Excel, CSV -->
+    <template #footer>
+      <div class="flex items-center justify-between w-full flex-wrap gap-2 print:hidden">
+        <div class="text-[11px] text-main-text/60 font-mono">
+          {{ libraryName }} · {{ todayDisplay.date }}
+        </div>
+        <div class="flex items-center gap-2">
+          <Button
+            variant="primary"
+            size="sm"
+            :icon="Printer"
+            @click="handlePrint"
+            class="!bg-brand-blue text-white shadow-2xs text-xs"
+          >
+            {{ langStore.isAmharic() ? 'አትም (Print)' : 'Print Official Document' }}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            :icon="Download"
+            :loading="attendanceStore.isDownloadingReport && attendanceStore.downloadingReportFormat === 'pdf'"
+            :disabled="attendanceStore.isDownloadingReport"
+            @click="handleSavePdf"
+            class="text-xs font-bold"
+          >
+            {{ langStore.isAmharic() ? 'PDF አስቀምጥ' : 'Save PDF' }}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            :icon="FileSpreadsheet"
+            :loading="attendanceStore.isDownloadingReport && attendanceStore.downloadingReportFormat === 'xlsx'"
+            :disabled="attendanceStore.isDownloadingReport"
+            @click="handleSaveExcel"
+            class="text-xs"
+          >
+            Excel
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            :icon="FileText"
+            :loading="attendanceStore.isDownloadingReport && attendanceStore.downloadingReportFormat === 'csv'"
+            :disabled="attendanceStore.isDownloadingReport"
+            @click="handleSaveCsv"
+            class="text-xs"
+          >
+            CSV
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            @click="emit('close')"
+            class="text-xs"
+          >
+            {{ langStore.t('common.close', 'Close') }}
+          </Button>
+        </div>
+      </div>
+    </template>
   </Modal>
 </template>
 

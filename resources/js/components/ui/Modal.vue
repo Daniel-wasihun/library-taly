@@ -69,19 +69,21 @@ onUnmounted(() => {
         >
           <!-- Modal Header -->
           <div class="px-6 py-4 border-b border-card-border flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3 min-w-0">
-              <div v-if="icon" class="w-8 h-8 rounded-xs bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center shrink-0">
-                <component :is="icon" class="w-4 h-4 stroke-[2.2]" />
+            <slot name="header">
+              <div class="flex items-center gap-3 min-w-0">
+                <div v-if="icon" class="w-8 h-8 rounded-xs bg-nav-accent/10 text-nav-accent border border-nav-accent/25 flex items-center justify-center shrink-0">
+                  <component :is="icon" class="w-4 h-4 stroke-[2.2]" />
+                </div>
+                <div class="min-w-0">
+                  <h3 class="font-bold text-sm text-main-text truncate leading-tight">{{ title }}</h3>
+                  <p v-if="description" class="text-xs text-main-text/50 truncate mt-0.5">{{ description }}</p>
+                </div>
               </div>
-              <div class="min-w-0">
-                <h3 class="font-bold text-sm text-main-text truncate leading-tight">{{ title }}</h3>
-                <p v-if="description" class="text-xs text-main-text/50 truncate mt-0.5">{{ description }}</p>
-              </div>
-            </div>
+            </slot>
             <button
               type="button"
               @click="emit('close')"
-              class="w-8 h-8 rounded-xs flex items-center justify-center text-main-text/40 hover:text-main-text hover:bg-main-text/5 transition cursor-pointer"
+              class="w-8 h-8 rounded-xs flex items-center justify-center text-main-text/40 hover:text-main-text hover:bg-main-text/5 transition cursor-pointer shrink-0"
             >
               <X class="w-4 h-4 stroke-[2.2]" />
             </button>

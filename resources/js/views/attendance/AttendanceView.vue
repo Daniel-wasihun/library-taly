@@ -455,8 +455,11 @@ const handleOpenPreview = (
   showReportPreviewModal.value = true;
 };
 
-const handlePrint = (range: 'day' | 'week' | 'month' | 'current' = 'current') => {
-  handleOpenPreview(range);
+const handlePrint = (
+  range: 'day' | 'week' | 'month' | 'current' = 'current',
+  scope?: 'full' | 'patron_types' | 'branches' | 'day_of_week' | 'intra_month'
+) => {
+  handleOpenPreview(range, scope);
 };
 
 const refreshStats = async () => {
@@ -635,7 +638,7 @@ watch(
       @refresh="refreshStats"
       @clear="resetDateRange"
       @export="handleExport"
-      @print="handlePrint('current')"
+      @print="handlePrint('current', $event)"
     />
 
     <div

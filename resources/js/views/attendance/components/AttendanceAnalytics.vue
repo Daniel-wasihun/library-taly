@@ -65,7 +65,7 @@ const emit = defineEmits<{
   (e: 'refresh'): void;
   (e: 'clear'): void;
   (e: 'export', range: 'day' | 'week' | 'month' | 'current'): void;
-  (e: 'print'): void;
+  (e: 'print', scope?: 'full' | 'patron_types' | 'branches' | 'day_of_week' | 'intra_month'): void;
 }>();
 
 const langStore = useLanguageStore();
@@ -158,6 +158,14 @@ const triggerDownload = async (
   scope?: 'full' | 'patron_types' | 'branches' | 'day_of_week' | 'intra_month'
 ) => {
   const chosenScope = scope || selectedExportScope.value;
+
+  // When user requests PDF or print preview, open the rich in-app preview modal
+  // where they can preview the full layout, inspect metrics, and click Print or Save PDF/Excel/CSV
+  if (format === 'pdf') {
+    emit('print', chosenScope);
+    return;
+  }
+
   downloadingFormat.value = format;
   downloadingScope.value = chosenScope;
   try {

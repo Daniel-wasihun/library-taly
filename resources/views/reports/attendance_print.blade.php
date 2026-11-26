@@ -428,7 +428,6 @@
                     @endif
                 </td>
             </tr>
-        </table>
             <tr>
                 <td class="label">{{ $isAmharic ? 'ያዘጋጀው ኃላፊ/ሠራተኛ' : 'Reporting Officer' }}</td>
                 <td class="val">{{ $generatedBy }} ({{ $generatedByUsername }})</td>

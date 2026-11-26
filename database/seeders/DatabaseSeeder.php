@@ -559,22 +559,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 8.5. Seed initial user-inserted Ethiopian Holiday (Day 12 Hidar Zion for 2019)
-        EthiopianHoliday::updateOrCreate(
-            [
-                'ethiopian_year' => 2019,
-                'ethiopian_month' => 3,
-                'ethiopian_day' => 12,
-                'library_id' => null, // applies across all branches
-            ],
-            [
-                'name' => 'Hidar Zion',
-                'name_am' => 'ኅዳር ጽዮን',
-                'description' => 'Major historical and cultural commemoration.',
-                'created_by' => $superAdminUser->id,
-            ]
-        );
-
         // 9. Seed Unified Shift Groups (4 Groups: each has at least 4 from each library branch)
         $groupA = ShiftGroup::updateOrCreate(
             ['name' => 'Group A'],
@@ -720,13 +704,13 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'library_id' => null,
-                'days' => [4, 8, 16, 20, 24, 28], // day 12 is holiday
+                'days' => [4, 8, 12, 16, 20, 24, 28],
                 'status' => 'active',
                 'notes' => 'Group C overnight duty for Hidar 2019 across all branches',
             ]
         );
 
-        // Group D: Night on 2, 6, 10, 14, 18, 22, 26, 30; Day on 4, 8, 16, 20, 24, 28
+        // Group D: Night on 2, 6, 10, 14, 18, 22, 26, 30; Day on 4, 8, 12, 16, 20, 24, 28
         GroupShiftSchedule::updateOrCreate(
             [
                 'shift_group_id' => $groupD->id,
@@ -736,7 +720,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'library_id' => null,
-                'days' => [4, 8, 16, 20, 24, 28], // day 12 is holiday
+                'days' => [4, 8, 12, 16, 20, 24, 28],
                 'status' => 'active',
                 'notes' => 'Group D daytime duty for Hidar 2019 across all branches',
             ]

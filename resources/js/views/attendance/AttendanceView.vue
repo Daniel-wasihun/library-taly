@@ -479,8 +479,8 @@ const syncActiveData = async () => {
   if (!isOnline.value) return;
   try {
     await Promise.all([
-      attendanceStore.fetchLogs(1, undefined, true),
-      attendanceStore.fetchStats(true),
+      attendanceStore.fetchLogs(1, undefined, true, true),
+      attendanceStore.fetchStats(true, true),
     ]);
   } catch {}
 };

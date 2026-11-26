@@ -352,7 +352,7 @@ const handleResetToday = () => {
             variant="secondary"
             size="sm"
             :icon="RotateCcw"
-            :loading="statsLoading"
+            :loading="statsLoading && !distributionReport?.length && !dailyStats?.today_total"
             @click="emit('refresh')"
           >
             {{ langStore.t('common.refresh', 'Apply & Refresh') }}
@@ -377,8 +377,8 @@ const handleResetToday = () => {
       </div>
     </div>
 
-    <!-- Skeleton Loading State -->
-    <div v-if="statsLoading" class="space-y-6 animate-pulse">
+    <!-- Skeleton Loading State: only on cold initial mount before any data is loaded -->
+    <div v-if="statsLoading && !distributionReport?.length && !dailyStats?.today_total" class="space-y-6 animate-pulse">
       <!-- 6 KPI Skeletons -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div v-for="i in 6" :key="i" class="bg-card-bg border border-card-border rounded-md p-4 space-y-2">

@@ -69,7 +69,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
         date_to: '',
     });
 
-    async function fetchLogs(page = 1, perPage?: number, force = false) {
+    async function fetchLogs(page = 1, perPage?: number, force = false, silent = false) {
         if (perPage) {
             pagination.perPage = perPage;
         }
@@ -81,7 +81,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
             return;
         }
 
-        loading.value = true;
+        if (!silent) {
+            loading.value = true;
+        }
         try {
             const { data } = await attendanceApi.list({
                 page,
@@ -98,11 +100,13 @@ export const useAttendanceStore = defineStore('attendance', () => {
                 isLoaded.value = true;
             }
         } catch {
-            if (typeof navigator !== 'undefined' && navigator.onLine) {
+            if (!silent && typeof navigator !== 'undefined' && navigator.onLine) {
                 toast.error('Failed to fetch attendance records.');
             }
         } finally {
-            loading.value = false;
+            if (!silent) {
+                loading.value = false;
+            }
         }
     }
 
@@ -227,7 +231,7 @@ export const useAttendanceStore = defineStore('attendance', () => {
         }
     }
 
-    async function fetchStats(force = false) {
+    async function fetchStats(force = false, silent = false) {
         // Enforce reporting authorization: never make unpermitted stats requests
         if (!authStore.canManageReporting) {
             return;
@@ -238,7 +242,9 @@ export const useAttendanceStore = defineStore('attendance', () => {
             return;
         }
 
-        statsLoading.value = true;
+        if (!silent) {
+            statsLoading.value = true;
+        }
         try {
             const { data } = await attendanceApi.stats({
                 library_id: filters.library_id || undefined,
@@ -254,9 +260,13 @@ export const useAttendanceStore = defineStore('attendance', () => {
             if (err?.response?.status === 403 || err?.response?.status === 401) {
                 return;
             }
-            toast.error('Failed to load attendance analytics.');
+            if (!silent) {
+                toast.error('Failed to load attendance analytics.');
+            }
         } finally {
-            statsLoading.value = false;
+            if (!silent) {
+                statsLoading.value = false;
+            }
         }
     }
 

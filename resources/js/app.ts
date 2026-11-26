@@ -19,14 +19,14 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').then((reg) => {
             console.log('[UniLibrary PWA] Service Worker registered:', reg.scope);
             
-            // Check for service worker updates
+            // Check for service worker updates silently in background
             reg.addEventListener('updatefound', () => {
                 const newWorker = reg.installing;
                 if (newWorker) {
                     newWorker.addEventListener('statechange', () => {
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            console.log('[UniLibrary PWA] New version installed, reloading to apply fresh bundles...');
-                            window.location.reload();
+                            console.log('[UniLibrary PWA] Fresh Service Worker installed in background.');
+                            // Silent background update: Never forcefully reload while user is actively working
                         }
                     });
                 }
@@ -35,13 +35,9 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
             console.warn('[UniLibrary PWA] Service Worker registration failed:', err);
         });
 
-        // Ensure single reload when service worker takes control
-        let refreshing = false;
+        // Controller change listener (silent adoption without disruptive page reload)
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (!refreshing) {
-                refreshing = true;
-                window.location.reload();
-            }
+            console.log('[UniLibrary PWA] Service Worker active controller updated.');
         });
     });
 }

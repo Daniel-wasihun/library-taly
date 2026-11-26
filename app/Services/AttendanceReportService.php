@@ -1725,7 +1725,7 @@ class AttendanceReportService
 
         // Section 3: Branch Comparison (full or branches, omitted if restricted/filtered to a single branch)
         if (($scope === 'full' || $scope === 'branches') && empty($data['selectedLibrary'])) {
-            $html .= '<h3>' . ($isAmharic ? '3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር' : '3. Library Branch Facility Distribution') . '</h3>';
+            $html .= '<h3>' . ($isAmharic ? ($scope === 'branches' ? 'የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር' : '3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር') : ($scope === 'branches' ? 'Library Branch Facility Distribution' : '3. Library Branch Facility Distribution')) . '</h3>';
             $html .= '<table>';
             $html .= '<tr><th>' . ($isAmharic ? 'የቅርንጫፍ ስም' : 'Campus Branch') . '</th><th>' . ($isAmharic ? 'ኮድ' : 'Code') . '</th><th class="text-right">' . ($isAmharic ? 'ተማሪዎች' : 'Students') . '</th><th class="text-right">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</th><th class="text-right">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Traffic Share (%)') . '</th></tr>';
 
@@ -1745,7 +1745,7 @@ class AttendanceReportService
 
         // Section 4: Operational Shift Windows (full or day_of_week)
         if ($scope === 'full' || $scope === 'day_of_week') {
-            $html .= '<h3>' . ($isAmharic ? '4. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት' : '4. Operational Shift Windows & Density') . '</h3>';
+            $html .= '<h3>' . ($isAmharic ? ($scope === 'day_of_week' ? '1. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት' : '4. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት') : ($scope === 'day_of_week' ? '1. Operational Shift Windows & Density' : '4. Operational Shift Windows & Density')) . '</h3>';
             $html .= '<table>';
             $html .= '<tr><th>' . ($isAmharic ? 'የፈረቃ ክፍለ-ጊዜ' : 'Shift Window') . '</th><th>' . ($isAmharic ? 'የሰዓት ገደብ' : 'Time Interval') . '</th><th class="text-right">' . ($isAmharic ? 'ተማሪዎች' : 'Students') . '</th><th class="text-right">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</th><th class="text-right">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Share (%)') . '</th></tr>';
 
@@ -1765,7 +1765,7 @@ class AttendanceReportService
 
         // Section 5: Day-of-the-Week Operational Influx Profile (full or day_of_week)
         if (($scope === 'full' || $scope === 'day_of_week') && !empty($data['dayOfWeekAnalytics'])) {
-            $html .= '<h3>' . ($isAmharic ? '5. የሳምንት ቀናት የተጠቃሚዎች ፍሰትና የጥግግት ትንተና' : '5. Day-of-the-Week Operational Foot-Traffic Influx') . '</h3>';
+            $html .= '<h3>' . ($isAmharic ? ($scope === 'day_of_week' ? '2. የሳምንት ቀናት የተጠቃሚዎች ፍሰትና የጥግግት ትንተና' : '5. የሳምንት ቀናት የተጠቃሚዎች ፍሰትና የጥግግት ትንተና') : ($scope === 'day_of_week' ? '2. Day-of-the-Week Operational Foot-Traffic Influx' : '5. Day-of-the-Week Operational Foot-Traffic Influx')) . '</h3>';
             $html .= '<table>';
             $html .= '<tr><th>' . ($isAmharic ? 'የሳምንቱ ዕለት' : 'Day of Week') . '</th><th class="text-right">' . ($isAmharic ? 'አማካይ በቀን' : 'Daily Average') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Visitors') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Weekly Share (%)') . '</th><th>' . ($isAmharic ? 'የፍሰት ደረጃ' : 'Surge Level') . '</th><th>' . ($isAmharic ? 'የአስተዳደር የቅድመ-ትንበያ ማስታወሻ' : 'Management Prediction Guidance') . '</th></tr>';
             foreach ($data['dayOfWeekAnalytics'] as $dow) {
@@ -1785,7 +1785,7 @@ class AttendanceReportService
         // Section 6: Intra-Month Day Recurring Occurrence & Weekly Cycle Matrix (full or intra_month)
         if (($scope === 'full' || $scope === 'intra_month') && !empty($data['intraMonthDayAnalytics'])) {
             $intra = $data['intraMonthDayAnalytics'];
-            $html .= '<h3>' . ($isAmharic ? '6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና' : '6. Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix') . '</h3>';
+            $html .= '<h3>' . ($isAmharic ? ($scope === 'intra_month' ? 'በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና' : '6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና') : ($scope === 'intra_month' ? 'Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix' : '6. Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix')) . '</h3>';
             $html .= '<p><b>' . ($isAmharic ? 'የትንበያ መረጃ፡ ' : 'Prediction Notice: ') . '</b>' . htmlspecialchars($intra['prediction']) . '</p>';
 
             // Weekly cycles

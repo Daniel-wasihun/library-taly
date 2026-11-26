@@ -536,7 +536,7 @@
         @if(($scope === 'full' || $scope === 'branches') && empty($selectedLibrary))
         <!-- Section 3: Branch Facilities Comparison Table -->
         <div class="section-header">
-            <span>{{ $isAmharic ? '3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር' : '3. Library Branch Facility Distribution' }}</span>
+            <span>{{ $isAmharic ? ($scope === 'branches' ? 'የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር' : '3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር') : ($scope === 'branches' ? 'Library Branch Facility Distribution' : '3. Library Branch Facility Distribution') }}</span>
         </div>
         <table class="formal-table">
             <thead>
@@ -573,7 +573,7 @@
         @if($scope === 'full' || $scope === 'day_of_week')
         <!-- Section 4: Operational Shift Windows Table -->
         <div class="section-header">
-            <span>{{ $isAmharic ? '4. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት' : '4. Operational Shift Windows & Density' }}</span>
+            <span>{{ $isAmharic ? ($scope === 'day_of_week' ? '1. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት' : '4. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት') : ($scope === 'day_of_week' ? '1. Operational Shift Windows & Density' : '4. Operational Shift Windows & Density') }}</span>
         </div>
         <table class="formal-table">
             <thead>
@@ -607,7 +607,7 @@
         <!-- Section 5: Day-of-Week Operational Foot-Traffic Analysis Table -->
         @if(!empty($dayOfWeekAnalytics))
         <div class="section-header">
-            <span>{{ $isAmharic ? '5. ሰኞ – እሑድ የሳምንት ቀናት የተጠቃሚዎች ፍሰት ትንተና' : '5. Day-of-the-Week Operational Foot-Traffic Analysis' }}</span>
+            <span>{{ $isAmharic ? ($scope === 'day_of_week' ? '2. ሰኞ – እሑድ የሳምንት ቀናት የተጠቃሚዎች ፍሰት ትንተና' : '5. ሰኞ – እሑድ የሳምንት ቀናት የተጠቃሚዎች ፍሰት ትንተና') : ($scope === 'day_of_week' ? '2. Day-of-the-Week Operational Foot-Traffic Analysis' : '5. Day-of-the-Week Operational Foot-Traffic Analysis') }}</span>
         </div>
         <table class="formal-table">
             <thead>
@@ -640,7 +640,7 @@
         <!-- Section 6: Intra-Month Day Recurring Occurrence & Weekly Cycle Matrix -->
         @if(!empty($intraMonthDayAnalytics))
         <div class="section-header">
-            <span>{{ $isAmharic ? '6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና' : '6. Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix' }}</span>
+            <span>{{ $isAmharic ? ($scope === 'intra_month' ? 'በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና' : '6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና') : ($scope === 'intra_month' ? 'Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix' : '6. Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix') }}</span>
         </div>
         <table class="formal-table">
             <thead>

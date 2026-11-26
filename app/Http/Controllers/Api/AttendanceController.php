@@ -474,7 +474,9 @@ class AttendanceController extends Controller
         }
 
         $lang = $request->query('lang', 'en');
-        $reportData = $this->reportService->compileReportData($user, $request->all(), $lang);
+        $params = $request->all();
+        $params['scope'] = strtolower($request->query('scope', $request->input('scope', 'full')));
+        $reportData = $this->reportService->compileReportData($user, $params, $lang);
 
         $html = view('reports.attendance_print', $reportData)->render();
 

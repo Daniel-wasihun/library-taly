@@ -42,6 +42,33 @@ const isPrinting = ref(false);
 
 const activeScope = computed(() => props.scope || 'full');
 
+const scopeTitle = computed(() => {
+  const isAm = langStore.isAmharic();
+  switch (activeScope.value) {
+    case 'patron_types':
+      return isAm
+        ? 'የተጠቃሚዎች ምድብና የስነ-ሕዝብ አጠቃቀም ትንተና ሪፖርት'
+        : 'Patron Demographic & Usage Counter Analytics Report';
+    case 'branches':
+      return isAm
+        ? 'የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽርና የተጠቃሚዎች ፍሰት ኦዲት ሪፖርት'
+        : 'Library Branch Facilities Comparison & Traffic Audit';
+    case 'day_of_week':
+      return isAm
+        ? 'የሳምንት ቀናት የተጠቃሚዎች ፍሰትና የጥግግት ትንተና ሪፖርት'
+        : 'Day-of-the-Week Foot-Traffic Influx & Density Analysis';
+    case 'intra_month':
+      return isAm
+        ? 'በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና ሪፖርት'
+        : 'Intra-Month Weekly Cycles & Recurring Day Occurrences Report';
+    case 'full':
+    default:
+      return isAm
+        ? 'ይፋዊ የአጠቃቀም ቆጣሪና የስነ-ሕዝብ ትንተና ሪፖርት'
+        : 'Official Library Attendance & Demographic Analytics Report';
+  }
+});
+
 const effectiveStats = computed(() => {
   return props.reportStats || attendanceStore.stats || {};
 });
@@ -280,7 +307,7 @@ const handleSaveCsv = async () => {
                 {{ langStore.isAmharic() ? 'የዩኒቨርሲቲ ቤተ-መጻሕፍት እና መረጃ አገልግሎት ዳይሬክቶሬት' : 'Directorate of University Library & Information Services' }}
               </p>
               <p class="text-[10px] text-slate-500 font-medium">
-                {{ langStore.isAmharic() ? 'ይፋዊ የአጠቃቀም ቆጣሪና የስነ-ሕዝብ ትንተና ሪፖርት' : 'Official Library Attendance & Demographic Analytics Report' }}
+                {{ scopeTitle }}
               </p>
             </div>
           </div>
@@ -311,8 +338,8 @@ const handleSaveCsv = async () => {
           </div>
         </div>
 
-        <!-- 1. Key Performance Indicators (General & Relevant Only) -->
-        <div class="mb-5">
+        <!-- 1. Key Performance Indicators (General & Relevant Only - Full Scope Only) -->
+        <div v-if="activeScope === 'full'" class="mb-5">
           <h2 class="text-xs font-bold text-[#0b529c] uppercase tracking-wider border-b border-[#0b529c]/40 pb-1 mb-2.5">
             {{ langStore.isAmharic() ? '1. ዋና ዋና የአፈጻጸም ጠቋሚዎች (KPIs)' : '1. Key Performance Indicators (KPIs)' }}
           </h2>
@@ -335,10 +362,10 @@ const handleSaveCsv = async () => {
           </div>
         </div>
 
-        <!-- 2. Patron Demographic Categorization Table -->
-        <div class="mb-5">
+        <!-- 2. Patron Demographic Categorization Table (Only for full or patron_types scope) -->
+        <div v-if="activeScope === 'full' || activeScope === 'patron_types'" class="mb-5">
           <h2 class="text-xs font-bold text-[#0b529c] uppercase tracking-wider border-b border-[#0b529c]/40 pb-1 mb-2.5">
-            {{ langStore.isAmharic() ? '2. የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር' : '2. Patron Demographic Categorization' }}
+            {{ langStore.isAmharic() ? (activeScope === 'patron_types' ? 'የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር' : '2. የተጠቃሚዎች ምድብና ስነ-ሕዝብ ዝርዝር') : (activeScope === 'patron_types' ? 'Patron Demographic Categorization' : '2. Patron Demographic Categorization') }}
           </h2>
           <table class="w-full border-collapse border border-slate-300 text-[11px]">
             <thead>
@@ -386,7 +413,7 @@ const handleSaveCsv = async () => {
         <!-- 3. Campus Facility Distribution Table (Only shown when viewing all branches) -->
         <div v-if="(activeScope === 'full' || activeScope === 'branches') && !props.libraryId" class="mb-5">
           <h2 class="text-xs font-bold text-[#0b529c] uppercase tracking-wider border-b border-[#0b529c]/40 pb-1 mb-2.5">
-            {{ langStore.isAmharic() ? '3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር' : '3. Library Branch Facility Distribution' }}
+            {{ langStore.isAmharic() ? (activeScope === 'branches' ? 'የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር' : '3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር') : (activeScope === 'branches' ? 'Library Branch Facility Distribution' : '3. Library Branch Facility Distribution') }}
           </h2>
           <table class="w-full border-collapse border border-slate-300 text-[11px]">
             <thead>
@@ -417,7 +444,7 @@ const handleSaveCsv = async () => {
         <!-- 4. Operational Shift Windows & Density Table -->
         <div v-if="(activeScope === 'full' || activeScope === 'day_of_week') && shiftWindowsList.length" class="mb-5">
           <h2 class="text-xs font-bold text-[#0b529c] uppercase tracking-wider border-b border-[#0b529c]/40 pb-1 mb-2.5">
-            {{ langStore.isAmharic() ? '4. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት' : '4. Operational Shift Windows & Density' }}
+            {{ langStore.isAmharic() ? (activeScope === 'day_of_week' ? '1. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት' : '4. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት') : (activeScope === 'day_of_week' ? '1. Operational Shift Windows & Density' : '4. Operational Shift Windows & Density') }}
           </h2>
           <table class="w-full border-collapse border border-slate-300 text-[11px]">
             <thead>
@@ -448,7 +475,7 @@ const handleSaveCsv = async () => {
         <!-- 5. Day-of-the-Week Influx Profile & Foot-Traffic Table -->
         <div v-if="(activeScope === 'full' || activeScope === 'day_of_week') && dayOfWeekList.length" class="mb-5">
           <h2 class="text-xs font-bold text-[#0b529c] uppercase tracking-wider border-b border-[#0b529c]/40 pb-1 mb-2.5">
-            {{ langStore.isAmharic() ? '5. ሰኞ – እሑድ የሳምንት ቀናት የተጠቃሚዎች ፍሰት ትንተና' : '5. Day-of-the-Week Operational Foot-Traffic Analysis' }}
+            {{ langStore.isAmharic() ? (activeScope === 'day_of_week' ? '2. ሰኞ – እሑድ የሳምንት ቀናት የተጠቃሚዎች ፍሰት ትንተና' : '5. ሰኞ – እሑድ የሳምንት ቀናት የተጠቃሚዎች ፍሰት ትንተና') : (activeScope === 'day_of_week' ? '2. Day-of-the-Week Operational Foot-Traffic Analysis' : '5. Day-of-the-Week Operational Foot-Traffic Analysis') }}
           </h2>
           <table class="w-full border-collapse border border-slate-300 text-[11px]">
             <thead>
@@ -481,7 +508,7 @@ const handleSaveCsv = async () => {
         <!-- 6. Intra-Month Weekly Cycles & Recurring Day Occurrences Table -->
         <div v-if="(activeScope === 'full' || activeScope === 'intra_month') && intraMonthData" class="mb-5">
           <h2 class="text-xs font-bold text-[#0b529c] uppercase tracking-wider border-b border-[#0b529c]/40 pb-1 mb-2.5">
-            {{ langStore.isAmharic() ? '6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና' : '6. Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix' }}
+            {{ langStore.isAmharic() ? (activeScope === 'intra_month' ? 'በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና' : '6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና') : (activeScope === 'intra_month' ? 'Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix' : '6. Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix') }}
           </h2>
           <!-- Weekly Cycles -->
           <table v-if="intraMonthData.weekly_cycles?.length" class="w-full border-collapse border border-slate-300 text-[11px] mb-3">

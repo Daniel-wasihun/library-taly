@@ -119,14 +119,16 @@ class AttendanceController extends Controller
 
         $count = (int) ($validated['count'] ?? 1);
 
-        $attendance = LibraryAttendance::create([
-            'library_id' => $libraryId,
-            'user_type' => $validated['user_type'],
-            'gender' => $validated['gender'],
-            'visitor_count' => $count,
-            'staff_id' => $user->id,
-            'entry_at' => now(),
-        ]);
+        $attendance = DB::transaction(function () use ($libraryId, $validated, $count, $user) {
+            return LibraryAttendance::create([
+                'library_id' => $libraryId,
+                'user_type' => $validated['user_type'],
+                'gender' => $validated['gender'],
+                'visitor_count' => $count,
+                'staff_id' => $user->id,
+                'entry_at' => now(),
+            ]);
+        });
 
         return response()->json([
             'success' => true,
@@ -402,7 +404,9 @@ class AttendanceController extends Controller
             'count' => ['required', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $attendance->update(['visitor_count' => $validated['count']]);
+        DB::transaction(function () use ($attendance, $validated) {
+            $attendance->update(['visitor_count' => $validated['count']]);
+        });
 
         return response()->json([
             'success' => true,
@@ -451,7 +455,9 @@ class AttendanceController extends Controller
             ], 403);
         }
 
-        $attendance->delete();
+        DB::transaction(function () use ($attendance) {
+            $attendance->delete();
+        });
 
         return response()->json(['success' => true, 'message' => 'Attendance log deleted.']);
     }

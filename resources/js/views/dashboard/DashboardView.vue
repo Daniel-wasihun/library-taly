@@ -1367,9 +1367,47 @@
           </div>
         </div>
 
-        <div v-if="loadingAudit" class="py-12 text-center space-y-2">
-          <div class="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin mx-auto" />
-          <p class="text-main-text/60 font-medium">{{ langStore.isAmharic() ? 'የኦዲት መረጃዎችን በማዘጋጀት ላይ...' : 'Compiling shift compliance audit data...' }}</p>
+        <!-- Audit Modal Loading Skeletons -->
+        <div v-if="loadingAudit" class="space-y-4 animate-pulse">
+          <!-- Document Preview Skeleton -->
+          <div v-if="auditViewMode === 'print'" class="w-full h-[580px] rounded border border-card-border overflow-hidden bg-white dark:bg-slate-900/40 p-8 space-y-6 shadow-inner">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div class="space-y-2">
+                <div class="h-5 w-64 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                <div class="h-3 w-44 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+              </div>
+              <div class="h-10 w-24 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+            </div>
+            <div class="grid grid-cols-4 gap-3">
+              <div v-for="i in 4" :key="`prev-kpi-${i}`" class="h-16 bg-slate-100 dark:bg-slate-800/60 rounded border border-card-border/40"></div>
+            </div>
+            <div class="space-y-2.5 pt-2">
+              <div class="h-8 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+              <div v-for="i in 6" :key="`prev-row-${i}`" class="h-7 bg-slate-100 dark:bg-slate-800/40 rounded"></div>
+            </div>
+            <div class="flex justify-between items-center pt-8 border-t border-slate-200 dark:border-slate-800">
+              <div class="h-4 w-40 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+              <div class="h-4 w-32 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+            </div>
+          </div>
+
+          <!-- Table View Skeleton -->
+          <div v-else class="space-y-4">
+            <!-- 4 Summary KPI Skeletons -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div v-for="i in 4" :key="`modal-kpi-${i}`" class="p-3 rounded border border-card-border bg-card-bg space-y-2 text-center">
+                <div class="h-6 w-16 mx-auto bg-slate-200 dark:bg-slate-700 rounded"></div>
+                <div class="h-2.5 w-24 mx-auto bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+              </div>
+            </div>
+            <!-- Tab buttons skeleton -->
+            <div class="h-8 w-80 bg-slate-200 dark:bg-slate-700/50 rounded"></div>
+            <!-- Incidents Table Skeleton -->
+            <div class="rounded border border-card-border p-3 space-y-2 bg-card-bg">
+              <div class="h-8 bg-slate-200 dark:bg-slate-700/70 rounded"></div>
+              <div v-for="i in 5" :key="`modal-row-${i}`" class="h-10 bg-slate-100 dark:bg-slate-800/50 rounded border border-card-border/30"></div>
+            </div>
+          </div>
         </div>
 
         <template v-else>

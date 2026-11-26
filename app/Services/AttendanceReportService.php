@@ -1244,7 +1244,8 @@ class AttendanceReportService
                 $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $dow['percentage'] . '%</Data></Cell>' . "\n";
                 $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . $split . '</Data></Cell>' . "\n";
                 $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $dow['surge_level_am'] : $dow['surge_level']) . '</Data></Cell>' . "\n";
-                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $dow['prediction_am'] : $dow['prediction']) . '</Data></Cell>' . "\n";
+                $predStr = $isAmharic ? ($dow['prediction_am'] ?? $dow['prediction'] ?? '—') : ($dow['prediction'] ?? '—');
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($predStr) . '</Data></Cell>' . "\n";
                 $output .= '   </Row>' . "\n";
             }
 
@@ -1309,7 +1310,8 @@ class AttendanceReportService
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $wCycle['total'] . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $wCycle['daily_average'] . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $wCycle['percent'] . '%</Data></Cell>' . "\n";
-                    $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $wCycle['prediction_am'] : $wCycle['prediction']) . '</Data></Cell>' . "\n";
+                    $wPredStr = $isAmharic ? ($wCycle['prediction_am'] ?? $wCycle['prediction'] ?? '—') : ($wCycle['prediction'] ?? '—');
+                    $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($wPredStr) . '</Data></Cell>' . "\n";
                     $output .= '   </Row>' . "\n";
                 }
             }
@@ -1467,7 +1469,8 @@ class AttendanceReportService
                 $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $dow['percentage'] . '%</Data></Cell>' . "\n";
                 $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . $split . '</Data></Cell>' . "\n";
                 $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $dow['surge_level_am'] : $dow['surge_level']) . '</Data></Cell>' . "\n";
-                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $dow['prediction_am'] : $dow['prediction']) . '</Data></Cell>' . "\n";
+                $predStr = $isAmharic ? ($dow['prediction_am'] ?? $dow['prediction'] ?? '—') : ($dow['prediction'] ?? '—');
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($predStr) . '</Data></Cell>' . "\n";
                 $output .= '   </Row>' . "\n";
             }
 
@@ -1529,7 +1532,8 @@ class AttendanceReportService
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $wCycle['total'] . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $wCycle['daily_average'] . '</Data></Cell>' . "\n";
                     $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $wCycle['percent'] . '%</Data></Cell>' . "\n";
-                    $output .= '    <Cell ss:MergeAcross="3" ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($isAmharic ? $wCycle['prediction_am'] : $wCycle['prediction']) . '</Data></Cell>' . "\n";
+                    $wPredStr2 = $isAmharic ? ($wCycle['prediction_am'] ?? $wCycle['prediction'] ?? '—') : ($wCycle['prediction'] ?? '—');
+                    $output .= '    <Cell ss:MergeAcross="3" ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($wPredStr2) . '</Data></Cell>' . "\n";
                     $output .= '   </Row>' . "\n";
                 }
                 $output .= '   <Row ss:Height="14"><Cell ss:MergeAcross="7"/></Row>' . "\n";
@@ -1659,7 +1663,9 @@ class AttendanceReportService
         $html .= '<table class="meta-table" style="margin-bottom: 16pt;">';
         $html .= '<tr>';
         $html .= '<td style="width: 25%; font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'የተዘጋጀበት ቀንና ሰዓት' : 'Date of Issuance') . ':</td>';
-        $html .= '<td style="width: 25%;">' . $data['generatedAt']['full'] . ' (' . $data['generatedAt']['time'] . ')</td>';
+        $genAtFull = $data['generatedAt']['full'] ?? ($data['generatedAt']['date'] ?? '');
+        $genAtTime = $data['generatedAt']['time'] ?? '';
+        $html .= '<td style="width: 25%;">' . $genAtFull . ' (' . $genAtTime . ')</td>';
         $html .= '<td style="width: 25%; font-weight: bold; background: #F8FAFC;">' . ($isAmharic ? 'የቤተ-መጻሕፍት ቅርንጫፍ' : 'Target Facilities') . ':</td>';
         $html .= '<td style="width: 25%;">' . htmlspecialchars($data['libraryName']) . '</td>';
         $html .= '</tr>';
@@ -1769,7 +1775,8 @@ class AttendanceReportService
                 $html .= '<td class="text-right">' . number_format($dow['total']) . '</td>';
                 $html .= '<td class="text-right">' . $dow['percentage'] . '%</td>';
                 $html .= '<td>' . htmlspecialchars($isAmharic ? $dow['surge_level_am'] : $dow['surge_level']) . '</td>';
-                $html .= '<td>' . htmlspecialchars($isAmharic ? $dow['prediction_am'] : $dow['prediction']) . '</td>';
+                $dPredStr = $isAmharic ? ($dow['prediction_am'] ?? $dow['prediction'] ?? '—') : ($dow['prediction'] ?? '—');
+                $html .= '<td>' . htmlspecialchars($dPredStr) . '</td>';
                 $html .= '</tr>';
             }
             $html .= '</table>';
@@ -1790,7 +1797,8 @@ class AttendanceReportService
                 $html .= '<td class="text-right" style="font-weight:bold;">' . number_format($wCycle['total']) . '</td>';
                 $html .= '<td class="text-right">' . number_format($wCycle['daily_average']) . '</td>';
                 $html .= '<td class="text-right">' . $wCycle['percent'] . '%</td>';
-                $html .= '<td>' . htmlspecialchars($isAmharic ? $wCycle['prediction_am'] : $wCycle['prediction']) . '</td>';
+                $wPredStr3 = $isAmharic ? ($wCycle['prediction_am'] ?? $wCycle['prediction'] ?? '—') : ($wCycle['prediction'] ?? '—');
+                $html .= '<td>' . htmlspecialchars($wPredStr3) . '</td>';
                 $html .= '</tr>';
             }
             $html .= '</table>';
@@ -1802,8 +1810,9 @@ class AttendanceReportService
                 $html .= '<tr>';
                 $html .= '<td><b>' . htmlspecialchars($occDay['display_name']) . '</b></td>';
                 foreach ($occDay['occurrences'] as $oc) {
-                    $badge = $isAmharic ? $oc['surge_badge_am'] : $oc['surge_badge'];
-                    $html .= '<td>' . number_format($oc['average']) . ' (' . htmlspecialchars($badge) . ')' . '</td>';
+                    $badge = $isAmharic ? ($oc['surge_badge_am'] ?? $oc['surge_badge'] ?? '') : ($oc['surge_badge'] ?? '');
+                    $badgeText = $badge ? ' (' . htmlspecialchars($badge) . ')' : '';
+                    $html .= '<td>' . number_format($oc['average'] ?? 0) . $badgeText . '</td>';
                 }
                 $html .= '</tr>';
             }
@@ -1890,11 +1899,12 @@ class AttendanceReportService
         fprintf($f, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
 
         // Executive Header Section
+        $genDateStr = ($data['generatedAt']['full'] ?? $data['generatedAt']['date'] ?? '') . ' ' . ($data['generatedAt']['time'] ?? '');
         fputcsv($f, [$scopeHeaders[$scope] ?? $scopeHeaders['full']]);
-        fputcsv($f, [$isAmharic ? 'የተዘጋጀበት ቀን' : 'Generated At', $data['generatedAt']['full'] . ' ' . $data['generatedAt']['time']]);
-        fputcsv($f, [$isAmharic ? 'የሪፖርቱ ሽፋን ጊዜ' : 'Reporting Window', $data['dateFromStr']['date'] . ' - ' . $data['dateToStr']['date']]);
-        fputcsv($f, [$isAmharic ? 'የቤተ-መጻሕፍት ቅርንጫፍ' : 'Branch Scope', $data['libraryName']]);
-        fputcsv($f, [$isAmharic ? 'ያዘጋጀው ሠራተኛ' : 'Prepared By', $data['generatedBy']]);
+        fputcsv($f, [$isAmharic ? 'የተዘጋጀበት ቀን' : 'Generated At', trim($genDateStr)]);
+        fputcsv($f, [$isAmharic ? 'የሪፖርቱ ሽፋን ጊዜ' : 'Reporting Window', ($data['dateFromStr']['date'] ?? '') . ' - ' . ($data['dateToStr']['date'] ?? '')]);
+        fputcsv($f, [$isAmharic ? 'የቤተ-መጻሕፍት ቅርንጫፍ' : 'Branch Scope', $data['libraryName'] ?? 'All Branches']);
+        fputcsv($f, [$isAmharic ? 'ያዘጋጀው ሠራተኛ' : 'Prepared By', $data['generatedBy'] ?? 'Staff']);
         fputcsv($f, [$isAmharic ? 'የኦዲት ወሰን' : 'Audit Scope', strtoupper($scope)]);
         fputcsv($f, []);
 
@@ -2003,12 +2013,12 @@ class AttendanceReportService
             ]);
             foreach ($data['dayOfWeekAnalytics'] as $dow) {
                 fputcsv($f, [
-                    $dow['display_name'],
-                    $dow['daily_average'],
-                    $dow['total'],
-                    $dow['percentage'] . '%',
-                    $isAmharic ? $dow['surge_level_am'] : $dow['surge_level'],
-                    $isAmharic ? $dow['prediction_am'] : $dow['prediction'],
+                    $dow['display_name'] ?? '',
+                    $dow['daily_average'] ?? 0,
+                    $dow['total'] ?? 0,
+                    ($dow['percentage'] ?? 0) . '%',
+                    $isAmharic ? ($dow['surge_level_am'] ?? $dow['surge_level'] ?? '—') : ($dow['surge_level'] ?? '—'),
+                    $isAmharic ? ($dow['prediction_am'] ?? $dow['prediction'] ?? '—') : ($dow['prediction'] ?? '—'),
                 ]);
             }
             fputcsv($f, []);
@@ -2017,7 +2027,9 @@ class AttendanceReportService
         // Intra-Month Day Recurring Occurrence Matrix (for full or intra_month)
         if (($scope === 'full' || $scope === 'intra_month') && !empty($data['intraMonthDayAnalytics'])) {
             fputcsv($f, [$isAmharic ? '--- 6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና ---' : '--- 6. INTRA-MONTH RECURRING DAY OCCURRENCE MATRIX ---']);
-            fputcsv($f, [$isAmharic ? 'የትንበያ ማስጠንቀቂያ' : 'Prediction Alert', $data['intraMonthDayAnalytics']['prediction']]);
+            if (!empty($data['intraMonthDayAnalytics']['prediction'])) {
+                fputcsv($f, [$isAmharic ? 'የትንበያ ማስጠንቀቂያ' : 'Prediction Alert', $data['intraMonthDayAnalytics']['prediction']]);
+            }
             fputcsv($f, [
                 $isAmharic ? 'የወሩ ሳምንት' : 'Week in Month',
                 $isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons',
@@ -2025,14 +2037,16 @@ class AttendanceReportService
                 $isAmharic ? 'ድርሻ (%)' : 'Share (%)',
                 $isAmharic ? 'የአሰራር ማስታወሻ' : 'Operational Note',
             ]);
-            foreach ($data['intraMonthDayAnalytics']['weekly_cycles'] as $wCycle) {
-                fputcsv($f, [
-                    $isAmharic ? $wCycle['label_am'] : $wCycle['label'],
-                    $wCycle['total'],
-                    $wCycle['daily_average'],
-                    $wCycle['percent'] . '%',
-                    $isAmharic ? $wCycle['prediction_am'] : $wCycle['prediction'],
-                ]);
+            if (!empty($data['intraMonthDayAnalytics']['weekly_cycles'])) {
+                foreach ($data['intraMonthDayAnalytics']['weekly_cycles'] as $wCycle) {
+                    fputcsv($f, [
+                        $isAmharic ? ($wCycle['label_am'] ?? $wCycle['label'] ?? '') : ($wCycle['label'] ?? ''),
+                        $wCycle['total'] ?? 0,
+                        $wCycle['daily_average'] ?? 0,
+                        ($wCycle['percent'] ?? 0) . '%',
+                        $isAmharic ? ($wCycle['prediction_am'] ?? $wCycle['prediction'] ?? '—') : ($wCycle['prediction'] ?? '—'),
+                    ]);
+                }
             }
             fputcsv($f, []);
         }

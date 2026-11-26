@@ -421,7 +421,7 @@
             <tr>
                 <td class="label">{{ $isAmharic ? 'የሪፖርቱ ሽፋን ጊዜ' : 'Reporting Window' }}</td>
                 <td class="val" colspan="3">
-                    @if($isSingleDay)
+                    @if(!empty($isSingleDay))
                         {{ $dateFromStr['full'] }}
                     @else
                         {{ $dateFromStr['date'] }} – {{ $dateToStr['date'] }}

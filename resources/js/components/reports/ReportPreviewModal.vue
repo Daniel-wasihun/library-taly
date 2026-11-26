@@ -128,6 +128,29 @@ const branchList = computed(() => {
   });
 });
 
+const shiftWindowsList = computed(() => {
+  const sw = effectiveStats.value.shift_windows;
+  if (!sw) return [];
+  return Object.values(sw);
+});
+
+const dayOfWeekList = computed(() => {
+  return effectiveStats.value.day_of_week_analytics || [];
+});
+
+const intraMonthData = computed(() => {
+  const im = effectiveStats.value.intra_month_analytics;
+  if (!im) return null;
+  if (im.selected_month_key && im.by_month?.[im.selected_month_key]) {
+    return im.by_month[im.selected_month_key];
+  }
+  return im;
+});
+
+const generalSystemStats = computed(() => {
+  return effectiveStats.value.kpis || {};
+});
+
 const handlePrint = () => {
   isPrinting.value = true;
   setTimeout(() => {
@@ -391,6 +414,123 @@ const handleSaveCsv = async () => {
           </table>
         </div>
 
+        <!-- 4. Operational Shift Windows & Density Table -->
+        <div v-if="(activeScope === 'full' || activeScope === 'day_of_week') && shiftWindowsList.length" class="mb-5">
+          <h2 class="text-xs font-bold text-[#0b529c] uppercase tracking-wider border-b border-[#0b529c]/40 pb-1 mb-2.5">
+            {{ langStore.isAmharic() ? '4. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት' : '4. Operational Shift Windows & Density' }}
+          </h2>
+          <table class="w-full border-collapse border border-slate-300 text-[11px]">
+            <thead>
+              <tr class="bg-slate-100 text-slate-800">
+                <th class="border border-slate-300 py-1.5 px-2.5 text-left font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'የፈረቃ ክፍለ-ጊዜ' : 'Shift Window' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-left font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'የሰዓት ገደብ' : 'Time Interval' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-right font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'ተማሪ' : 'Students' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-right font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'መምህር' : 'Teachers' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-right font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'ሠራተኛ' : 'Staff' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-right font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'ጠቅላላ' : 'Total' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-right font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'ድርሻ' : 'Share' }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="s in shiftWindowsList" :key="s.code" class="hover:bg-slate-50/50">
+                <td class="border border-slate-300 py-1.5 px-2.5 font-semibold">{{ s.title }}</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 font-mono text-[10px]">{{ s.time_range }}</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 text-right font-mono">{{ Number(s.students || 0).toLocaleString() }}</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 text-right font-mono">{{ Number(s.teachers || 0).toLocaleString() }}</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 text-right font-mono">{{ Number(s.staff || 0).toLocaleString() }}</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 text-right font-mono font-bold">{{ Number(s.count || 0).toLocaleString() }}</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 text-right font-mono">{{ s.percent || 0 }}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 5. Day-of-the-Week Influx Profile & Foot-Traffic Table -->
+        <div v-if="(activeScope === 'full' || activeScope === 'day_of_week') && dayOfWeekList.length" class="mb-5">
+          <h2 class="text-xs font-bold text-[#0b529c] uppercase tracking-wider border-b border-[#0b529c]/40 pb-1 mb-2.5">
+            {{ langStore.isAmharic() ? '5. ሰኞ – እሑድ የሳምንት ቀናት የተጠቃሚዎች ፍሰት ትንተና' : '5. Day-of-the-Week Operational Foot-Traffic Analysis' }}
+          </h2>
+          <table class="w-full border-collapse border border-slate-300 text-[11px]">
+            <thead>
+              <tr class="bg-slate-100 text-slate-800">
+                <th class="border border-slate-300 py-1.5 px-2.5 text-left font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'የሳምንቱ ዕለት' : 'Day of Week' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-right font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'አማካይ በቀን' : 'Daily Avg' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-right font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-right font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'ድርሻ (%)' : 'Share (%)' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-left font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'የፈረቃ ክፍፍል (ጠ/ቀ/ማ)' : 'Morn / Aft / Night' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-left font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'የፍሰት ደረጃ' : 'Surge Level' }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="d in dayOfWeekList" :key="d.day_of_week" class="hover:bg-slate-50/50">
+                <td class="border border-slate-300 py-1.5 px-2.5 font-semibold">
+                  {{ d.display_name }} {{ d.is_peak ? (langStore.isAmharic() ? '[ከፍተኛ]' : '[Peak]') : '' }}
+                </td>
+                <td class="border border-slate-300 py-1.5 px-2.5 text-right font-mono font-bold text-[#0b529c]">{{ Number(d.daily_average || 0).toLocaleString() }}</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 text-right font-mono">{{ Number(d.total || 0).toLocaleString() }}</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 text-right font-mono">{{ d.percentage || 0 }}%</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 font-mono text-[10px]">{{ d.morning }} / {{ d.afternoon }} / {{ d.night }}</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 font-bold" :class="d.is_peak ? 'text-rose-600' : 'text-blue-600'">
+                  {{ langStore.isAmharic() ? d.surge_level_am : d.surge_level }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 6. Intra-Month Weekly Cycles & Recurring Day Occurrences Table -->
+        <div v-if="(activeScope === 'full' || activeScope === 'intra_month') && intraMonthData" class="mb-5">
+          <h2 class="text-xs font-bold text-[#0b529c] uppercase tracking-wider border-b border-[#0b529c]/40 pb-1 mb-2.5">
+            {{ langStore.isAmharic() ? '6. በወሩ ውስጥ ያሉ ሳምንታትና የዕለታት ድግግሞሽ ትንተና' : '6. Intra-Month Recurring Day Occurrence & Weekly Cycle Matrix' }}
+          </h2>
+          <!-- Weekly Cycles -->
+          <table v-if="intraMonthData.weekly_cycles?.length" class="w-full border-collapse border border-slate-300 text-[11px] mb-3">
+            <thead>
+              <tr class="bg-slate-100 text-slate-800">
+                <th class="border border-slate-300 py-1.5 px-2.5 text-left font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'የወሩ ሳምንታዊ ክፍለ-ጊዜ' : 'Weekly Cycle in Month' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-right font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-right font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'አማካይ በቀን' : 'Daily Average' }}</th>
+                <th class="border border-slate-300 py-1.5 px-2.5 text-right font-bold uppercase text-[10px]">{{ langStore.isAmharic() ? 'የወሩ ድርሻ (%)' : 'Monthly Share (%)' }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="wc in intraMonthData.weekly_cycles" :key="wc.cycle_index" class="hover:bg-slate-50/50">
+                <td class="border border-slate-300 py-1.5 px-2.5 font-semibold">
+                  {{ langStore.isAmharic() ? wc.label_am : wc.label }} {{ wc.is_peak_week ? (langStore.isAmharic() ? '[ከፍተኛ]' : '[Peak]') : '' }}
+                </td>
+                <td class="border border-slate-300 py-1.5 px-2.5 text-right font-mono font-bold">{{ Number(wc.total || 0).toLocaleString() }}</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 text-right font-mono">{{ Number(wc.daily_average || 0).toLocaleString() }}</td>
+                <td class="border border-slate-300 py-1.5 px-2.5 text-right font-mono">{{ wc.percent || 0 }}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 7. Institutional Summary & General System Insights -->
+        <div v-if="activeScope === 'full'" class="mb-5 p-3 rounded bg-slate-50 border border-slate-200">
+          <h2 class="text-xs font-bold text-[#0b529c] uppercase tracking-wider mb-2">
+            {{ langStore.isAmharic() ? '7. አጠቃላይ የሥርዓቱ ግንዛቤዎችና የቁልፍ መረጃዎች ማጠቃለያ' : '7. General System Insights & Executive Analytics Summary' }}
+          </h2>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10.5px]">
+            <div class="p-2 rounded bg-white border border-slate-200">
+              <span class="text-slate-500 block text-[9.5px] uppercase font-bold">{{ langStore.isAmharic() ? 'ከፍተኛ የሰዓት ፍሰት' : 'Peak Traffic Hour' }}</span>
+              <strong class="font-mono text-slate-800">{{ generalSystemStats.peak_hour || '—' }}</strong>
+            </div>
+            <div class="p-2 rounded bg-white border border-slate-200">
+              <span class="text-slate-500 block text-[9.5px] uppercase font-bold">{{ langStore.isAmharic() ? 'በጣም ንቁ ቅርንጫፍ' : 'Busiest Branch' }}</span>
+              <strong class="text-[#0b529c] truncate block">{{ generalSystemStats.busiest_branch || 'All Branches Active' }}</strong>
+            </div>
+            <div class="p-2 rounded bg-white border border-slate-200">
+              <span class="text-slate-500 block text-[9.5px] uppercase font-bold">{{ langStore.isAmharic() ? 'ቀዳሚ የተጠቃሚ ምድብ' : 'Dominant Patron Group' }}</span>
+              <strong class="text-emerald-700">{{ generalSystemStats.dominant_patron || (langStore.isAmharic() ? 'ተማሪዎች' : 'Students') }}</strong>
+            </div>
+            <div class="p-2 rounded bg-white border border-slate-200">
+              <span class="text-slate-500 block text-[9.5px] uppercase font-bold">{{ langStore.isAmharic() ? 'ጠቅላላ የሪፖርት ጊዜ ተጠቃሚ' : 'Total Window Patrons' }}</span>
+              <strong class="font-mono text-brand-blue">{{ Number(generalSystemStats.total || totalUsers).toLocaleString() }}</strong>
+            </div>
+          </div>
+        </div>
+
         <!-- Report Footer / Exporter Information Only -->
         <div class="mt-8 pt-4 border-t border-slate-300 flex items-center justify-between text-slate-600 text-[11.5px]">
           <div class="flex items-center gap-1.5">
@@ -473,22 +613,41 @@ const handleSaveCsv = async () => {
 
 <style scoped>
 @media print {
-  body * {
-    visibility: hidden;
+  /* Hide the entire app UI, headers, sidebars, modal chrome, and background */
+  :global(body),
+  :global(#app),
+  :global(nav),
+  :global(header),
+  :global(aside),
+  :global(.teleport),
+  :global(.modal-backdrop) {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
   }
+
+  body * {
+    visibility: hidden !important;
+  }
+
   #unilib-report-printable-sheet,
   #unilib-report-printable-sheet * {
-    visibility: visible;
+    visibility: visible !important;
   }
+
   #unilib-report-printable-sheet {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    border: none;
-    box-shadow: none;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 20mm !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    z-index: 999999 !important;
   }
 }
 </style>

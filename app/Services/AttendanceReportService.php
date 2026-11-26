@@ -1381,30 +1381,32 @@ class AttendanceReportService
         $output .= '   </Row>' . "\n";
         $output .= '   <Row ss:Height="14"><Cell ss:MergeAcross="6"/></Row>' . "\n";
 
-        // Section 3: Branch Facilities Comparison
-        $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="6" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? '3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር' : '3. Library Branch Facility Comparison') . '</Data></Cell></Row>' . "\n";
-        $output .= '   <Row ss:Height="18">' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የቅርንጫፍ ስም' : 'Branch Facility') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ኮድ' : 'Code') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ተማሪዎች' : 'Students') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons') . '</Data></Cell>' . "\n";
-        $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ድርሻ (%)' : 'Traffic Share (%)') . '</Data></Cell>' . "\n";
-        $output .= '   </Row>' . "\n";
-
-        foreach ($data['branchComparison'] as $branch) {
-            $output .= '   <Row>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($branch['name']) . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . $branch['code'] . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $branch['students'] . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . ($branch['teachers'] ?? 0) . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . ($branch['staff'] ?? 0) . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $branch['total'] . '</Data></Cell>' . "\n";
-            $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $branch['percent'] . '%</Data></Cell>' . "\n";
+        // Section 3: Branch Facilities Comparison (omitted if filtered to a single branch)
+        if (($scope === 'full' || $scope === 'branches') && empty($data['selectedLibrary'])) {
+            $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="6" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? '3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር' : '3. Library Branch Facility Comparison') . '</Data></Cell></Row>' . "\n";
+            $output .= '   <Row ss:Height="18">' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'የቅርንጫፍ ስም' : 'Branch Facility') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ኮድ' : 'Code') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ተማሪዎች' : 'Students') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons') . '</Data></Cell>' . "\n";
+            $output .= '    <Cell ss:StyleID="TableHead"><Data ss:Type="String">' . ($isAmharic ? 'ድርሻ (%)' : 'Traffic Share (%)') . '</Data></Cell>' . "\n";
             $output .= '   </Row>' . "\n";
+
+            foreach ($data['branchComparison'] as $branch) {
+                $output .= '   <Row>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . htmlspecialchars($branch['name']) . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellText"><Data ss:Type="String">' . $branch['code'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $branch['students'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . ($branch['teachers'] ?? 0) . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . ($branch['staff'] ?? 0) . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="Number">' . $branch['total'] . '</Data></Cell>' . "\n";
+                $output .= '    <Cell ss:StyleID="CellNumber"><Data ss:Type="String">' . $branch['percent'] . '%</Data></Cell>' . "\n";
+                $output .= '   </Row>' . "\n";
+            }
+            $output .= '   <Row ss:Height="14"><Cell ss:MergeAcross="6"/></Row>' . "\n";
         }
-        $output .= '   <Row ss:Height="14"><Cell ss:MergeAcross="6"/></Row>' . "\n";
 
         // Section 4: Operational Shift Windows
         $output .= '   <Row ss:Height="20"><Cell ss:MergeAcross="6" ss:StyleID="SectionHeader"><Data ss:Type="String">' . ($isAmharic ? '4. የፈረቃና የጊዜ ክፍለ-ጊዜ ስርጭት' : '4. Operational Shift Windows & Density') . '</Data></Cell></Row>' . "\n";
@@ -1715,8 +1717,8 @@ class AttendanceReportService
             $html .= '</table>';
         }
 
-        // Section 3: Branch Comparison (full or branches)
-        if ($scope === 'full' || $scope === 'branches') {
+        // Section 3: Branch Comparison (full or branches, omitted if restricted/filtered to a single branch)
+        if (($scope === 'full' || $scope === 'branches') && empty($data['selectedLibrary'])) {
             $html .= '<h3>' . ($isAmharic ? '3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር' : '3. Library Branch Facility Distribution') . '</h3>';
             $html .= '<table>';
             $html .= '<tr><th>' . ($isAmharic ? 'የቅርንጫፍ ስም' : 'Campus Branch') . '</th><th>' . ($isAmharic ? 'ኮድ' : 'Code') . '</th><th class="text-right">' . ($isAmharic ? 'ተማሪዎች' : 'Students') . '</th><th class="text-right">' . ($isAmharic ? 'መምህራን' : 'Teachers') . '</th><th class="text-right">' . ($isAmharic ? 'ሠራተኞች' : 'Staff') . '</th><th class="text-right">' . ($isAmharic ? 'ጠቅላላ ተጠቃሚ' : 'Total Patrons') . '</th><th class="text-right">' . ($isAmharic ? 'ድርሻ (%)' : 'Traffic Share (%)') . '</th></tr>';
@@ -1851,7 +1853,7 @@ class AttendanceReportService
         $html .= '<table style="width: 100%; border: none; margin: 0; padding: 0;">';
         $html .= '<tr style="border: none;">';
         $html .= '<td style="border: none; text-align: left; padding: 0;">';
-        $html .= '<strong style="color: #0F172A;">' . ($isAmharic ? 'ሪፖርቱን ያመነጨው/ያዘጋጀው፡ ' : 'Generated by: ') . '</strong>';
+        $html .= '<strong style="color: #0F172A;">' . ($isAmharic ? 'ሪፖርቱን ያዘጋጀው፡ ' : 'Generated by: ') . '</strong>';
         $html .= '<span style="color: #0B529C; font-weight: bold;">' . htmlspecialchars($data['generatedBy']) . '</span>';
         if (!empty($data['generatedByUsername'])) {
             $html .= ' <span style="color: #64748B; font-size: 8pt;">(@' . htmlspecialchars($data['generatedByUsername']) . ')</span>';
@@ -1932,8 +1934,8 @@ class AttendanceReportService
             fputcsv($f, []);
         }
 
-        // Branch Comparison Section (for full or branches)
-        if (($scope === 'full' || $scope === 'branches') && !empty($data['branchComparison'])) {
+        // Branch Comparison Section (for full or branches, omitted if single branch selected)
+        if (($scope === 'full' || $scope === 'branches') && empty($data['selectedLibrary']) && !empty($data['branchComparison'])) {
             fputcsv($f, [$isAmharic ? '--- 3. የቅርንጫፍ ቤተ-መጻሕፍት ንጽጽር ---' : '--- 3. LIBRARY BRANCH FACILITY COMPARISON ---']);
             fputcsv($f, [
                 $isAmharic ? 'የቅርንጫፍ ስም' : 'Branch Facility',

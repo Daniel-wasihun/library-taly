@@ -1376,6 +1376,7 @@
           <!-- Document Preview Mode (Embedded Printable A4 Report with authentication) -->
           <div v-if="auditViewMode === 'print'" class="w-full h-[580px] rounded border border-card-border overflow-hidden bg-white shadow-inner">
             <iframe
+              id="inactivity-audit-iframe"
               :src="printAuditUrl"
               class="w-full h-full border-none"
               title="Inactivity Audit Document Preview"
@@ -1752,11 +1753,35 @@ const openInactivityModal = (mode: 'table' | 'print' = 'table') => {
 };
 
 const handlePrintAudit = () => {
-  const url = printAuditUrl.value;
-  const printWin = window.open(url, '_blank');
-  if (!printWin) {
-    toast.error(langStore.isAmharic() ? 'ብቅ-ባይ መስኮት ታግዷል፤ እባክዎ ይፍቀዱለት።' : 'Pop-up blocked. Please allow pop-ups for this site.');
+  const iframe = document.getElementById('inactivity-audit-iframe') as HTMLIFrameElement | null;
+  if (iframe && iframe.contentWindow) {
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      return;
+    } catch (e) {
+      console.warn('Iframe print access failed, falling back:', e);
+    }
   }
+
+  // If table view or iframe not yet accessible, switch to preview mode then print
+  if (auditViewMode.value !== 'print') {
+    auditViewMode.value = 'print';
+    setTimeout(() => {
+      const targetIframe = document.getElementById('inactivity-audit-iframe') as HTMLIFrameElement | null;
+      if (targetIframe && targetIframe.contentWindow) {
+        try {
+          targetIframe.contentWindow.focus();
+          targetIframe.contentWindow.print();
+        } catch {
+          window.print();
+        }
+      }
+    }, 400);
+    return;
+  }
+
+  window.print();
 };
 
 const handleExportCsv = async () => {

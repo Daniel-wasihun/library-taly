@@ -15,8 +15,13 @@
 ### 1. Turn & Schedule-Based Duty Access Control
 - High-privilege library operations (circulation, attendance counting, fine waivers) are gated by `EnsureScheduledDutyTurn` middleware and `DutyScheduleService.php`.
 - Attendants are restricted to their assigned library branch and scheduled duty shift time window.
-- Out-of-shift attempts return specific codes (`OUTSIDE_DUTY_TURN`, `OUTSIDE_SHIFT_HOURS`, `BRANCH_RESTRICTED`).
-- Backend error responses are localized client-side to Amharic in `AttendanceCounter.vue` via `localizedDutyReason`.
+- **Out-of-shift attempts return specific codes** (`OUTSIDE_DUTY_TURN`, `OUTSIDE_SHIFT_HOURS`, `BRANCH_RESTRICTED`).
+- **Management Stepped-In & Active Branch Detection**: When an Admin, Super Admin, or Manager operates the usage counter for any library branch whose scheduled shift attendants are absent or not logging:
+  - `DutyScheduleService.php` and `AttendanceController.php` grant administrative management override without duty schedule blockage or cross-branch restriction.
+  - `ShiftInactivityMonitorService.php` queries attendance records using resilient multi-format timestamps (UTC, local EAT, and ISO 8601) to eliminate timezone boundary filtering discrepancies.
+  - When counts are recorded by management within the shift window, the branch is immediately classified as **Active Branch** (`management_stepped_in: true`) and excluded from inactivity alerts (`alerts`).
+  - Active branch cards in `DashboardView.vue` display an indigo `🛡️ Management Desk` badge, identify the manager/admin as the active operator with their role, and list non-logging shift attendants as "Scheduled Attendants Not Logging (Covered by Management)".
+- **Backend error responses are localized client-side to Amharic** in `AttendanceCounter.vue` via `localizedDutyReason`.
 
 ### 2. Offline-First PWA Attendance Counter
 - **PWA Infrastructure**: Service Worker (`public/sw.js`), `manifest.json`, mobile-capable meta tags, and Woldia University Library clean branding/splash screen.

@@ -43,11 +43,11 @@ class DutyScheduleService
         $targetDate = $date ?? $now->toDateString();
         $taskName = self::TASKS[$taskKey] ?? $taskKey;
 
-        // 1. Super Admin and Head Librarian possess administrative master override
-        if ($user->hasAdminPrivilege()) {
+        // 1. Super Admin, Admin, and Library Manager possess administrative master override
+        if ($user->hasAdminPrivilege() || $user->hasRole('Manager') || $user->can('libraries.manage')) {
             return [
                 'allowed' => true,
-                'reason' => 'Administrative override granted.',
+                'reason' => 'Administrative management override granted.',
                 'task' => $taskKey,
                 'task_name' => $taskName,
                 'schedule' => null,
@@ -55,7 +55,7 @@ class DutyScheduleService
         }
 
         // 2. Branch scope check: if target branch specified and user is scoped to a different branch
-        if ($libraryId && !$user->canManageAllLibraries() && (int) $user->library_id !== (int) $libraryId) {
+        if ($libraryId && !$user->canManageAllLibraries() && !$user->hasRole('Manager') && !$user->can('libraries.manage') && (int) $user->library_id !== (int) $libraryId) {
             $userBranchName = $user->library?->name ?? 'another branch';
             return [
                 'allowed' => false,

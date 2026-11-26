@@ -612,9 +612,32 @@
               </h4>
               <span class="text-[9px] font-mono text-main-text/50">Code: [{{ branch.branch_code }}]</span>
             </div>
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>{{ branch.last_entry_minutes_ago === 0 ? (langStore.isAmharic() ? 'አሁን' : 'Just now') : `${branch.last_entry_minutes_ago}m ago` }}</span>
+            <div class="flex items-center gap-1">
+              <span
+                v-if="branch.management_stepped_in"
+                class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 flex items-center gap-1"
+              >
+                <ShieldCheck class="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                <span>{{ langStore.isAmharic() ? 'አስተዳደር' : 'Management Desk' }}</span>
+              </span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>{{ branch.last_entry_minutes_ago === 0 ? (langStore.isAmharic() ? 'አሁን' : 'Just now') : `${branch.last_entry_minutes_ago}m ago` }}</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Management Stepped In Notice -->
+          <div
+            v-if="branch.management_stepped_in"
+            class="px-2.5 py-1.5 rounded bg-indigo-500/10 dark:bg-indigo-950/30 border border-indigo-500/30 text-indigo-900 dark:text-indigo-200 text-[10.5px] flex items-center justify-between"
+          >
+            <div class="flex items-center gap-1.5 font-bold">
+              <ShieldCheck class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span>{{ langStore.isAmharic() ? (branch.management_notice_am || 'ቆጠራው በአስተዳደር እየተካሄደ ነው') : (branch.management_notice || 'Management Stepped In (Desk Operated by Admin/Manager)') }}</span>
+            </div>
+            <span class="px-1.5 py-0.2 rounded text-[8.5px] font-bold bg-indigo-600 text-white shrink-0">
+              {{ langStore.isAmharic() ? 'ተረካቢ' : 'Desk Lead' }}
             </span>
           </div>
 
@@ -695,22 +718,26 @@
               <div
                 v-for="att in branch.working_attendants"
                 :key="att.id"
-                class="p-2 rounded text-[11px] bg-emerald-500/10 dark:bg-emerald-950/25 border border-emerald-500/25 space-y-1"
+                class="p-2 rounded text-[11px] border space-y-1"
+                :class="att.is_management ? 'bg-indigo-500/10 dark:bg-indigo-950/25 border-indigo-500/30' : 'bg-emerald-500/10 dark:bg-emerald-950/25 border-emerald-500/25'"
               >
                 <div class="flex items-center justify-between gap-1.5">
                   <div class="flex items-center gap-1.5 truncate">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span class="w-2 h-2 rounded-full shrink-0" :class="att.is_management ? 'bg-indigo-500' : 'bg-emerald-500'"></span>
                     <span class="font-extrabold text-main-text truncate">{{ att.name }}</span>
                     <span class="text-[10px] text-main-text/60 font-mono">(@{{ att.username }})</span>
+                    <span v-if="att.is_management" class="text-[8.5px] px-1 py-0.2 rounded font-bold bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 border border-indigo-500/30 shrink-0">
+                      {{ att.role }}
+                    </span>
                   </div>
-                  <span class="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-emerald-600 text-white shrink-0">
+                  <span class="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded text-white shrink-0" :class="att.is_management ? 'bg-indigo-600' : 'bg-emerald-600'">
                     {{ att.counts_logged }} {{ langStore.isAmharic() ? 'ተጠቃሚ' : 'patrons' }}
                   </span>
                 </div>
 
                 <div class="flex items-center justify-between text-[10px] text-main-text/60 pt-0.5 border-t border-emerald-500/15">
                   <span class="font-mono truncate max-w-[140px]">{{ att.phone && att.phone !== '—' ? att.phone : att.email }}</span>
-                  <span class="text-emerald-700 dark:text-emerald-400 font-medium">
+                  <span class="font-medium" :class="att.is_management ? 'text-indigo-700 dark:text-indigo-400' : 'text-emerald-700 dark:text-emerald-400'">
                     {{ langStore.isAmharic() ? 'የመጨረሻ' : 'Last' }}: {{ att.last_entry_formatted }} ({{ att.last_entry_minutes_ago }}m ago)
                   </span>
                 </div>
@@ -721,14 +748,17 @@
           <!-- Other Scheduled Attendants on Duty in this Branch -->
           <div v-if="branch.other_scheduled_attendants?.length" class="pt-1.5 border-t border-card-border/60">
             <div class="text-[9px] text-main-text/50 flex items-center justify-between">
-              <span>{{ langStore.isAmharic() ? 'ሌሎች በፈረቃው የተመደቡ ሠራተኞች' : 'Other Scheduled on Duty' }} ({{ branch.other_scheduled_attendants.length }}):</span>
-              <span class="text-emerald-600 dark:text-emerald-400 font-semibold text-[8.5px]">✓ {{ langStore.isAmharic() ? 'ቅርንጫፉ ንቁ ነው' : 'Branch Compliant' }}</span>
+              <span>{{ branch.management_stepped_in ? (langStore.isAmharic() ? 'ያልመዘገቡ የፈረቃው ሠራተኞች (በአስተዳደር የተሸፈኑ)' : 'Scheduled Attendants Not Logging (Covered by Management)') : (langStore.isAmharic() ? 'ሌሎች በፈረቃው የተመደቡ ሠራተኞች' : 'Other Scheduled on Duty') }} ({{ branch.other_scheduled_attendants.length }}):</span>
+              <span :class="branch.management_stepped_in ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400'" class="font-semibold text-[8.5px]">
+                {{ branch.management_stepped_in ? (langStore.isAmharic() ? '✓ በአስተዳደር ንቁ ሆኗል' : '✓ Active by Management') : (langStore.isAmharic() ? '✓ ቅርንጫፉ ንቁ ነው' : '✓ Branch Compliant') }}
+              </span>
             </div>
             <div class="flex flex-wrap gap-1 mt-1">
               <span
                 v-for="otherAtt in branch.other_scheduled_attendants"
                 :key="otherAtt.id"
-                class="px-1.5 py-0.5 rounded text-[9px] bg-main-bg border border-card-border/80 text-main-text/70 font-mono truncate"
+                class="px-1.5 py-0.5 rounded text-[9px] border font-mono truncate"
+                :class="branch.management_stepped_in ? 'bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200' : 'bg-main-bg border-card-border/80 text-main-text/70'"
                 :title="`${otherAtt.name} (@${otherAtt.username}) - ${otherAtt.phone}`"
               >
                 {{ otherAtt.name }}

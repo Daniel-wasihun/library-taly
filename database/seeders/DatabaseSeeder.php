@@ -93,7 +93,7 @@ class DatabaseSeeder extends Seeder
         $superAdminRole->syncPermissions(Permission::all());
         $adminRole->syncPermissions(Permission::all());
 
-        // Manager: Library management, scoped reporting & analytics, and viewing users
+        // Manager: Library management, scoped reporting & analytics, desk logging & 2-minute adjustments
         $managerRole->syncPermissions([
             'dashboard.view',
             'users.view',
@@ -106,6 +106,9 @@ class DatabaseSeeder extends Seeder
             'schedules.view',
             'schedules.manage',
             'attendance.view',
+            'attendance.record',
+            'attendance.update',
+            'attendance.delete',
             'attendance.analytics',
         ]);
 

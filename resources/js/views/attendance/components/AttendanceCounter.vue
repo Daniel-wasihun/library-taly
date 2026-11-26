@@ -129,9 +129,13 @@ const localizedDutyReason = computed(() => {
       </div>
 
       <!-- Active Shift Status Badge -->
-      <div v-else-if="props.dutyStatus?.allowed && !authStore.isAdmin" class="w-full mb-3 p-2 rounded-xs sm:rounded-sm bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 flex items-center gap-2 text-xs font-semibold">
+      <div v-else-if="props.dutyStatus?.allowed && !authStore.isAdmin && !authStore.isSuperAdmin && !authStore.isManagement && !authStore.hasRole('Manager')" class="w-full mb-3 p-2 rounded-xs sm:rounded-sm bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 flex items-center gap-2 text-xs font-semibold">
         <Sparkles class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
         <span class="truncate">🟢 {{ langStore.t('attendance.shift_active', 'Active Shift Duty: Counter Ready') }}</span>
+      </div>
+      <div v-else-if="props.dutyStatus?.allowed && (authStore.isAdmin || authStore.isSuperAdmin || authStore.isManagement || authStore.hasRole('Manager'))" class="w-full mb-3 p-2 rounded-xs sm:rounded-sm bg-indigo-500/10 border border-indigo-500/30 text-indigo-800 dark:text-indigo-300 flex items-center gap-2 text-xs font-semibold">
+        <Sparkles class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+        <span class="truncate">🛡️ {{ langStore.isAmharic() ? 'የአስተዳደር ፈቃድ፡ ቆጠራው ዝግጁ ነው' : 'Administrative Management Override: Counter Ready' }}</span>
       </div>
 
       <!-- TOP: Patron Type Toggle (Mobile Standard Scaled) -->

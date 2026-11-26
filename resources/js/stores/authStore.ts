@@ -69,10 +69,16 @@ export const useAuthStore = defineStore(
         const canManageAttendanceAnalytics = computed(() => {
             return isSuperAdmin.value || (user.value as any)?.can_manage_reporting || hasPermission('attendance.analytics') || hasPermission('libraries.manage');
         });
+        const isManagement = computed(() => {
+            return isSuperAdmin.value ||
+                   isAdmin.value ||
+                   hasRole('Manager') ||
+                   hasPermission('libraries.manage');
+        });
         const userRoles = computed(() => user.value?.roles ?? []);
-        const isOnDutyToday = computed(() => isSuperAdmin.value || (user.value?.duty_status?.has_active_shift_today ?? false));
-        const canCirculateBooks = computed(() => isSuperAdmin.value || (user.value?.duty_status?.circulation_authorized_today ?? false));
-        const canLogAttendance = computed(() => isSuperAdmin.value || isAdmin.value || (user.value?.duty_status?.circulation_authorized_today ?? false));
+        const isOnDutyToday = computed(() => isSuperAdmin.value || isManagement.value || (user.value?.duty_status?.has_active_shift_today ?? false));
+        const canCirculateBooks = computed(() => isSuperAdmin.value || isManagement.value || (user.value?.duty_status?.circulation_authorized_today ?? false));
+        const canLogAttendance = computed(() => isSuperAdmin.value || isAdmin.value || isManagement.value || hasRole('Manager') || (user.value?.duty_status?.circulation_authorized_today ?? false));
 
         function hasRole(role: string | string[]): boolean {
             if (isSuperAdmin.value) return true;
@@ -153,6 +159,7 @@ export const useAuthStore = defineStore(
             isAuthenticated,
             isAdmin,
             isSuperAdmin,
+            isManagement,
             canManageAllLibraries,
             canManageLibrary,
             canManageReporting,

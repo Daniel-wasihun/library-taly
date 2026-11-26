@@ -49,10 +49,10 @@ const dutyStatus = ref<{
 const checkingDuty = ref(false);
 
 const checkDutyStatus = async () => {
-  if (authStore.isAdmin || authStore.isSuperAdmin) {
+  if (authStore.isAdmin || authStore.isSuperAdmin || authStore.isManagement || authStore.hasRole('Manager')) {
     dutyStatus.value = {
       allowed: true,
-      reason: 'Administrative override granted.',
+      reason: 'Administrative management override granted.',
     };
     return;
   }
@@ -313,7 +313,9 @@ const canUpdateEntry = (entryAt: string) => canModifyEntry(entryAt);
 const handleLog = async (gender: 'male' | 'female', count = 1) => {
   const isOffline = !isOnline.value || (typeof navigator !== 'undefined' && !navigator.onLine);
 
-  if (!isOffline && !authStore.hasPermission('attendance.record')) {
+  const isPrivileged = authStore.isAdmin || authStore.isSuperAdmin || authStore.isManagement || authStore.hasRole('Manager');
+
+  if (!isOffline && !isPrivileged && !authStore.hasPermission('attendance.record')) {
     toast.error('Permission required: Only authorized staff with attendance.record permission can record attendance.');
     return;
   }
@@ -323,7 +325,7 @@ const handleLog = async (gender: 'male' | 'female', count = 1) => {
   }
 
   // Pre-flight check: ensure active shift duty when online
-  if (!isOffline && !authStore.isAdmin && !authStore.isSuperAdmin && (!dutyStatus.value || !dutyStatus.value.allowed)) {
+  if (!isOffline && !isPrivileged && (!dutyStatus.value || !dutyStatus.value.allowed)) {
     toast.error(dutyStatus.value?.reason || 'Usage counter is locked: you can only record during your active shift time.');
     return;
   }

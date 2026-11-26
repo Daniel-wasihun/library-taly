@@ -80,7 +80,8 @@ class AttendanceController extends Controller
         $user = $request->user();
 
         // Security check: Only attendants and authorized staff can record live attendance
-        if (!$user->hasPermissionTo('attendance.record')) {
+        $isPrivilegedStaff = $user->hasAdminPrivilege() || $user->hasRole('Manager') || $user->can('libraries.manage');
+        if (!$user->hasPermissionTo('attendance.record') && !$isPrivilegedStaff) {
             return response()->json([
                 'message' => 'Unauthorized: Only attendants and authorized staff can record live attendance.',
             ], 403);
@@ -95,8 +96,8 @@ class AttendanceController extends Controller
 
         $libraryId = (int) $validated['library_id'];
 
-        // Security check: Ensure staff logs into their own branch unless global admin
-        if (!$user->canManageAllLibraries()) {
+        // Security check: Ensure staff logs into their own branch unless global admin or management
+        if (!$user->canManageAllLibraries() && !$isPrivilegedStaff) {
             if (!$user->library_id || (int) $user->library_id !== $libraryId) {
                 return response()->json([
                     'message' => 'Unauthorized: You can only record attendance for your assigned library branch.',

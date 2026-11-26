@@ -181,13 +181,23 @@ class ShiftInactivityMonitorService
                 }
             }
 
-            // Query attendance records logged in this branch during this active shift (using UTC for database storage)
+            // Query attendance records logged in this branch during this active shift (using resilient multi-format timestamps)
             $shiftStartUtc = (clone $shiftStartDateTime)->utc();
             $evalTimeUtc = (clone $evalTime)->utc();
 
             $records = LibraryAttendance::where('library_id', $branch->id)
-                ->where('entry_at', '>=', $shiftStartUtc)
-                ->where('entry_at', '<=', $evalTimeUtc)
+                ->where(function ($q) use ($shiftStartDateTime, $evalTime, $shiftStartUtc, $evalTimeUtc) {
+                    $q->where(function ($sq) use ($shiftStartDateTime, $evalTime) {
+                        $sq->where('entry_at', '>=', $shiftStartDateTime->toDateTimeString())
+                           ->where('entry_at', '<=', $evalTime->toDateTimeString());
+                    })->orWhere(function ($sq) use ($shiftStartUtc, $evalTimeUtc) {
+                        $sq->where('entry_at', '>=', $shiftStartUtc->toDateTimeString())
+                           ->where('entry_at', '<=', $evalTimeUtc->toDateTimeString());
+                    })->orWhere(function ($sq) use ($shiftStartDateTime, $evalTime) {
+                        $sq->where('entry_at', '>=', $shiftStartDateTime->toIso8601String())
+                           ->where('entry_at', '<=', $evalTime->toIso8601String());
+                    });
+                })
                 ->orderBy('entry_at', 'asc')
                 ->get(['id', 'entry_at', 'visitor_count', 'staff_id', 'created_at']);
 
@@ -199,7 +209,7 @@ class ShiftInactivityMonitorService
             if ($records->isNotEmpty()) {
                 // 1. Shift Start Delay: Did attendants delay >= 30m before first recording?
                 $firstRecord = $records->first();
-                $firstRecordAt = Carbon::parse($firstRecord->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                $firstRecordAt = $this->parseEntryDateTime($firstRecord->entry_at);
                 $startGap = (int) $shiftStartDateTime->diffInMinutes($firstRecordAt);
                 if ($startGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
                     $countedStartGap = $startGap - self::INACTIVITY_THRESHOLD_MINUTES;
@@ -223,8 +233,8 @@ class ShiftInactivityMonitorService
 
                 // 2. Intermittent Inactivity: Gaps >= 30m between consecutive counts
                 for ($i = 0; $i < count($records) - 1; $i++) {
-                    $currAt = Carbon::parse($records[$i]->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
-                    $nextAt = Carbon::parse($records[$i + 1]->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                    $currAt = $this->parseEntryDateTime($records[$i]->entry_at);
+                    $nextAt = $this->parseEntryDateTime($records[$i + 1]->entry_at);
                     $midGap = (int) $currAt->diffInMinutes($nextAt);
                     if ($midGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
                         $countedMidGap = $midGap - self::INACTIVITY_THRESHOLD_MINUTES;
@@ -277,7 +287,7 @@ class ShiftInactivityMonitorService
                 } else {
                     // Records exist: check gap since the last recorded entry
                     $lastRecord = $records->last();
-                    $lastEntryAt = Carbon::parse($lastRecord->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                    $lastEntryAt = $this->parseEntryDateTime($lastRecord->entry_at);
                     $gapMinutes = (int) $lastEntryAt->diffInMinutes($evalTime);
                     $lastEntryTimeStr = $lastEntryAt->format('h:i A');
 
@@ -378,20 +388,27 @@ class ShiftInactivityMonitorService
             } elseif ($records->isNotEmpty()) {
                 // Branch is ACTIVE & COMPLIANT: At least one attendant has logged counts within the 30-min window!
                 $lastRecord = $records->last();
-                $lastEntryAt = Carbon::parse($lastRecord->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                $lastEntryAt = $this->parseEntryDateTime($lastRecord->entry_at);
                 $gapMinutes = (int) $lastEntryAt->diffInMinutes($evalTime);
 
-                // Group entries by staff_id to calculate activity per attendant
+                // Group entries by staff_id to calculate activity per attendant / manager
                 $staffActivity = $records->groupBy('staff_id');
-                $staffIds = $staffActivity->keys()->filter()->all();
+                $staffIds = $staffActivity->keys()->filter()->map(fn ($id) => (int) $id)->all();
                 $staffUsers = User::with('roles')->whereIn('id', $staffIds)->get()->keyBy('id');
 
+                $hasManagementOperator = false;
                 $workingAttendants = [];
                 foreach ($staffActivity as $sId => $staffRecords) {
                     $sUser = $staffUsers->get($sId);
                     $sLastRecord = $staffRecords->last();
-                    $sLastAt = Carbon::parse($sLastRecord->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                    $sLastAt = $this->parseEntryDateTime($sLastRecord->entry_at);
                     $sGapMinutes = (int) $sLastAt->diffInMinutes($evalTime);
+
+                    $roleName = $sUser?->roles->first()?->name ?? 'Attendant';
+                    $isManagement = ($sUser && ($sUser->hasAdminPrivilege() || $sUser->hasRole('Manager') || $sUser->can('libraries.manage')));
+                    if ($isManagement) {
+                        $hasManagementOperator = true;
+                    }
 
                     $workingAttendants[] = [
                         'id' => (int) $sId,
@@ -399,7 +416,8 @@ class ShiftInactivityMonitorService
                         'username' => $sUser?->username ?? '',
                         'email' => $sUser?->email ?? '',
                         'phone' => $sUser?->phone ?? '—',
-                        'role' => $sUser?->roles->first()?->name ?? 'Attendant',
+                        'role' => $roleName,
+                        'is_management' => $isManagement,
                         'counts_logged' => (int) $staffRecords->sum('visitor_count'),
                         'batches_logged' => $staffRecords->count(),
                         'last_entry_at' => $sLastAt->toIso8601String(),
@@ -415,7 +433,7 @@ class ShiftInactivityMonitorService
 
                 $scheduledAttendantList = $scheduledAttendants->map(function ($u) {
                     return [
-                        'id' => $u->id,
+                        'id' => (int) $u->id,
                         'name' => $u->name,
                         'username' => $u->username ?? '',
                         'email' => $u->email,
@@ -424,11 +442,16 @@ class ShiftInactivityMonitorService
                     ];
                 })->toArray();
 
-                // Non-working scheduled attendants (scheduled on duty but colleagues are handling counts)
+                // Check whether scheduled attendants logged or if management stepped in
+                $scheduledAttendantIds = $scheduledAttendants->pluck('id')->map(fn ($id) => (int) $id)->all();
+                $scheduledAttendantsLoggedCount = count(array_intersect($staffIds, $scheduledAttendantIds));
+                $managementSteppedIn = ($hasManagementOperator && $scheduledAttendantsLoggedCount === 0);
+
+                // Non-working scheduled attendants (scheduled on duty but management or colleagues are handling counts)
                 $workingUserIds = array_column($workingAttendants, 'id');
                 $otherScheduledAttendants = array_values(array_filter(
                     $scheduledAttendantList,
-                    fn ($att) => !in_array($att['id'], $workingUserIds, true)
+                    fn ($att) => !in_array((int) $att['id'], $workingUserIds, true)
                 ));
 
                 $shift12hWindow = Carbon::parse($activeShift->start_time)->format('h:i A') . ' – ' . Carbon::parse($activeShift->end_time)->format('h:i A');
@@ -456,10 +479,14 @@ class ShiftInactivityMonitorService
                     'scheduled_attendants_count' => count($scheduledAttendantList),
                     'scheduled_attendants' => $scheduledAttendantList,
                     'other_scheduled_attendants' => $otherScheduledAttendants,
+                    'has_management_operator' => $hasManagementOperator,
+                    'management_stepped_in' => $managementSteppedIn,
+                    'management_notice' => $managementSteppedIn ? 'Desk operated by Management (Shift attendants inactive or absent)' : null,
+                    'management_notice_am' => $managementSteppedIn ? 'ቆጠራው በአስተዳደር እየተካሄደ ነው (የፈረቃው ሠራተኞች አልመዘገቡም)' : null,
                     'has_past_lapses' => count($pastLapses) > 0,
                     'past_lapses_count' => count($pastLapses),
                     'past_lapses' => $pastLapses,
-                    'status' => 'ACTIVE_COMPLIANT',
+                    'status' => $managementSteppedIn ? 'ACTIVE_MANAGEMENT_OVERRIDE' : 'ACTIVE_COMPLIANT',
                 ];
 
                 if (count($pastLapses) > 0) {
@@ -636,13 +663,23 @@ class ShiftInactivityMonitorService
                     'role' => $u->roles->first()?->name ?? 'Attendant',
                 ])->toArray();
 
-                // Attendance logs during this shift window (using UTC for database storage)
+                // Attendance logs during this shift window (using resilient multi-format timestamps)
                 $shiftStartUtc = (clone $shiftStart)->utc();
                 $evalEndUtc = (clone $evalEnd)->utc();
 
                 $records = LibraryAttendance::where('library_id', $branch->id)
-                    ->where('entry_at', '>=', $shiftStartUtc)
-                    ->where('entry_at', '<=', $evalEndUtc)
+                    ->where(function ($q) use ($shiftStart, $evalEnd, $shiftStartUtc, $evalEndUtc) {
+                        $q->where(function ($sq) use ($shiftStart, $evalEnd) {
+                            $sq->where('entry_at', '>=', $shiftStart->toDateTimeString())
+                               ->where('entry_at', '<=', $evalEnd->toDateTimeString());
+                        })->orWhere(function ($sq) use ($shiftStartUtc, $evalEndUtc) {
+                            $sq->where('entry_at', '>=', $shiftStartUtc->toDateTimeString())
+                               ->where('entry_at', '<=', $evalEndUtc->toDateTimeString());
+                        })->orWhere(function ($sq) use ($shiftStart, $evalEnd) {
+                            $sq->where('entry_at', '>=', $shiftStart->toIso8601String())
+                               ->where('entry_at', '<=', $evalEnd->toIso8601String());
+                        });
+                    })
                     ->orderBy('entry_at', 'asc')
                     ->get(['id', 'entry_at', 'visitor_count', 'staff_id']);
 
@@ -666,7 +703,7 @@ class ShiftInactivityMonitorService
                     }
                 } else {
                     // Check gap from shift start to first log
-                    $firstLogAt = Carbon::parse($records->first()->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                    $firstLogAt = $this->parseEntryDateTime($records->first()->entry_at);
                     $startGap = (int) $shiftStart->diffInMinutes($firstLogAt);
                     if ($startGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
                         $countedStartGap = max(0, $startGap - self::INACTIVITY_THRESHOLD_MINUTES);
@@ -683,8 +720,8 @@ class ShiftInactivityMonitorService
 
                     // Check consecutive record gaps
                     for ($i = 0; $i < count($records) - 1; $i++) {
-                        $curr = Carbon::parse($records[$i]->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
-                        $next = Carbon::parse($records[$i + 1]->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                        $curr = $this->parseEntryDateTime($records[$i]->entry_at);
+                        $next = $this->parseEntryDateTime($records[$i + 1]->entry_at);
                         $midGap = (int) $curr->diffInMinutes($next);
 
                         if ($midGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
@@ -702,7 +739,7 @@ class ShiftInactivityMonitorService
                     }
 
                     // Check gap from last record to evalEnd
-                    $lastLogAt = Carbon::parse($records->last()->entry_at, 'UTC')->setTimezone('Africa/Addis_Ababa');
+                    $lastLogAt = $this->parseEntryDateTime($records->last()->entry_at);
                     $tailGap = (int) $lastLogAt->diffInMinutes($evalEnd);
                     if ($tailGap >= self::INACTIVITY_THRESHOLD_MINUTES) {
                         $countedTailGap = max(0, $tailGap - self::INACTIVITY_THRESHOLD_MINUTES);
@@ -854,5 +891,22 @@ class ShiftInactivityMonitorService
             'COMPLETE_SHIFT_INACTIVITY' => $isAmharic ? 'በሙሉ ፈረቃው ምንም ቆጠራ አልተካሄደም' : 'Complete Shift Absence',
             default => $gapType,
         };
+    }
+
+    /**
+     * Parse entry_at timestamp safely without erroneous UTC offset double-addition.
+     */
+    protected function parseEntryDateTime($entryAt): Carbon
+    {
+        if ($entryAt instanceof Carbon) {
+            return (clone $entryAt)->setTimezone('Africa/Addis_Ababa');
+        }
+
+        $str = (string) $entryAt;
+        if (preg_match('/[+-]\d{2}:?\d{2}$|Z$/', $str)) {
+            return Carbon::parse($str)->setTimezone('Africa/Addis_Ababa');
+        }
+
+        return Carbon::parse($str, 'Africa/Addis_Ababa');
     }
 }
